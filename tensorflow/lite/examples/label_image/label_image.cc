@@ -189,6 +189,19 @@ void RunInference(Settings* s) {
   if (s->profiling) profiler->StartProfiling();
 
   struct timeval start_time, stop_time;
+
+   gettimeofday(&start_time, nullptr);
+   if (interpreter->Invoke() != kTfLiteOk) {
+	   LOG(FATAL) << "Failed to invoke tflite!\n";
+	 }
+   gettimeofday(&stop_time, nullptr);
+	
+  LOG(INFO) << "invoked \n";
+  LOG(INFO) << "first time: "
+   	 << (get_us(stop_time) - get_us(start_time)) / 1000
+            << " ms \n\n";
+
+  
   gettimeofday(&start_time, nullptr);
   for (int i = 0; i < s->loop_count; i++) {
     if (interpreter->Invoke() != kTfLiteOk) {
