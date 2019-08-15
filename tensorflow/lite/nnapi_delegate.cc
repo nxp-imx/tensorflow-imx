@@ -695,10 +695,10 @@ TfLiteStatus AddOpsAndParams(
         break;
     }
 
-    if (nnapi_version == 11 && GetAndroidSdkVersionCached() < 28) {
-      logError("Op %d needs NNAPI1.1", builtin);
-      return kTfLiteError;
-    }
+ //   if (nnapi_version == 11 && GetAndroidSdkVersionCached() < 28) {
+ //     logError("Op %d needs NNAPI1.1", builtin);
+ //    return kTfLiteError;
+ //   }
 
     // Add the operation.
     RETURN_ERROR_IF_NN_FAILED(ANeuralNetworksModel_addOperation(
