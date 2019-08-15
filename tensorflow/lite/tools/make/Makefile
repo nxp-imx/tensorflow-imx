@@ -46,20 +46,15 @@ LIBS := \
 -lstdc++ \
 -lpthread \
 -lm \
--lz
+-lz \
+-lrt
 
 # There are no rules for compiling objects for the host system (since we don't
 # generate things like the protobuf compiler that require that), so all of
 # these settings are for the target compiler.
-CXXFLAGS := -O3 -DNDEBUG
 CXXFLAGS += $(EXTRA_CXXFLAGS)
-CCFLAGS := ${CXXFLAGS}
 CXXFLAGS += --std=c++11
-CFLAGS :=
-LDOPTS := -L/usr/local/lib
 ARFLAGS := -r
-TARGET_TOOLCHAIN_PREFIX :=
-CC_PREFIX :=
 
 # This library is the main target for this makefile. It will contain a minimal
 # runtime that can be linked in to other programs.
@@ -157,9 +152,6 @@ BENCHMARK_LIB := $(LIBDIR)$(BENCHMARK_LIB_NAME)
 BENCHMARK_BINARY := $(BINDIR)$(BENCHMARK_BINARY_NAME)
 MINIMAL_BINARY := $(BINDIR)minimal
 
-CXX := $(CC_PREFIX)${TARGET_TOOLCHAIN_PREFIX}g++
-CC := $(CC_PREFIX)${TARGET_TOOLCHAIN_PREFIX}gcc
-AR := $(CC_PREFIX)${TARGET_TOOLCHAIN_PREFIX}ar
 
 MINIMAL_OBJS := $(addprefix $(OBJDIR), \
 $(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(MINIMAL_SRCS))))
