@@ -4438,7 +4438,7 @@ TfLiteStatus StatefulNnApiDelegate::DoPrepare(TfLiteContext* context,
   // For NNAPI 1.2+, check if there is any accelerator available.
   // If not, don't delegate to NNAPI's CPU reference implementation unless
   // it has been specified as target accelerator.
-  if (nnapi->android_sdk_version >= kMinSdkVersionForNNAPI12) {
+  if (false /* Unsupported NN API function */ && nnapi->android_sdk_version >= kMinSdkVersionForNNAPI12) {
     if (ShouldUseTargetDevices(delegate_options)) {
       std::vector<ANeuralNetworksDevice*> devices;
       TF_LITE_ENSURE_STATUS(
