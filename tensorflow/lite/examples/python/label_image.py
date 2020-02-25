@@ -20,10 +20,11 @@ from __future__ import print_function
 
 import argparse
 import numpy as np
+from datetime import datetime
 
 from PIL import Image
 
-import tensorflow as tf # TF2
+import tflite_runtime.interpreter as tflite
 
 
 def load_labels(filename):
@@ -36,17 +37,17 @@ if __name__ == '__main__':
   parser.add_argument(
       '-i',
       '--image',
-      default='/tmp/grace_hopper.bmp',
+      default='grace_hopper.bmp',
       help='image to be classified')
   parser.add_argument(
       '-m',
       '--model_file',
-      default='/tmp/mobilenet_v1_1.0_224_quant.tflite',
+      default='mobilenet_v1_1.0_224_quant.tflite',
       help='.tflite model to be executed')
   parser.add_argument(
       '-l',
       '--label_file',
-      default='/tmp/labels.txt',
+      default='labels.txt',
       help='name of file containing labels')
   parser.add_argument(
       '--input_mean',
@@ -58,7 +59,7 @@ if __name__ == '__main__':
       help='input standard deviation')
   args = parser.parse_args()
 
-  interpreter = tf.lite.Interpreter(model_path=args.model_file)
+  interpreter = tflite.Interpreter(model_path=args.model_file)
   interpreter.allocate_tensors()
 
   input_details = interpreter.get_input_details()
@@ -80,7 +81,16 @@ if __name__ == '__main__':
 
   interpreter.set_tensor(input_details[0]['index'], input_data)
 
+  # ignore the 1st invoke
+  startTime = datetime.now()
   interpreter.invoke()
+  delta = datetime.now() - startTime
+  print("Warm-up time:", '%.1f' % (delta.total_seconds() * 1000), "ms\n")
+
+  startTime = datetime.now()
+  interpreter.invoke()
+  delta = datetime.now() - startTime
+  print("Inference time:", '%.1f' % (delta.total_seconds() * 1000), "ms\n")
 
   output_data = interpreter.get_tensor(output_details[0]['index'])
   results = np.squeeze(output_data)

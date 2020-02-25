@@ -41,14 +41,14 @@ DOCLINES = __doc__.split('\n')
 TENSORFLOW_DIR = os.environ['TENSORFLOW_DIR']
 
 # Setup cross compiling
-TARGET = os.environ.get('TENSORFLOW_TARGET', None)
+TARGET = 'yocto'
 if TARGET == 'rpi':
   os.environ['CXX'] = 'arm-linux-gnueabihf-g++'
   os.environ['CC'] = 'arm-linux-gnueabihf-gcc'
 elif TARGET == 'aarch64':
   os.environ['CXX'] = 'aarch64-linux-gnu-g++'
   os.environ['CC'] = 'aarch64-linux-gnu-gcc'
-MAKE_CROSS_OPTIONS = ['TARGET=%s' % TARGET]  if TARGET else []
+MAKE_CROSS_OPTIONS = ['TARGET=linux', 'TARGET_ARCH=aarch64']
 
 RELATIVE_MAKE_DIR = os.path.join('tensorflow', 'lite', 'tools', 'make')
 MAKE_DIR = os.path.join(TENSORFLOW_DIR, RELATIVE_MAKE_DIR)
@@ -70,7 +70,7 @@ def get_build_cpus():
 def make_args(target='', quiet=True):
   """Construct make command line."""
   args = (['make', 'SHELL=/bin/bash',
-           'BUILD_WITH_NNAPI=false', '-C', TENSORFLOW_DIR]
+           'BUILD_WITH_NNAPI=true', '-C', TENSORFLOW_DIR]
           + MAKE_CROSS_OPTIONS +
           ['-f', RELATIVE_MAKEFILE_PATH, '-j',
            str(get_build_cpus())])
@@ -146,7 +146,7 @@ ext = Extension(
                   numpy.get_include(),
                   os.path.join(DOWNLOADS_DIR, 'flatbuffers', 'include'),
                   os.path.join(DOWNLOADS_DIR, 'absl')],
-    libraries=[LIB_TFLITE],
+    libraries=[LIB_TFLITE, 'rt'],
     library_dirs=[LIB_TFLITE_DIR])
 
 setup(
