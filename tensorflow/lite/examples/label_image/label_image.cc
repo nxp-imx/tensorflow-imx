@@ -244,7 +244,7 @@ void RunInference(Settings* s) {
   interpreter->SetProfiler(profiler.get());
 
   if (s->profiling) profiler->StartProfiling();
-  if (s->loop_count > 1)
+  if (s->loop_count > 0)
     for (int i = 0; i < s->number_of_warmup_runs; i++) {
       if (interpreter->Invoke() != kTfLiteOk) {
         LOG(FATAL) << "Failed to invoke tflite!\n";

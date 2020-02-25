@@ -3560,11 +3560,14 @@ TfLiteStatus NNAPIDelegateKernel::BuildGraph(
       context, nnapi_->ANeuralNetworksModel_finish(nn_model_.get()),
       nnapi_errno);
 
+  static unsigned int input_count = 0;
+  static unsigned int output_count = 0;
+
   // Create shared memory pool for inputs and outputs.
   nn_input_memory_.reset(
-      new NNMemory(nnapi_, "input_pool", total_input_byte_size));
+      new NNMemory(nnapi_, (std::string("input_pool_") + std::to_string(input_count++)).c_str(), total_input_byte_size));
   nn_output_memory_.reset(
-      new NNMemory(nnapi_, "output_pool", total_output_byte_size));
+      new NNMemory(nnapi_, (std::string("output_pool_") + std::to_string(output_count++)).c_str(), total_output_byte_size));
 
   return kTfLiteOk;
 }
@@ -3697,7 +3700,7 @@ TfLiteStatus StatefulNnApiDelegate::DoPrepare(TfLiteContext* context,
   bool is_accelerator_specified = false;
   // For NNAPI 1.2+, check if there is any accelerator available.
   // If not, don't delegate to NNAPI's CPU reference implementation.
-  if (nnapi->android_sdk_version >= kMinSdkVersionForNNAPI12) {
+  if (false /* Unsupported NN API function */ && nnapi->android_sdk_version >= kMinSdkVersionForNNAPI12) {
     // Check if user specified an acclelerator to use.
     const char* device_name_ptr = GetOptions(delegate).accelerator_name;
     if (device_name_ptr) {
