@@ -33,7 +33,7 @@ if [ ! -f $BZL_FILE_PATH ]; then
   exit 1;
 fi
 
-EIGEN_URL="$(grep -o 'https.*gitlab.com/libeigen/eigen/-/archive/.*tar\.gz' "${BZL_FILE_PATH}" | grep -v mirror.tensorflow | head -n1)"
+EIGEN_URL="$(grep -o 'http.*gitlab.com/libeigen/eigen/-/archive/.*tar\.gz' "${BZL_FILE_PATH}" | grep -v mirror.tensorflow | head -n1)"
 EIGEN_SHA="$(eval echo $(grep '# SHARED_EIGEN_SHA' "${BZL_FILE_PATH}" | grep -o '\".*\"'))"
 GEMMLOWP_URL="$(grep -o 'https://storage.googleapis.com/mirror.tensorflow.org/github.com/google/gemmlowp/.*zip' "${BZL_FILE_PATH}" | head -n1)"
 GEMMLOWP_SHA="$(eval echo $(grep '# SHARED_GEMMLOWP_SHA' "${BZL_FILE_PATH}" | grep -o '\".*\"'))"
@@ -77,7 +77,8 @@ download_and_extract() {
   rm -rf ${dir}/*  # Delete existing files.
   tempdir=$(mktemp -d)
   filepath="${tempdir}/$(basename ${url})"
-  curl -Lo ${filepath} ${url}
+  #curl -Lo ${filepath} ${url}
+  wget ${url} -O ${filepath}
   if [ -n "${sha256}" ]; then
     echo "checking sha256 of ${dir}"
     echo "${sha256}  ${filepath}" | sha256sum -c
@@ -87,6 +88,7 @@ download_and_extract() {
   elif [[ "${url}" == *zip ]]; then
     tempdir2=$(mktemp -d)
     unzip ${filepath} -d ${tempdir2}
+
 
     # If the zip file contains nested directories, extract the files from the
     # inner directory.
