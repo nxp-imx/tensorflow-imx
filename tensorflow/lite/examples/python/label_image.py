@@ -19,7 +19,7 @@ import time
 
 import numpy as np
 from PIL import Image
-import tensorflow as tf
+import tflite_runtime.interpreter as tflite
 
 
 def load_labels(filename):
@@ -32,17 +32,17 @@ if __name__ == '__main__':
   parser.add_argument(
       '-i',
       '--image',
-      default='/tmp/grace_hopper.bmp',
+      default='grace_hopper.bmp',
       help='image to be classified')
   parser.add_argument(
       '-m',
       '--model_file',
-      default='/tmp/mobilenet_v1_1.0_224_quant.tflite',
+      default='mobilenet_v1_1.0_224_quant.tflite',
       help='.tflite model to be executed')
   parser.add_argument(
       '-l',
       '--label_file',
-      default='/tmp/labels.txt',
+      default='labels.txt',
       help='name of file containing labels')
   parser.add_argument(
       '--input_mean',
@@ -110,9 +110,16 @@ if __name__ == '__main__':
 
   interpreter.set_tensor(input_details[0]['index'], input_data)
 
-  start_time = time.time()
+  # ignore the 1st invoke
+  startTime = time.time()
   interpreter.invoke()
-  stop_time = time.time()
+  delta = time.time() - startTime
+  print("Warm-up time:", '%.1f' % (delta * 1000), "ms\n")
+
+  startTime = time.time()
+  interpreter.invoke()
+  delta = time.time() - startTime
+  print("Inference time:", '%.1f' % (delta * 1000), "ms\n")
 
   output_data = interpreter.get_tensor(output_details[0]['index'])
   results = np.squeeze(output_data)
@@ -125,4 +132,3 @@ if __name__ == '__main__':
     else:
       print('{:08.6f}: {}'.format(float(results[i] / 255.0), labels[i]))
 
-  print('time: {:.3f}ms'.format((stop_time - start_time) * 1000))
