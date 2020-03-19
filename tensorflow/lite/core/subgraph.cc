@@ -1026,7 +1026,9 @@ void Subgraph::UseNNAPI(bool enable) {
   if (applied_nnapi_delegate_ && !enable) {
     ReportError("Attempting to disable NNAPI delegate after it's applied.");
   } else {
-    should_apply_nnapi_delegate_ = enable;
+    if (enable) {
+      ReportError("Interpreter::UseNNAPI is not supported. Use Interpreter::ModifyGraphWithDelegate instead.");
+    }
   }
 }
 

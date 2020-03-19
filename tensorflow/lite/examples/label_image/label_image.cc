@@ -202,9 +202,9 @@ void RunInference(Settings* s) {
   for (const auto& delegate : delegates_) {
     if (interpreter->ModifyGraphWithDelegate(delegate.second.get()) !=
         kTfLiteOk) {
-      LOG(FATAL) << "Failed to apply " << delegate.first << " delegate.";
+      LOG(FATAL) << "Failed to apply " << delegate.first << " delegate.\n";
     } else {
-      LOG(INFO) << "Applied " << delegate.first << " delegate.";
+      LOG(INFO) << "Applied " << delegate.first << " delegate.\n";
     }
   }
 
