@@ -276,7 +276,7 @@ void EvalQuantized(TfLiteContext* context, TfLiteNode* node,
                    TfLiteSubParams* params, const OpData* data,
                    const TfLiteTensor* input1, const TfLiteTensor* input2,
                    TfLiteTensor* output) {
-  tflite::ArithmeticParams op_params;
+  tflite::ArithmeticParams op_params = {.float_activation_min = 0.0f};
   op_params.left_shift = data->left_shift;
   op_params.input1_offset = data->input1_offset;
   op_params.input1_multiplier = data->input1_multiplier;

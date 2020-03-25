@@ -14,6 +14,8 @@ limitations under the License.
 ==============================================================================*/
 #include "tensorflow/lite/kernels/internal/transpose_utils.h"
 
+#include <cassert>
+
 namespace tflite {
 namespace transpose_utils {
 
@@ -154,6 +156,7 @@ size_t Flatten(const RuntimeShape& input_shape,
         min_val_idx = j;
       }
     }
+    assert(min_val_idx != -1);
     non_flatten_params->perm[min_val_idx] = i;
   }
 
