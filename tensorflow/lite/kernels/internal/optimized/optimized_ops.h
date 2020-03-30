@@ -7353,7 +7353,7 @@ inline void Transpose3D(const TransposeParams& params,
   s2 = input_shape.Dims(1);
   s3 = input_shape.Dims(2);
 
-  int p1, p2, p3;
+  int p1 = 0, p2 = 0, p3 = 0;
   if (params.perm[0] == 2) {
     p1 = 1;
   } else if (params.perm[1] == 2) {
@@ -7469,7 +7469,7 @@ void Transpose(const TransposeParams& unshrinked_params,
   if (shrinked_params.perm[0] == 0 && output_size >= 3) {
     RuntimeShape non_flatten_input_shape;
     RuntimeShape non_flatten_output_shape;
-    TransposeParams non_flatten_params;
+    TransposeParams non_flatten_params = {.perm_count = 0, .perm = {0, 0, 0, 0}};
     const int total_size = shrinked_input_shape.FlatSize();
     const int non_flatten_size = transpose_utils::Flatten(
         shrinked_input_shape, shrinked_output_shape, shrinked_params,

@@ -55,22 +55,22 @@ double get_us(struct timeval t) { return (t.tv_sec * 1000000 + t.tv_usec); }
 using TfLiteDelegatePtr = tflite::Interpreter::TfLiteDelegatePtr;
 using TfLiteDelegatePtrMap = std::map<std::string, TfLiteDelegatePtr>;
 
-TfLiteDelegatePtr CreateGPUDelegate(Settings* s) {
+TfLiteDelegatePtr CreateGPUDelegate(Settings* s, tflite::FlatBufferModel* model) {
 #if defined(__ANDROID__)
   TfLiteGpuDelegateOptionsV2 gpu_opts = TfLiteGpuDelegateOptionsV2Default();
   gpu_opts.inference_preference =
       TFLITE_GPU_INFERENCE_PREFERENCE_SUSTAINED_SPEED;
   gpu_opts.is_precision_loss_allowed = s->allow_fp16 ? 1 : 0;
-  return evaluation::CreateGPUDelegate(s->model, &gpu_opts);
+  return evaluation::CreateGPUDelegate(model, &gpu_opts);
 #else
-  return evaluation::CreateGPUDelegate(s->model);
+  return evaluation::CreateGPUDelegate(model);
 #endif
 }
 
-TfLiteDelegatePtrMap GetDelegates(Settings* s) {
+TfLiteDelegatePtrMap GetDelegates(Settings* s, tflite::FlatBufferModel* model) {
   TfLiteDelegatePtrMap delegates;
   if (s->gl_backend) {
-    auto delegate = CreateGPUDelegate(s);
+    auto delegate = CreateGPUDelegate(s, model);
     if (!delegate) {
       LOG(INFO) << "GPU acceleration is unsupported on this platform.";
     } else {
@@ -129,6 +129,7 @@ void PrintProfilingInfo(const profiling::ProfileEvent* e,
             << EnumNameBuiltinOperator(
                    static_cast<BuiltinOperator>(registration.builtin_code))
             << "\n";
+  LOG(INFO).unsetf(std::ios::floatfield);
 }
 
 void RunInference(Settings* s) {
@@ -144,9 +145,8 @@ void RunInference(Settings* s) {
     LOG(FATAL) << "\nFailed to mmap model " << s->model_name << "\n";
     exit(-1);
   }
-  s->model = model.get();
   LOG(INFO) << "Loaded model " << s->model_name << "\n";
-  model->error_reporter();
+  (void)model->error_reporter();
   LOG(INFO) << "resolved reporter\n";
 
   tflite::ops::builtin::BuiltinOpResolver resolver;
@@ -198,7 +198,7 @@ void RunInference(Settings* s) {
     LOG(INFO) << "number of outputs: " << outputs.size() << "\n";
   }
 
-  auto delegates_ = GetDelegates(s);
+  auto delegates_ = GetDelegates(s, model.get());
   for (const auto& delegate : delegates_) {
     if (interpreter->ModifyGraphWithDelegate(delegate.second.get()) !=
         kTfLiteOk) {
