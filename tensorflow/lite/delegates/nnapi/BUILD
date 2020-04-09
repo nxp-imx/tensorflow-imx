@@ -41,6 +41,7 @@ cc_library(
         "//tensorflow/lite/nnapi:nnapi_util",
         "@farmhash_archive//:farmhash",
     ],
+    linkopts = ["-lrt"]
 )
 
 cc_library(

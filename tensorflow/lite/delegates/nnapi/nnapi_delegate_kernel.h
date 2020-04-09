@@ -170,7 +170,11 @@ class NNFreeBurst {
 // Manage NNAPI shared memory handle
 class NNMemory {
  public:
+#ifdef TFLITE_NNAPI_ALLOW_MMAP_SHARING
   NNMemory(const NnApi* nnapi, const char* name, size_t size);
+#else
+  NNMemory(const NnApi* /*nnapi*/, const char* /*name*/, size_t /*size*/) {}
+#endif
 
   ~NNMemory();
 
@@ -185,6 +189,9 @@ class NNMemory {
   size_t byte_size_ = 0;
   uint8_t* data_ptr_ = nullptr;
   ANeuralNetworksMemory* nn_memory_handle_ = nullptr;
+  #ifndef __ANDROID__
+  const char* name_ {nullptr};
+  #endif
 };
 
 // LINT.IfChange
