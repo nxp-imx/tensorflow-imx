@@ -104,6 +104,13 @@ config_setting(
 )
 
 config_setting(
+    name = "armv8-a",
+    values = {
+        "cpu": "armv8-a",
+    },
+)
+
+config_setting(
     name = "haswell",
     values = {
         "cpu": "haswell",
@@ -709,6 +716,9 @@ cc_library(
             ":neon_tensor_utils",
         ],
         ":armeabi-v7a": [
+            ":neon_tensor_utils",
+        ],
+        ":armv8-a": [
             ":neon_tensor_utils",
         ],
         ":armv7a": [

@@ -105,7 +105,7 @@ int ASharedMemory_create(const char* name, size_t size) {
 
 const NnApi LoadNnApi() {
   NnApi nnapi = {};
-  nnapi.android_sdk_version = 0;
+  nnapi.android_sdk_version = 29;
 
 #ifdef __ANDROID__
   nnapi.android_sdk_version = GetAndroidSdkVersion();
@@ -122,7 +122,10 @@ const NnApi LoadNnApi() {
   // instances of nn api RT
   libneuralnetworks = dlopen("libneuralnetworks.so", RTLD_LAZY | RTLD_LOCAL);
   if (libneuralnetworks == nullptr) {
-    NNAPI_LOG("nnapi error: unable to open library %s", "libneuralnetworks.so");
+    char* error = dlerror();
+           if (error != NULL) {
+               NNAPI_LOG("nnapi error: unable to open library %s, error=%s", "libneuralnetworks.so", error);
+           }
   }
 
   nnapi.nnapi_exists = libneuralnetworks != nullptr;
