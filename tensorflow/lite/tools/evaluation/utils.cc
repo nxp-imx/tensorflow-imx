@@ -95,24 +95,18 @@ TfLiteStatus GetSortedFileNames(
 
 // TODO(b/138448769): Migrate delegate helper APIs to lite/testing.
 TfLiteDelegatePtr CreateNNAPIDelegate() {
-#if defined(__ANDROID__)
   return TfLiteDelegatePtr(
       NnApiDelegate(),
       // NnApiDelegate() returns a singleton, so provide a no-op deleter.
       [](TfLiteDelegate*) {});
-#else
-  return CreateNullDelegate();
-#endif  // defined(__ANDROID__)
 }
 
-#if defined(__ANDROID__)
+
 TfLiteDelegatePtr CreateNNAPIDelegate(StatefulNnApiDelegate::Options options) {
   return TfLiteDelegatePtr(
       new StatefulNnApiDelegate(options), [](TfLiteDelegate* delegate) {
         delete reinterpret_cast<StatefulNnApiDelegate*>(delegate);
       });
-}
-#endif  // defined(__ANDROID__)
 
 #if defined(__ANDROID__)
 TfLiteDelegatePtr CreateGPUDelegate(TfLiteGpuDelegateOptionsV2* options) {

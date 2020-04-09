@@ -40,7 +40,9 @@ limitations under the License.
 #if defined __ANDROID__ || defined __unix__
 #define TFLITE_NNAPI_ALLOW_MMAP_SHARING
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#include <fcntl.h>
 #endif
 
 #include "tensorflow/lite/allocation.h"
@@ -489,16 +491,26 @@ namespace delegate {
 namespace nnapi {
 
 #ifdef TFLITE_NNAPI_ALLOW_MMAP_SHARING
-NNMemory::NNMemory(const NnApi* nnapi, const char* name, size_t size) {
-  if (name && size > 0) {
-    nnapi_ = nnapi;
-    byte_size_ = size;
-    fd_ = nnapi_->ASharedMemory_create(name, size);
-    data_ptr_ = reinterpret_cast<uint8_t*>(
-        mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0));
-    nnapi_->ANeuralNetworksMemory_createFromFd(size, PROT_READ | PROT_WRITE,
-                                               fd_, 0, &nn_memory_handle_);
-  }
+NNMemory::NNMemory(const NnApi* nnapi, const char* name, size_t size)
+#ifndef __ANDROID__
+    : name_(name)
+#endif
+{
+    if (name && size > 0) {
+        nnapi_ = nnapi;
+        byte_size_ = size;
+        auto map_flag = MAP_SHARED;
+#if defined __ANDROID__
+        fd_ = nnapi_->ASharedMemory_create(name, size);
+#else
+        fd_ = shm_open(name, O_RDWR|O_CREAT, 0666);
+        ftruncate(fd_, size);
+#endif
+        data_ptr_ = reinterpret_cast<uint8_t*>(
+            mmap(nullptr, size, PROT_READ | PROT_WRITE, map_flag, fd_, 0));
+        nnapi_->ANeuralNetworksMemory_createFromFd(
+            size, PROT_READ | PROT_WRITE, fd_, 0, &nn_memory_handle_);
+    }
 }
 #else
 NNMemory::NNMemory(const NnApi* /*nnapi*/, const char* /*name*/,
@@ -514,7 +526,11 @@ NNMemory::~NNMemory() {
   if (nn_memory_handle_) {
     nnapi_->ANeuralNetworksMemory_free(nn_memory_handle_);
   }
+  #if defined __ANDROID__
   if (fd_ > 0) close(fd_);
+  #else
+  if (name_) unlink(name_);
+  #endif
 #endif
 }
 
@@ -2336,8 +2352,14 @@ bool NNAPIDelegateKernel::Validate(
     case kTfLiteBuiltinDepthToSpace: {
       const TfLiteType input_type =
           context->tensors[node->inputs->data[0]].type;
-      EXPECT_INPUT_TYPE_IN(input_type, kTfLiteFloat32, kTfLiteUInt8,
-                           kTfLiteInt8);
+      // EXPECT_INPUT_TYPE_IN(input_type, kTfLiteFloat32, kTfLiteUInt8,
+      //                      kTfLiteInt8);
+      if (version <= 1 &&
+          (input_type == kTfLiteFloat32 || input_type == kTfLiteUInt8 ||
+           input_type == kTfLiteInt8)) {
+
+          val_ctx.is_valid = true;
+      }
     } break;
     case kTfLiteBuiltinReduceProd:
     case kTfLiteBuiltinSum: {
@@ -4207,7 +4229,8 @@ const StatefulNnApiDelegate::Options StatefulNnApiDelegate::GetOptions(
   StatefulNnApiDelegate::Options options;
   options.execution_preference = delegate_data->execution_preference;
   options.accelerator_name = delegate_data->accelerator_name.empty()
-                                 ? nullptr
+                                //  ? nullptr
+                                 ? "VsiNpu"
                                  : delegate_data->accelerator_name.c_str();
   options.cache_dir = delegate_data->cache_dir.empty()
                           ? nullptr
