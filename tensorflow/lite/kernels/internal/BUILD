@@ -117,6 +117,13 @@ config_setting(
 )
 
 config_setting(
+    name = "armv8-a",
+    values = {
+        "cpu": "armv8-a",
+    },
+)
+
+config_setting(
     name = "haswell",
     values = {
         "cpu": "haswell",

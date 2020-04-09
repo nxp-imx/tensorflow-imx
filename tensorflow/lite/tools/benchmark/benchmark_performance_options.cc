@@ -22,11 +22,9 @@ limitations under the License.
 #include <utility>
 
 #include "tensorflow/core/util/stats_calculator.h"
-#include "tensorflow/lite/c/common.h"
-#if defined(__ANDROID__)
+#include "tensorflow/lite/c/c_api_internal.h"
 #include "tensorflow/lite/delegates/gpu/delegate.h"
 #include "tensorflow/lite/nnapi/nnapi_util.h"
-#endif
 #include "tensorflow/lite/profiling/time.h"
 #include "tensorflow/lite/tools/benchmark/benchmark_params.h"
 #include "tensorflow/lite/tools/benchmark/benchmark_utils.h"
@@ -43,14 +41,12 @@ namespace benchmark {
 
 std::string MultiRunStatsRecorder::PerfOptionName(
     const BenchmarkParams& params) const {
-#if defined(__ANDROID__)
   if (params.Get<bool>("use_nnapi")) {
     const std::string accelerator =
         params.Get<std::string>("nnapi_accelerator_name");
     return accelerator.empty() ? "nnapi(w/o accel name)"
                                : "nnapi(" + accelerator + ")";
   }
-#endif
 
   if (params.Get<bool>("use_gpu")) {
 #if defined(__ANDROID__)
@@ -229,12 +225,12 @@ void BenchmarkPerformanceOptions::ResetPerformanceOptions() {
   single_option_run_params_->Set<bool>("use_gpu", false);
 #if defined(__ANDROID__)
   single_option_run_params_->Set<bool>("gpu_precision_loss_allowed", true);
+#endif
   single_option_run_params_->Set<bool>("use_nnapi", false);
   single_option_run_params_->Set<std::string>("nnapi_accelerator_name", "");
   single_option_run_params_->Set<bool>("disable_nnapi_cpu", false);
   single_option_run_params_->Set<int>("max_delegated_partitions", 0);
   single_option_run_params_->Set<bool>("nnapi_allow_fp16", false);
-#endif
 #if defined(TFLITE_ENABLE_HEXAGON)
   single_option_run_params_->Set<bool>("use_hexagon", false);
 #endif
@@ -288,7 +284,6 @@ void BenchmarkPerformanceOptions::CreatePerformanceOptions() {
 #endif
   }
 
-#if defined(__ANDROID__)
   if (benchmark_all || HasOption("nnapi")) {
     std::string nnapi_accelerators = nnapi::GetStringDeviceNamesList();
     if (!nnapi_accelerators.empty()) {
@@ -313,7 +308,6 @@ void BenchmarkPerformanceOptions::CreatePerformanceOptions() {
     params.AddParam("use_nnapi", BenchmarkParam::Create<bool>(true));
     all_run_params_.emplace_back(std::move(params));
   }
-#endif
 
 #if defined(TFLITE_ENABLE_HEXAGON)
   if (benchmark_all || HasOption("dsp")) {

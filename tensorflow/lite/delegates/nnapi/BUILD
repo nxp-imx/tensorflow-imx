@@ -40,6 +40,7 @@ cc_library(
         "//tensorflow/lite/nnapi:nnapi_lib",
         "//tensorflow/lite/nnapi:nnapi_util",
     ],
+    linkopts = ["-lrt"]
 )
 
 cc_library(
