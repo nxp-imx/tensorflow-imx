@@ -43,7 +43,9 @@ limitations under the License.
 #if defined __ANDROID__ || defined __unix__
 #define TFLITE_NNAPI_ALLOW_MMAP_SHARING
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#include <fcntl.h>
 #endif
 
 #include <fp16.h>
@@ -2892,8 +2894,14 @@ bool NNAPIDelegateKernel::Validate(
     case kTfLiteBuiltinDepthToSpace: {
       const TfLiteType input_type =
           context->tensors[node->inputs->data[0]].type;
-      EXPECT_INPUT_TYPE_IN(input_type, kTfLiteFloat32, kTfLiteUInt8,
-                           kTfLiteInt8);
+      // EXPECT_INPUT_TYPE_IN(input_type, kTfLiteFloat32, kTfLiteUInt8,
+      //                      kTfLiteInt8);
+      if (version <= 1 &&
+          (input_type == kTfLiteFloat32 || input_type == kTfLiteUInt8 ||
+           input_type == kTfLiteInt8)) {
+
+          val_ctx.is_valid = true;
+      }
     } break;
     case kTfLiteBuiltinReduceProd:
     case kTfLiteBuiltinSum: {
@@ -5449,7 +5457,8 @@ const StatefulNnApiDelegate::Options StatefulNnApiDelegate::GetOptions(
   StatefulNnApiDelegate::Options options;
   options.execution_preference = delegate_data->execution_preference;
   options.accelerator_name = delegate_data->accelerator_name.empty()
-                                 ? nullptr
+                                //  ? nullptr
+                                 ? "vsi-npu"
                                  : delegate_data->accelerator_name.c_str();
   options.cache_dir = delegate_data->cache_dir.empty()
                           ? nullptr

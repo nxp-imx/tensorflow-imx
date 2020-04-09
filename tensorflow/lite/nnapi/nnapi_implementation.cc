@@ -160,7 +160,7 @@ ASharedMemory_create_fn getASharedMemory_create() {
 
 const NnApi LoadNnApi() {
   NnApi nnapi = {};
-  nnapi.android_sdk_version = 0;
+  nnapi.android_sdk_version = 29;
 
 #ifdef __ANDROID__
   nnapi.android_sdk_version = GetAndroidSdkVersion();

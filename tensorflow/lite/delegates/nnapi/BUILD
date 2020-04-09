@@ -48,6 +48,7 @@ cc_library(
         "@FP16",
         "@farmhash_archive//:farmhash",
     ],
+    linkopts = ["-lrt"]
 )
 
 cc_library(

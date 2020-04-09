@@ -173,7 +173,11 @@ class NNFreeBurst {
 // Manage NNAPI shared memory handle
 class NNMemory {
  public:
+#ifdef TFLITE_NNAPI_ALLOW_MMAP_SHARING
   NNMemory(const NnApi* nnapi, const char* name, size_t size);
+#else
+  NNMemory(const NnApi* /*nnapi*/, const char* /*name*/, size_t /*size*/) {}
+#endif
 
   ~NNMemory();
 
