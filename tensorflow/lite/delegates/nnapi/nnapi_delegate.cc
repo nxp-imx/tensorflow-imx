@@ -2620,6 +2620,7 @@ bool NNAPIDelegateKernel::Validate(
              "NNAPI does not support generating a scalar as output for MEAN.",
              &val_ctx);
 
+    #if defined __ANDROID__
       auto input_param = context->tensors[node->inputs->data[0]].params;
       auto output_param = context->tensors[node->outputs->data[0]].params;
       Expect(input_param.scale == output_param.scale &&
@@ -2628,6 +2629,7 @@ bool NNAPIDelegateKernel::Validate(
              "NNAPI requires that the input and output have the same "
              "quantization parameters.",
              &val_ctx);
+    #endif
     } break;
     case kTfLiteBuiltinEmbeddingLookup: {
       ExpectOpVersion(version, 1, &val_ctx);
