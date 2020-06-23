@@ -60,6 +60,8 @@ limitations under the License.
 #include "tensorflow/lite/nnapi/nnapi_util.h"
 #include "tensorflow/lite/util.h"
 
+static int graph_index = 0;
+
 namespace tflite {
 namespace {
 
@@ -4147,10 +4149,14 @@ TfLiteStatus NNAPIDelegateKernel::BuildGraph(
       "finalizing the model", nnapi_errno);
 
   // Create shared memory pool for inputs and outputs.
+  std::string input_pool_name = "input_pool" + std::to_string(graph_index);
+  std::string output_pool_name = "output_pool" + std::to_string(graph_index);
   nn_input_memory_.reset(
-      new NNMemory(nnapi_, "input_pool", total_input_byte_size));
+      new NNMemory(nnapi_, input_pool_name.data(), total_input_byte_size));
   nn_output_memory_.reset(
-      new NNMemory(nnapi_, "output_pool", total_output_byte_size));
+      new NNMemory(nnapi_, output_pool_name.data(), total_output_byte_size));
+
+  graph_index++;
 
   return kTfLiteOk;
 }
