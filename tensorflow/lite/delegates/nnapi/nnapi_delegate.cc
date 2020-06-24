@@ -61,6 +61,7 @@ limitations under the License.
 #include "tensorflow/lite/util.h"
 
 static int graph_index = 0;
+static int actual_node_num = 0;
 
 namespace tflite {
 namespace {
@@ -3738,8 +3739,10 @@ TfLiteStatus NNAPIDelegateKernel::AddOpsAndTensors(TfLiteContext* context,
       builder.TransformHardSwishIntoSupportedOps(
           node->inputs->data[0], node->outputs->data[0], need_int8_conversion,
           node_index);
+      actual_node_num += 4;
       continue;
     }
+    actual_node_num++;
     // Map inputs to NN API tensor indices.
     for (int input_pos = 0; input_pos < node->inputs->size; ++input_pos) {
       const auto input_index = node->inputs->data[input_pos];
