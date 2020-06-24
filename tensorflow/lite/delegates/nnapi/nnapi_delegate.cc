@@ -1895,6 +1895,7 @@ bool NNAPIDelegateKernel::Validate(
       }
       auto builtin =
           reinterpret_cast<TfLiteResizeBilinearParams*>(node->builtin_data);
+      #if defined __ANDROID__    // Relax Rule for ResizeBilinear Operator
       if (android_sdk_version <= kMinSdkVersionForNNAPI12) {
         Expect(!builtin->align_corners,
                NNAPIValidationFailureType::kUnsupportedOperandValue,
@@ -1903,6 +1904,7 @@ bool NNAPIDelegateKernel::Validate(
                NNAPIValidationFailureType::kUnsupportedOperandValue,
                "NNAPI does not support half_pixel_centers == true.", &val_ctx);
       }
+      #endif
       if (android_sdk_version < kMinSdkVersionForNNAPI12) {
         Expect(input.type == kTfLiteFloat32,
                NNAPIValidationFailureType::kUnsupportedInputType,
@@ -2351,7 +2353,7 @@ bool NNAPIDelegateKernel::Validate(
              "NNAPI does not support generating a scalar as output for MEAN.",
              &val_ctx);
 
-    #if defined __ANDROID__
+    #if defined __ANDROID__  //Relax Rule for Mean Operator
       auto input_param = context->tensors[node->inputs->data[0]].params;
       auto output_param = context->tensors[node->outputs->data[0]].params;
       Expect(input_param.scale == output_param.scale &&
