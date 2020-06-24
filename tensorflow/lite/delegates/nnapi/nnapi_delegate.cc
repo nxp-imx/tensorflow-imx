@@ -1638,6 +1638,7 @@ bool NNAPIDelegateKernel::Validate(
       }
       auto builtin =
           reinterpret_cast<TfLiteResizeBilinearParams*>(node->builtin_data);
+      #if defined __ANDROID__
       Expect(!builtin->align_corners,
              NNAPIValidationFailureType::kUnsupportedOperandValue,
              "NNAPI does not support align_corners == true.", &val_ctx);
@@ -1645,6 +1646,7 @@ bool NNAPIDelegateKernel::Validate(
       Expect(!builtin->half_pixel_centers,
              NNAPIValidationFailureType::kUnsupportedOperandValue,
              "NNAPI does not support half_pixel_centers == true.", &val_ctx);
+      #endif
       if (android_sdk_version < kMinSdkVersionForNNAPI12) {
         Expect(input.type == kTfLiteFloat32,
                NNAPIValidationFailureType::kUnsupportedInputType,
