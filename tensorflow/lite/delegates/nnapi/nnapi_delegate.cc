@@ -61,6 +61,7 @@ limitations under the License.
 #include "tensorflow/lite/util.h"
 
 static int graph_index = 0;
+static int actual_node_num = 0;
 
 namespace tflite {
 namespace {
@@ -3218,7 +3219,8 @@ TfLiteStatus NNAPIDelegateKernel::GetOperationsSupportedByTargetNnApiDevices(
   }
 
   // Determine the list of operations the device actually supports
-  auto support_flags = absl::make_unique<bool[]>(nodes_.size());
+  // auto support_flags = absl::make_unique<bool[]>(nodes_.size());
+  auto support_flags = absl::make_unique<bool[]>(actual_node_num);
 
   RETURN_TFLITE_ERROR_IF_NN_ERROR(
       context,
@@ -3526,8 +3528,10 @@ TfLiteStatus NNAPIDelegateKernel::AddOpsAndTensors(TfLiteContext* context,
     if (reg->builtin_code == kTfLiteBuiltinHardSwish) {
       builder.AddHardSwish(node->inputs->data[0], node->outputs->data[0],
                            need_int8_conversion);
+      actual_node_num += 4;
       continue;
     }
+    actual_node_num++;
     // Map inputs to NN API tensor indices.
     for (int input_pos = 0; input_pos < node->inputs->size; ++input_pos) {
       const auto input_index = node->inputs->data[input_pos];
