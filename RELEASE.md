@@ -1,5 +1,9 @@
 # Release 2.2.0
 
+TensorFlow 2.2 discontinues support for Python 2, [previously announced](https://groups.google.com/a/tensorflow.org/d/msg/announce/gVwS5RC8mds/dCt1ka2XAAAJ) as following [Python 2's EOL on January 1, 2020](https://www.python.org/dev/peps/pep-0373/#update).
+
+Coinciding with this change, new releases of [TensorFlow's Docker images](https://hub.docker.com/r/tensorflow/tensorflow/) provide Python 3 exclusively. Because all images now use Python 3, Docker tags containing `-py3` will no longer be provided and existing `-py3` tags like `latest-py3` will not be updated.   
+
 ## Major Features and Improvements
 
 * Replaced the scalar type for string tensors from `std::string` to `tensorflow::tstring` which is now ABI stable.
@@ -12,6 +16,7 @@
     * Support gradient `allreduce` in `float16`. See this [example](https://github.com/tensorflow/models/blob/master/official/staging/training/grad_utils.py) usage.
     * Experimental support of [all reduce gradient packing](https://www.tensorflow.org/api_docs/python/tf/distribute/experimental/CollectiveHints) to allow overlapping gradient aggregation with backward path computation. 
     * Deprecated `experimental_run_v2` method for distribution strategies and renamed the method `run` as it is no longer experimental.
+    * Add CompositeTensor support for DistributedIterators. This should help prevent unnecessary function retracing and memory leaks.
 * `tf.keras`:
   * `Model.fit` major improvements:
      * You can now use custom training logic with `Model.fit` by overriding `Model.train_step`.
@@ -44,7 +49,6 @@
 * Keras compile/fit behavior for functional and subclassed models have been unified. Model properties such as `metrics`, `metrics_names` will now be available only after **training/evaluating the model on actual data** for functional models. `metrics` will **now include** model `loss` and output losses.`loss_functions` property has been removed from the model. This was an undocumented property that was accidentally public and has now been removed.
 
 ## Known Caveats
-* Due to certain unforeseen circumstances, we are unable to release MacOS py3.8 binaries, but Windows/Linux binaries for py3.8 are available.
 * The current TensorFlow release now **requires** [gast](https://pypi.org/project/gast/) version 0.3.3. 
 
 ## Bug Fixes and Other Changes
@@ -121,7 +125,9 @@
   * Add check for memory alignment to MemoryAllocation::MemoryAllocation() on 32-bit ARM. This ensures a deterministic early exit instead of a hard to debug bus error later.
   * `saved_model_cli aot_compile_cpu` allows you to compile saved models to XLA header+object files and include them in your C++ programs.
   * Enable `Igamma`, `Igammac` for XLA.
-  * XLA reduction emitter is deterministic when the environment variable `TF_DETERMINISTIC_OPS` is set.
+* Deterministic Op Functionality:
+  * XLA reduction emitter is deterministic when the environment variable `TF_DETERMINISTIC_OPS` is set to "true" or "1". This extends deterministic `tf.nn.bias_add` back-prop functionality (and therefore also deterministic back-prop of bias-addition in Keras layers) to include when XLA JIT complilation is enabled.
+  * Fix problem, when running on a CUDA GPU and when either environment variable `TF_DETERMINSTIC_OPS` or environment variable `TF_CUDNN_DETERMINISTIC` is set to "true" or "1", in which some layer configurations led to an exception with the message "No algorithm worked!"
 * Tracing and Debugging:
   * Add source, destination name to `_send` traceme to allow easier debugging.
   * Add traceme event to `fastpathexecute`.

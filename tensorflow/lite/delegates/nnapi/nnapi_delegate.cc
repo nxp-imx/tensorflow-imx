@@ -60,6 +60,9 @@ limitations under the License.
 #include "tensorflow/lite/nnapi/nnapi_util.h"
 #include "tensorflow/lite/util.h"
 
+static int graph_index = 0;
+static int actual_node_num = 0;
+
 namespace tflite {
 namespace {
 
@@ -1636,6 +1639,7 @@ bool NNAPIDelegateKernel::Validate(
       }
       auto builtin =
           reinterpret_cast<TfLiteResizeBilinearParams*>(node->builtin_data);
+      #if defined __ANDROID__
       Expect(!builtin->align_corners,
              NNAPIValidationFailureType::kUnsupportedOperandValue,
              "NNAPI does not support align_corners == true.", &val_ctx);
@@ -1643,6 +1647,7 @@ bool NNAPIDelegateKernel::Validate(
       Expect(!builtin->half_pixel_centers,
              NNAPIValidationFailureType::kUnsupportedOperandValue,
              "NNAPI does not support half_pixel_centers == true.", &val_ctx);
+      #endif
       if (android_sdk_version < kMinSdkVersionForNNAPI12) {
         Expect(input.type == kTfLiteFloat32,
                NNAPIValidationFailureType::kUnsupportedInputType,
@@ -2052,6 +2057,7 @@ bool NNAPIDelegateKernel::Validate(
              "NNAPI does not support generating a scalar as output for MEAN.",
              &val_ctx);
 
+    #if defined __ANDROID__
       auto input_param = context->tensors[node->inputs->data[0]].params;
       auto output_param = context->tensors[node->outputs->data[0]].params;
       Expect(input_param.scale == output_param.scale &&
@@ -2060,6 +2066,7 @@ bool NNAPIDelegateKernel::Validate(
              "NNAPI requires that the input and output have the same "
              "quantization parameters.",
              &val_ctx);
+    #endif
     } break;
     case kTfLiteBuiltinEmbeddingLookup: {
       ExpectOpVersion(version, 1, &val_ctx);
@@ -3212,7 +3219,8 @@ TfLiteStatus NNAPIDelegateKernel::GetOperationsSupportedByTargetNnApiDevices(
   }
 
   // Determine the list of operations the device actually supports
-  auto support_flags = absl::make_unique<bool[]>(nodes_.size());
+  // auto support_flags = absl::make_unique<bool[]>(nodes_.size());
+  auto support_flags = absl::make_unique<bool[]>(actual_node_num);
 
   RETURN_TFLITE_ERROR_IF_NN_ERROR(
       context,
@@ -3520,8 +3528,10 @@ TfLiteStatus NNAPIDelegateKernel::AddOpsAndTensors(TfLiteContext* context,
     if (reg->builtin_code == kTfLiteBuiltinHardSwish) {
       builder.AddHardSwish(node->inputs->data[0], node->outputs->data[0],
                            need_int8_conversion);
+      actual_node_num += 4;
       continue;
     }
+    actual_node_num++;
     // Map inputs to NN API tensor indices.
     for (int input_pos = 0; input_pos < node->inputs->size; ++input_pos) {
       const auto input_index = node->inputs->data[input_pos];
@@ -3879,10 +3889,14 @@ TfLiteStatus NNAPIDelegateKernel::BuildGraph(
       "finalizing the model", nnapi_errno);
 
   // Create shared memory pool for inputs and outputs.
+  std::string input_pool_name = "input_pool" + std::to_string(graph_index);
+  std::string output_pool_name = "output_pool" + std::to_string(graph_index);
   nn_input_memory_.reset(
-      new NNMemory(nnapi_, "input_pool", total_input_byte_size));
+      new NNMemory(nnapi_, input_pool_name.data(), total_input_byte_size));
   nn_output_memory_.reset(
-      new NNMemory(nnapi_, "output_pool", total_output_byte_size));
+      new NNMemory(nnapi_, output_pool_name.data(), total_output_byte_size));
+
+  graph_index++;
 
   return kTfLiteOk;
 }
