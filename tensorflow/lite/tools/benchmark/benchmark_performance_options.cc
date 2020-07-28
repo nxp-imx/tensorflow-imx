@@ -308,15 +308,6 @@ void BenchmarkPerformanceOptions::CreatePerformanceOptions() {
     params.AddParam("use_nnapi", BenchmarkParam::Create<bool>(true));
     all_run_params_.emplace_back(std::move(params));
   }
-}
-
-void BenchmarkPerformanceOptions::Run(int argc, char** argv) {
-  // We first parse flags for single-option runs to get information like
-  // parameters of the input model etc.
-  if (single_option_run_->ParseFlags(&argc, argv) != kTfLiteOk) return;
-
-  // Now, we parse flags that are specified for this particular binary.
-  if (!ParseFlags(&argc, argv)) return;
 
 #if defined(TFLITE_ENABLE_HEXAGON)
   if (benchmark_all || HasOption("dsp")) {
