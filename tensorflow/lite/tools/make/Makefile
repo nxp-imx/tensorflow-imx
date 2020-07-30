@@ -227,7 +227,7 @@ endif
 # Not to include XNNPACK.
 CXXFLAGS += -DTFLITE_WITHOUT_XNNPACK
 
-BUILD_WITH_NNAPI ?= false
+BUILD_WITH_NNAPI ?= true
 ifeq ($(BUILD_WITH_NNAPI),true)
 	CORE_CC_ALL_SRCS += tensorflow/lite/delegates/nnapi/nnapi_delegate.cc
 	CORE_CC_ALL_SRCS += tensorflow/lite/delegates/nnapi/quant_lstm_sup.cc
