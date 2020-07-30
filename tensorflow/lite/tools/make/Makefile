@@ -171,7 +171,7 @@ ifeq ($(BUILD_WITH_RUY),true)
   CXXFLAGS += -DTFLITE_WITH_RUY
 endif
 
-BUILD_WITH_NNAPI ?= false
+BUILD_WITH_NNAPI ?= true
 ifeq ($(BUILD_WITH_NNAPI),true)
 	CORE_CC_ALL_SRCS += tensorflow/lite/delegates/nnapi/nnapi_delegate.cc
 	CORE_CC_ALL_SRCS += tensorflow/lite/delegates/nnapi/quant_lstm_sup.cc
