@@ -235,8 +235,9 @@ BENCHMARK_SRCS_DIR := tensorflow/lite/tools/benchmark
 DELEGATE_PROVIDER_SRCS_DIR := tensorflow/lite/tools/delegates
 EVALUATION_UTILS_SRCS := \
   tensorflow/lite/tools/evaluation/utils.cc
-BENCHMARK_ALL_SRCS := \
-	$(wildcard $(BENCHMARK_SRCS_DIR)/*.cc) \
+BENCHMARK_ALL_SRCS := $(filter-out \
+	$(wildcard $(BENCHMARK_SRCS_DIR)/*_provider.cc), \
+	$(wildcard $(BENCHMARK_SRCS_DIR)/*.cc)) \
 	$(PROFILE_SUMMARIZER_SRCS) \
 	$(CMD_LINE_TOOLS_SRCS) \
 	$(EVALUATION_UTILS_SRCS)
@@ -377,7 +378,7 @@ $(BENCHMARK_PERF_OPTIONS_BINARY) : $(BENCHMARK_PERF_OPTIONS_OBJ) $(BENCHMARK_LIB
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) \
 	-o $(BENCHMARK_PERF_OPTIONS_BINARY) $(BENCHMARK_PERF_OPTIONS_OBJ) \
-	$(LIBFLAGS) $(BENCHMARK_LIB) $(LDFLAGS) $(LIBS)
+	$(LIBFLAGS) -Wl,--allow-multiple-definition -Wl,--whole-archive $(BENCHMARK_LIB) -Wl,--as-needed $(LDFLAGS) $(LIBS)
 
 benchmark: $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY)
 
