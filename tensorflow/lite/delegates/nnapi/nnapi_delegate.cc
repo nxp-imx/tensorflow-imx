@@ -1129,7 +1129,7 @@ class NNAPIOpBuilder {
       if (tensor->quantization.type == kTfLiteAffineQuantization) {
         TfLiteAffineQuantization* quantization_params =
             static_cast<TfLiteAffineQuantization*>(tensor->quantization.params);
-        if (quantization_params->scale->size > 1) {
+        if (quantization_params->scale->size >= 1 && nn_type != ANEURALNETWORKS_TENSOR_QUANT8_ASYMM) {
           // Set up per-channel quantization.
           ann_perchannel_params = {
               .channelDim = static_cast<uint32_t>(
