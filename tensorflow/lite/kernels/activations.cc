@@ -123,7 +123,8 @@ void PopulateLookupTable(struct OpData* data, const TfLiteTensor* input,
     const float rescaled = std::round(transformed * inverse_scale);
     const int32_t quantized =
         static_cast<int32_t>(rescaled + output->params.zero_point);
-    data->table[static_cast<uint8_t>(static_cast<T>(val))] =
+    uint32_t index = static_cast<uint32_t>(val) & 0xff;
+    data->table[static_cast<uint8_t>(static_cast<T>(index))] =
         static_cast<uint8_t>(
             static_cast<T>(std::max(std::min(maxval, quantized), minval)));
   }

@@ -90,7 +90,7 @@ class BenchmarkTfLiteModel : public BenchmarkModel {
 
  private:
   struct InputTensorData {
-    InputTensorData() : data(nullptr, nullptr) {}
+    InputTensorData() : data(nullptr, nullptr), bytes(0) {}
 
     std::unique_ptr<void, void (*)(void*)> data;
     size_t bytes;

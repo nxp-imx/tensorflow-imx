@@ -159,9 +159,9 @@ void RunInference(Settings* s) {
     LOG(FATAL) << "\nFailed to mmap model " << s->model_name << "\n";
     exit(-1);
   }
-  s->model = model.get();
+//  s->model = model.get();
   LOG(INFO) << "Loaded model " << s->model_name << "\n";
-  model->error_reporter();
+  (void) model->error_reporter();
   LOG(INFO) << "resolved reporter\n";
 
   tflite::ops::builtin::BuiltinOpResolver resolver;

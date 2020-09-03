@@ -78,6 +78,8 @@ OperatorDetails GetOperatorDetails(const tflite::Interpreter& interpreter,
   const char* profiling_string =
       interpreter.OpProfilingString(node_reg->second, &node_reg->first);
   OperatorDetails details;
+  details.subgraph_index = subgraph_index;
+  details.node_index = node_index;
   if (profiling_string) {
     details.op_description = std::string(profiling_string);
   }
