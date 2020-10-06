@@ -44,8 +44,16 @@ case "${TENSORFLOW_TARGET}" in
                        bdist_wheel --plat-name=linux-armv7l
     ;;
   aarch64)
-    ${PYTHON} setup.py bdist --plat-name=linux-aarch64 \
-                       bdist_wheel --plat-name=linux-aarch64
+    # Fix for python-wheel 0.35.0 and newer. In this version the aarch64 tag is not available on different machine architecture (e.g. x86_64)
+    # To avoid compilation failure we don't specify the plat-name.  The *.so is cross compiled anyway.  
+    WHEEL_VERSION=`${PYTHON} -c "import wheel; print(wheel.__version__)"`
+    if [[ $WHEEL_VERSION < "0.35" ]]; then
+        ${PYTHON} setup.py bdist --plat-name=linux-aarch64 \
+                           bdist_wheel --plat-name=linux-aarch64
+    else
+        ${PYTHON} setup.py bdist  \
+                           bdist_wheel 
+    fi
     ;;
   *)
     if [[ -n "${TENSORFLOW_TARGET}" ]] && [[ -n "${TENSORFLOW_TARGET_ARCH}" ]]; then
