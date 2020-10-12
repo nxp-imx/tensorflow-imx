@@ -1694,7 +1694,7 @@ bool NNAPIDelegateKernel::Validate(
                NNAPIValidationFailureType::kUnsupportedOperandValue,
                "NNAPI does not support half_pixel_centers == true.", &val_ctx);
       }
-      #endif
+//      #endif
       if (android_sdk_version < kMinSdkVersionForNNAPI12) {
         Expect(input.type == kTfLiteFloat32,
                NNAPIValidationFailureType::kUnsupportedInputType,

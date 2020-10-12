@@ -107,6 +107,7 @@ TfLiteDelegatePtr CreateNNAPIDelegate(StatefulNnApiDelegate::Options options) {
       new StatefulNnApiDelegate(options), [](TfLiteDelegate* delegate) {
         delete reinterpret_cast<StatefulNnApiDelegate*>(delegate);
       });
+}
 
 #if defined(__ANDROID__)
 TfLiteDelegatePtr CreateGPUDelegate(TfLiteGpuDelegateOptionsV2* options) {

@@ -28,6 +28,7 @@ limitations under the License.
 #include "tensorflow/lite/delegates/hexagon/hexagon_delegate.h"
 #endif
 #endif
+#include "tensorflow/lite/delegates/nnapi/nnapi_delegate.h"
 
 // TODO(b/149248802): include XNNPACK delegate when the issue is resolved.
 #if !defined(__Fuchsia__) || defined(TFLITE_WITHOUT_XNNPACK)
