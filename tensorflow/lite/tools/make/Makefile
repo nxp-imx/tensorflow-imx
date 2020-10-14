@@ -20,6 +20,7 @@ else
 		HOST_OS := osx
 	endif
 endif
+HOST_OS := linux
 
 HOST_ARCH := $(shell if uname -m | grep -q i[345678]86; then echo x86_32; else uname -m; fi)
 
@@ -45,6 +46,9 @@ INCLUDES := \
 -I$(MAKEFILE_DIR)/downloads/cpuinfo/include \
 -I$(MAKEFILE_DIR)/downloads/cpuinfo/src \
 -I$(MAKEFILE_DIR)/downloads/cpuinfo/deps/clog/include \
+-I$(MAKEFILE_DIR)/downloads/googletest/googletest/include \
+-I$(MAKEFILE_DIR)/downloads/googletest/googlemock/include \
+-I$(MAKEFILE_DIR)/downloads/re2/ \
 -I$(OBJDIR)
 # This is at the end so any globally-installed frameworks like protobuf don't
 # override local versions in the source tree.
@@ -62,10 +66,10 @@ LIBS := \
 # There are no rules for compiling objects for the host system (since we don't
 # generate things like the protobuf compiler that require that), so all of
 # these settings are for the target compiler.
-CXXFLAGS += -O3 -DNDEBUG -DCPU_SETSIZE=__CPU_SETSIZE -DNNAPI_VERBOSE_VALIDATION -fPIC 
+CXXFLAGS += -O3 -DNDEBUG -DCPU_SETSIZE=__CPU_SETSIZE -DNNAPI_VERBOSE_VALIDATION -fPIC -Wno-narrowing
 CXXFLAGS += $(EXTRA_CXXFLAGS)
 CFLAGS := ${CXXFLAGS}
-CXXFLAGS += --std=c++11
+CXXFLAGS += --std=c++14
 LDOPTS := -L/usr/local/lib
 ARFLAGS := -r
 TARGET_TOOLCHAIN_PREFIX :=
@@ -194,6 +198,40 @@ $(wildcard tensorflow/lite/kernels/*test_util*.cc) \
 $(wildcard tensorflow/lite/tools/make/downloads/cpuinfo/src/*/mock*.c) \
 tensorflow/lite/tflite_with_xnnpack.cc \
 $(MINIMAL_SRCS)
+
+UNIT_TEST_ALL_SRCS := \
+$(wildcard tensorflow/lite/*test.cc) \
+$(wildcard tensorflow/lite/kernels/*test.cc) \
+$(wildcard tensorflow/lite/delegates/nnapi/*test.cc) \
+$(wildcard tensorflow/lite/delegates/utils/*test.cc) \
+$(wildcard tensorflow/lite/delegates/*test.cc) \
+$(wildcard tensorflow/lite/c/*test.cc)
+
+UNIT_TEST_EXCLUDE_SRCS := \
+tensorflow/lite/model_xnnpack_test.cc \
+tensorflow/lite/delegates/nnapi/nnapi_delegate_errno_test.cc \
+tensorflow/lite/delegates/nnapi/nnapi_delegate_signed_quantization_test.cc \
+tensorflow/lite/delegates/nnapi/nnapi_delegate_device_selection_test.cc
+
+UNIT_TEST_SRCS := $(filter-out $(UNIT_TEST_EXCLUDE_SRCS), $(UNIT_TEST_ALL_SRCS))
+UNIT_TEST_UTIL_SRCS := \
+$(CMD_LINE_TOOLS_SRCS) \
+$(wildcard tensorflow/lite/kernels/*test_util.cc) \
+tensorflow/lite/tools/versioning/op_version.cc \
+tensorflow/lite/kernels/internal/test_util.cc \
+tensorflow/lite/kernels/acceleration_test_util_internal.cc \
+$(wildcard tensorflow/lite/delegates/utils/dummy_delegate/*.cc ) \
+tensorflow/lite/delegates/utils/simple_delegate.cc \
+tensorflow/lite/delegates/utils.cc \
+tensorflow/lite/delegates/interpreter_utils.cc \
+tensorflow/lite/delegates/nnapi/acceleration_test_list.cc \
+tensorflow/lite/delegates/nnapi/acceleration_test_util.cc \
+tensorflow/lite/tools/evaluation/utils.cc \
+tensorflow/lite/tools/optimize/model_utils.cc \
+tensorflow/lite/tools/optimize/quantization_utils.cc \
+tensorflow/lite/tools/optimize/operator_property.cc \
+tensorflow/core/platform/default/logging.cc \
+tensorflow/core/platform/default/env_time.cc
 
 BUILD_WITH_MMAP ?= true
 ifeq ($(BUILD_TYPE),micro)
@@ -325,7 +363,11 @@ $(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(BENCHMARK_PERF_OPTIONS_SRC))))
 BENCHMARK_LIB_OBJS := $(addprefix $(OBJDIR), \
 $(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(BENCHMARK_LIB_SRCS))))
 
-# For normal manually-created TensorFlow Lite C++ source files.
+UNIT_TEST_OBJS := $(addprefix $(OBJDIR), $(UNIT_TEST_SRCS:.cc=.o))
+UNIT_TEST_UTIL_OBJS := $(addprefix $(OBJDIR), $(UNIT_TEST_UTIL_SRCS:.cc=.o))
+UNIT_TEST_NAMES := $(addprefix $(OBJDIR), $(UNIT_TEST_SRCS:.cc=))
+
+# For normal manually-created TensorFlow Lite C   source files.
 $(OBJDIR)%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
@@ -398,6 +440,38 @@ $(BENCHMARK_PERF_OPTIONS_BINARY) : $(BENCHMARK_PERF_OPTIONS_OBJ) $(BENCHMARK_LIB
 	$(LIBFLAGS) -Wl,--allow-multiple-definition -Wl,--whole-archive $(BENCHMARK_LIB) -Wl,--as-needed $(LDFLAGS) $(LIBS)
 
 benchmark: $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY)
+
+tests: $(UNIT_TEST_NAMES)
+
+LIB_DIRS := \
+-L$(MAKEFILE_DIR)/downloads/googletest/build/lib/ \
+-L$(MAKEFILE_DIR)/downloads/re2/build/ \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/algorithm \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/base \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/container \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/debugging \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/flags \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/hash \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/memory \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/meta \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/numeric \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/strings \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/synchronization \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/time \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/types \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/utility \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/status \
+
+
+
+$(UNIT_TEST_NAMES): %: %.o $(UNIT_TEST_UTIL_OBJS) $(LIB_PATH)
+	@mkdir -p $(dir $@) 
+	$(CXX) $(CXXFLAGS) $(INCLUDES) \
+	-o $@ $@.o $(UNIT_TEST_UTIL_OBJS) \
+	$(LIB_PATH) $(LIBFLAGS) $(LDFLAGS) $(LIBS) \
+	$(LIB_DIRS) \
+	-lgtest -lgtest_main -lgmock -lre2 \
+	-labsl_synchronization -labsl_stacktrace -labsl_scoped_set_env -labsl_raw_hash_set -labsl_debugging_internal -labsl_examine_stack -labsl_failure_signal_handler -labsl_leak_check -labsl_leak_check_disable -labsl_symbolize -labsl_demangle_internal -labsl_flags -labsl_flags_config -labsl_flags_internal -labsl_flags_marshalling -labsl_flags_parse -labsl_flags_registry -labsl_flags_usage -labsl_flags_usage_internal -labsl_flags_program_name -labsl_city -labsl_hash -labsl_hashtablez_sampler -labsl_str_format_internal -labsl_strings -labsl_strings_internal -labsl_graphcycles_internal -labsl_civil_time -labsl_time -labsl_time_zone -labsl_bad_any_cast_impl -labsl_bad_optional_access -labsl_bad_variant_access -labsl_base -labsl_malloc_internal -labsl_dynamic_annotations -labsl_int128 -labsl_throw_delegate -labsl_status -labsl_raw_logging_internal -labsl_log_severity -labsl_spinlock_wait -labsl_periodic_sampler -labsl_exponential_biased -labsl_cord 
 
 libdir:
 	@echo $(LIBDIR)

@@ -54,6 +54,8 @@ FP16_URL="https://github.com/Maratyszcza/FP16/archive/4dfe081cf6bcd15db339cf2680
 FP16_SHA="d973501a40c55126b31accc2d9f08d931ec3cc190c0430309a5e341d3c0ce32a"
 CPUINFO_URL="https://github.com/pytorch/cpuinfo/archive/6cecd15784fcb6c5c0aa7311c6248879ce2cb8b2.zip"
 CPUINFO_SHA="b1f2ee97e46d8917a66bcb47452fc510d511829556c93b83e06841b9b35261a5"
+RE2_URL="https://github.com/google/re2/archive/506cfa4bffd060c06ec338ce50ea3468daa6c814.tar.gz"
+RE2_SHA="d070e2ffc5476c496a6a872a6f246bfddce8e7797d6ba605a7c8d72866743bf9"
 # TODO(petewarden): Some new code in Eigen triggers a clang bug with iOS arm64,
 #                   so work around it by patching the source.
 replace_by_sed() {
@@ -121,6 +123,7 @@ download_and_extract "${FLATBUFFERS_URL}" "${DOWNLOADS_DIR}/flatbuffers" "${FLAT
 download_and_extract "${FFT2D_URL}" "${DOWNLOADS_DIR}/fft2d" "${FFT2D_SHA}"
 download_and_extract "${FP16_URL}" "${DOWNLOADS_DIR}/fp16" "${FP16_SHA}"
 download_and_extract "${CPUINFO_URL}" "${DOWNLOADS_DIR}/cpuinfo" "${CPUINFO_SHA}"
+download_and_extract "${RE2_URL}" "${DOWNLOADS_DIR}/re2" ${RE2_SHA}
 
 replace_by_sed 's#static uint32x4_t p4ui_CONJ_XOR = vld1q_u32( conj_XOR_DATA );#static uint32x4_t p4ui_CONJ_XOR; // = vld1q_u32( conj_XOR_DATA ); - Removed by script#' \
   "${DOWNLOADS_DIR}/eigen/Eigen/src/Core/arch/NEON/Complex.h"
