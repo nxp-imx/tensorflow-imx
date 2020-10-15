@@ -109,9 +109,12 @@ const NnApi LoadNnApi() {
   // instances of nn api RT
   libneuralnetworks = dlopen("libneuralnetworks.so", RTLD_LAZY | RTLD_LOCAL);
   if (libneuralnetworks == nullptr) {
-    char* error = dlerror();
-    if (error != NULL) {
-        NNAPI_LOG("nnapi error: unable to open library %s, error=%s", "libneuralnetworks.so", error);
+    libneuralnetworks = dlopen("libneuralnetworks.so.1", RTLD_LAZY | RTLD_LOCAL);
+    if (libneuralnetworks == nullptr) {
+        char* error = dlerror();
+        if (error != NULL) {
+            NNAPI_LOG("nnapi error: unable to open library %s, error=%s", "libneuralnetworks.so or libneuralnetworks.so.1", error);
+        }
     }
   }
 
