@@ -255,8 +255,11 @@ BENCHMARK_SRCS_DIR := tensorflow/lite/tools/benchmark
 DELEGATE_PROVIDER_SRCS_DIR := tensorflow/lite/tools/delegates
 EVALUATION_UTILS_SRCS := \
   tensorflow/lite/tools/evaluation/utils.cc
-BENCHMARK_ALL_SRCS := \
-	$(wildcard $(BENCHMARK_SRCS_DIR)/*.cc) \
+BENCHMARK_ALL_SRCS := $(filter-out \
+	$(wildcard $(BENCHMARK_SRCS_DIR)/*_provider.cc), \
+	$(wildcard $(BENCHMARK_SRCS_DIR)/*.cc)) \
+	$(DELEGATE_PROVIDER_SRCS_DIR)/nnapi_delegate_provider.cc \
+	$(DELEGATE_PROVIDER_SRCS_DIR)/default_execution_provider.cc \
 	$(PROFILE_SUMMARIZER_SRCS) \
 	$(CMD_LINE_TOOLS_SRCS) \
 	$(EVALUATION_UTILS_SRCS)
@@ -269,11 +272,9 @@ BENCHMARK_LIB_SRCS := $(filter-out \
 	$(BENCHMARK_MAIN_SRC) \
 	$(BENCHMARK_PERF_OPTIONS_SRC) \
 	$(BENCHMARK_SRCS_DIR)/benchmark_plus_flex_main.cc \
-	$(DELEGATE_PROVIDER_SRCS_DIR)/default_execution_provider.cc \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/external_delegate_provider.cc \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/gpu_delegate_provider.cc \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/hexagon_delegate_provider.cc \
-	$(DELEGATE_PROVIDER_SRCS_DIR)/nnapi_delegate_provider.cc \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/xnnpack_delegate_provider.cc, \
 	$(BENCHMARK_ALL_SRCS))
 
@@ -394,7 +395,7 @@ $(BENCHMARK_PERF_OPTIONS_BINARY) : $(BENCHMARK_PERF_OPTIONS_OBJ) $(BENCHMARK_LIB
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) \
 	-o $(BENCHMARK_PERF_OPTIONS_BINARY) $(BENCHMARK_PERF_OPTIONS_OBJ) \
-	$(LIBFLAGS) $(BENCHMARK_LIB) $(LDFLAGS) $(LIBS)
+	$(LIBFLAGS) -Wl,--allow-multiple-definition -Wl,--whole-archive $(BENCHMARK_LIB) -Wl,--as-needed $(LDFLAGS) $(LIBS)
 
 benchmark: $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY)
 
