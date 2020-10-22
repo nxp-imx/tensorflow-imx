@@ -4243,7 +4243,7 @@ const StatefulNnApiDelegate::Options StatefulNnApiDelegate::GetOptions(
   options.execution_preference = delegate_data->execution_preference;
   options.accelerator_name = delegate_data->accelerator_name.empty()
                                 //  ? nullptr
-                                 ? "VsiNpu"
+                                 ? "vsi-npu"
                                  : delegate_data->accelerator_name.c_str();
   options.cache_dir = delegate_data->cache_dir.empty()
                           ? nullptr
