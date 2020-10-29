@@ -529,9 +529,8 @@ NNMemory::~NNMemory() {
   if (nn_memory_handle_) {
     nnapi_->ANeuralNetworksMemory_free(nn_memory_handle_);
   }
-  #if defined __ANDROID__
   if (fd_ > 0) close(fd_);
-  #else
+  #if !defined(__ANDROID__)
   if (name_) unlink(name_);
   #endif
 #endif
