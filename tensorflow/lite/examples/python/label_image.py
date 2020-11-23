@@ -87,12 +87,12 @@ if __name__ == '__main__':
   startTime = time.time()
   interpreter.invoke()
   delta = time.time() - startTime
-  print("Warm-up time:", '%.1f' % (delta.total_seconds() * 1000), "ms\n")
+  print("Warm-up time:", '%.1f' % (delta * 1000), "ms\n")
 
   startTime = time.time()
   interpreter.invoke()
   delta = time.time() - startTime
-  print("Inference time:", '%.1f' % (delta.total_seconds() * 1000), "ms\n")
+  print("Inference time:", '%.1f' % (delta * 1000), "ms\n")
 
   output_data = interpreter.get_tensor(output_details[0]['index'])
   results = np.squeeze(output_data)
@@ -105,4 +105,3 @@ if __name__ == '__main__':
     else:
       print('{:08.6f}: {}'.format(float(results[i] / 255.0), labels[i]))
 
-  print('time: {:.3f}ms'.format((stop_time - start_time) * 1000))
