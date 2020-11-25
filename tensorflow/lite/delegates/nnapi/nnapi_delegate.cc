@@ -1661,6 +1661,7 @@ bool NNAPIDelegateKernel::Validate(
       }
     } break;
     case kTfLiteBuiltinResizeBilinear: {
+      #if defined __ANDROID__     //Refuse delegation due to performance reason
       ExpectMaxOpVersion(version, 3, &val_ctx);
       const auto& input = context->tensors[node->inputs->data[0]];
       const auto output_dims = context->tensors[node->outputs->data[0]].dims;
@@ -1701,6 +1702,10 @@ bool NNAPIDelegateKernel::Validate(
                NNAPIValidationFailureType::kUnsupportedInputType,
                "NNAPI 1.0 & 1.1 only supports float input.", &val_ctx);
       }
+      #endif
+      AddValidationFailure(NNAPIValidationFailureType::kUnsupportedOperator,
+             "Operator refused due performance reasons.",
+             &val_ctx);
     } break;
     case kTfLiteBuiltinResizeNearestNeighbor: {
       ExpectMaxOpVersion(version, 3, &val_ctx);
