@@ -30,6 +30,7 @@ limitations under the License.
 #include <tuple>
 #include <utility>
 #include <vector>
+#include <cmath>
 
 #include "tensorflow/lite/nnapi/NeuralNetworksTypes.h"
 
@@ -748,6 +749,12 @@ class NNAPIOpBuilder {
                                      float scale, int32_t zero_point) {
     return AddVectorOperand<int32_t>(
         values, num_values, ANEURALNETWORKS_TENSOR_INT32, scale, zero_point);
+  }
+
+  TfLiteStatus AddVectorUInt8Operand(const uint8_t* values, uint32_t num_values,
+                                     float scale, int32_t zero_point) {
+      return AddVectorOperand<uint8_t>(values, num_values,
+              ANEURALNETWORKS_TENSOR_QUANT8_ASYMM, scale, zero_point);
   }
 
   TfLiteStatus AddVectorFloat32Operand(const float* values,
@@ -2435,6 +2442,12 @@ bool NNAPIDelegateKernel::Validate(
             &val_ctx);
       }
     } break;
+    case kTfLiteBuiltinLeakyRelu: {
+        ExpectOpVersion(version, 1, &val_ctx);
+        ExpectMinAndroidSdkVersion(android_sdk_version, kMinSdkVersionForNNAPI12,
+                &val_ctx);
+        ExpectIsFloatOrUint8Operator(context, node, &val_ctx);
+    } break;
     case kTfLiteBuiltinPrelu: {
       ExpectOpVersion(version, 1, &val_ctx);
       ExpectMinAndroidSdkVersion(android_sdk_version, kMinSdkVersionForNNAPI12,
@@ -2713,6 +2726,19 @@ bool NNAPIDelegateKernel::Validate(
   }
   return val_ctx.is_valid;
 }  // NOLINT(readability/fn_size)
+
+template <typename T>
+inline std::vector<T> Quantize(const std::vector<float>& data, float scale,
+                               int32_t zero_point) {
+  std::vector<T> q;
+  for (const auto& f : data) {
+    q.push_back(static_cast<T>(std::max<float>(
+        std::numeric_limits<T>::min(),
+        std::min<float>(std::numeric_limits<T>::max(),
+                        std::round(zero_point + (f / scale))))));
+  }
+  return q;
+}
 
 TfLiteStatus NNAPIDelegateKernel::Map(
     TfLiteContext* context, int builtin_code, int version,
@@ -3352,6 +3378,57 @@ TfLiteStatus NNAPIDelegateKernel::Map(
     } break;
     case kTfLiteBuiltinPrelu: {
       *nn_op_type = ANEURALNETWORKS_PRELU;
+    } break;
+    case kTfLiteBuiltinLeakyRelu: {
+      //LeakyRelu can be replaced by ParametricRelu by providing aditional Tensor,
+      //specifing the aplpha value.
+      *nn_op_type = ANEURALNETWORKS_PRELU;
+      // Parametric Relu requires aditional tensor for alpha values, so we allocate
+      //a new tensor to fill it with 0.1. It is deleted with other tensors in the
+      //context during subgraph destructor call.
+      int alpha_index = -1;
+      mapping_args.context->AddTensors(mapping_args.context, 1, &alpha_index);
+      TfLiteTensor* alpha_tensor = &mapping_args.context->tensors[alpha_index];
+      const auto input_type =
+              mapping_args.context->tensors[mapping_args.node->inputs->data[0]].type;
+      if(input_type == kTfLiteFloat32) {
+          alpha_tensor->type = kTfLiteFloat32;
+      } else if (input_type == kTfLiteUInt8) {
+          alpha_tensor->type = kTfLiteUInt8;
+      } else {
+          TFLITE_LOG(TFLITE_LOG_ERROR, "kTfLiteBuiltinLeakyRelu inconsistent validation");
+          return kTfLiteError;
+      }
+
+      TfLiteIntArray* alpha_shape = TfLiteIntArrayCreate(1);
+      alpha_shape->data[0] = 1;
+      alpha_tensor->allocation_type = kTfLiteDynamic;
+      mapping_args.context->ResizeTensor(mapping_args.context, alpha_tensor,
+          alpha_shape);
+      auto builtin = reinterpret_cast<TfLiteLeakyReluParams*>(
+          mapping_args.node->builtin_data);
+      if(input_type == kTfLiteFloat32) {
+          alpha_tensor->data.f[0] = builtin->alpha;
+          mapping_args.builder->AddVectorFloat32Operand(alpha_tensor->data.f, 1);
+      } else if (input_type == kTfLiteUInt8) {
+          auto quantization = mapping_args.context->tensors[mapping_args.node->inputs->data[0]].quantization;
+          if(quantization.type == kTfLiteAffineQuantization ){
+              auto quant_params = static_cast<TfLiteAffineQuantization*>(quantization.params);
+              if(quant_params->scale->size != 1) {
+                  return kTfLiteError;
+              }
+              auto data = Quantize<uint8_t>({builtin->alpha}, quant_params->scale->data[0],
+                  quant_params->zero_point->data[0]);
+              alpha_tensor->data.uint8[0] = data[0];
+              mapping_args.builder->AddVectorUInt8Operand(alpha_tensor->data.uint8,
+                      1, quant_params->scale->data[0], quant_params->zero_point->data[0]);
+          } else {
+              return kTfLiteError;
+          }
+      } else {
+          TFLITE_LOG(TFLITE_LOG_ERROR, "kTfLiteBuiltinLeakyRelu inconsistent validation");
+          return kTfLiteError;
+      }
     } break;
     case kTfLiteBuiltinTile: {
       *nn_op_type = ANEURALNETWORKS_TILE;
