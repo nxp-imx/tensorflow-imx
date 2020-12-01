@@ -301,8 +301,14 @@ bool NeedInt8Conversion(const TfLiteContext* context, int builtin_code,
     case kTfLiteBuiltinTanh:
     case kTfLiteBuiltinTile:
     case kTfLiteBuiltinTopkV2:
-    case kTfLiteBuiltinTranspose: {
+    case kTfLiteBuiltinTranspose:
+    case kTfLiteBuiltinDequantize: {
       return input_type == kTfLiteInt8;
+    }
+    case kTfLiteBuiltinQuantize: {
+        const int output_id = node->outputs->data[0];
+        const TfLiteType output_type = context->tensors[output_id].type;
+        return output_type == kTfLiteInt8;
     }
     default:
       return false;
@@ -2047,7 +2053,7 @@ bool NNAPIDelegateKernel::Validate(
         EXPECT_INPUT_TYPE_IN(input.type, kTfLiteUInt8);
       } else {
         EXPECT_INPUT_TYPE_IN(input.type, kTfLiteUInt8, kTfLiteInt8);
-
+#ifdef __ANDROID__
         if (android_sdk_version == kMinSdkVersionForNNAPI12 &&
             input.type == kTfLiteInt8) {
           const auto zero_point = input.params.zero_point;
@@ -2057,6 +2063,7 @@ bool NNAPIDelegateKernel::Validate(
                  "symmetric quantization.",
                  &val_ctx);
         }
+#endif
       }
     } break;
     case kTfLiteBuiltinFloor: {
@@ -2610,9 +2617,9 @@ bool NNAPIDelegateKernel::Validate(
       }
       const auto output_type = context->tensors[node->outputs->data[0]].type;
       if (android_sdk_version < kMinSdkVersionForNNAPI13) {
-        Expect(output_type == kTfLiteUInt8,
-               NNAPIValidationFailureType::kUnsupportedOutputType,
-               "Output should be kTfLiteUInt8.", &val_ctx);
+        Expect(((output_type == kTfLiteUInt8) || (output_type == kTfLiteInt8)),
+             NNAPIValidationFailureType::kUnsupportedOutputType,
+             "Output should be kTfLiteUInt8 or kTfLiteInt8.", &val_ctx);
       } else {
         ExpectTypeIn(output_type, {kTfLiteUInt8, kTfLiteInt8},
                      NNAPIValidationFailureType::kUnsupportedOutputType,
