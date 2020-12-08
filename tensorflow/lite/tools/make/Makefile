@@ -49,7 +49,10 @@ INCLUDES := \
 -I$(MAKEFILE_DIR)/downloads/googletest/googletest/include \
 -I$(MAKEFILE_DIR)/downloads/googletest/googlemock/include \
 -I$(MAKEFILE_DIR)/downloads/re2/ \
+-I$(MAKEFILE_DIR)/../evaluation/stages \
+-I$(MAKEFILE_DIR)/../../..tensorflow/core/lib/jpeg/ \
 -I$(OBJDIR)
+
 # This is at the end so any globally-installed frameworks like protobuf don't
 # override local versions in the source tree.
 INCLUDES += -I/usr/include
@@ -61,7 +64,9 @@ LIBS := \
 -lpthread \
 -lm \
 -lz \
--ldl
+-ldl \
+-lprotobuf \
+-ljpeg
 
 # There are no rules for compiling objects for the host system (since we don't
 # generate things like the protobuf compiler that require that), so all of
@@ -292,7 +297,8 @@ TF_LITE_CC_SRCS := $(filter-out $(CORE_CC_EXCLUDE_SRCS), $(CORE_CC_ALL_SRCS))
 BENCHMARK_SRCS_DIR := tensorflow/lite/tools/benchmark
 DELEGATE_PROVIDER_SRCS_DIR := tensorflow/lite/tools/delegates
 EVALUATION_UTILS_SRCS := \
-  tensorflow/lite/tools/evaluation/utils.cc
+  tensorflow/lite/tools/evaluation/utils.cc \
+
 BENCHMARK_ALL_SRCS := $(filter-out \
 	$(wildcard $(BENCHMARK_SRCS_DIR)/*_provider.cc), \
 	$(wildcard $(BENCHMARK_SRCS_DIR)/*.cc)) \
@@ -315,6 +321,59 @@ BENCHMARK_LIB_SRCS := $(filter-out \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/hexagon_delegate_provider.cc \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/xnnpack_delegate_provider.cc, \
 	$(BENCHMARK_ALL_SRCS))
+
+EVALUATION_BINARY_SRCS := \
+	tensorflow/core/platform/default/logging.cc \
+	tensorflow/core/platform/default/env_time.cc \
+	tensorflow/core/lib/jpeg/jpeg_mem.cc \
+	tensorflow/core/lib/jpeg/jpeg_handle.cc \
+	tensorflow/lite/tools/evaluation/utils.cc \
+	tensorflow/lite/tools/evaluation/tasks/task_executor_main.cc \
+	tensorflow/lite/tools/evaluation/tasks/task_executor.cc \
+	tensorflow/lite/tools/evaluation/proto/evaluation_stages.pb.cc \
+	tensorflow/lite/tools/evaluation/proto/evaluation_config.pb.cc \
+	tensorflow/lite/tools/evaluation/proto/preprocessing_steps.pb.cc \
+	tensorflow/lite/tools/evaluation/stages/image_classification_stage.cc \
+	tensorflow/lite/tools/evaluation/stages/object_detection_stage.cc \
+	tensorflow/lite/tools/evaluation/stages/object_detection_average_precision_stage.cc \
+	tensorflow/lite/tools/evaluation/stages/image_preprocessing_stage.cc \
+	tensorflow/lite/tools/evaluation/stages/tflite_inference_stage.cc \
+	tensorflow/lite/tools/evaluation/stages/topk_accuracy_eval_stage.cc \
+	tensorflow/lite/tools/evaluation/stages/utils/image_metrics.cc \
+	tensorflow/lite/tools/evaluation/stages/inference_profiler_stage.cc \
+	tensorflow/lite/tools/evaluation/evaluation_delegate_provider.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/hash/internal/hash.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/hash/internal/city.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/container/internal/hashtablez_sampler.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/container/internal/hashtablez_sampler_force_weak_definition.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/synchronization/mutex.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/synchronization/internal/per_thread_sem.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/synchronization/internal/create_thread_identity.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/synchronization/internal/waiter.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/debugging/symbolize.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/debugging/stacktrace.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/debugging/internal/demangle.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/debugging/internal/vdso_support.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/debugging/internal/elf_mem_image.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/debugging/internal/address_is_readable.cc \
+	$(CMD_LINE_TOOLS_SRCS) \
+	$(DELEGATE_PROVIDER_SRCS_DIR)/nnapi_delegate_provider.cc \
+	$(DELEGATE_PROVIDER_SRCS_DIR)/default_execution_provider.cc \
+
+COCO_OBJECT_DETECTION_BINARY_NAME := coco_object_detection_run_eval
+COCO_OBJECT_DETECTION_SRCS := \
+	tensorflow/lite/tools/evaluation/tasks/coco_object_detection/run_eval.cc \
+	$(EVALUATION_BINARY_SRCS)
+
+IMAGENET_IMAGE_CLASSIFICATION_BINARY_NAME := imagenet_image_classification_run_eval
+IMAGENET_IMAGE_CLASSIFICATION_SRCS := \
+	tensorflow/lite/tools/evaluation/tasks/imagenet_image_classification/run_eval.cc \
+	$(EVALUATION_BINARY_SRCS)
+
+INFERENCE_DIFF_BINARY_NAME := inference_diff_run_eval
+INFERENCE_DIFF_SRCS := \
+	tensorflow/lite/tools/evaluation/tasks/inference_diff/run_eval.cc \
+	$(EVALUATION_BINARY_SRCS)
 
 # These target-specific makefiles should modify or replace options like
 # CXXFLAGS or LIBS to work for a specific targeted architecture. All logic
@@ -343,6 +402,9 @@ BENCHMARK_BINARY := $(BINDIR)$(BENCHMARK_BINARY_NAME)
 BENCHMARK_PERF_OPTIONS_BINARY := $(BINDIR)$(BENCHMARK_PERF_OPTIONS_BINARY_NAME)
 MINIMAL_BINARY := $(BINDIR)minimal
 LABEL_IMAGE_BINARY := $(BINDIR)label_image
+COCO_OBJECT_DETECTION_BINARY := $(BINDIR)$(COCO_OBJECT_DETECTION_BINARY_NAME)
+IMAGENET_IMAGE_CLASSIFICATION_BINARY := $(BINDIR)$(IMAGENET_IMAGE_CLASSIFICATION_BINARY_NAME)
+INFERENCE_DIFF_BINARY := $(BINDIR)$(INFERENCE_DIFF_BINARY_NAME)
 
 
 MINIMAL_OBJS := $(addprefix $(OBJDIR), \
@@ -367,7 +429,16 @@ UNIT_TEST_OBJS := $(addprefix $(OBJDIR), $(UNIT_TEST_SRCS:.cc=.o))
 UNIT_TEST_UTIL_OBJS := $(addprefix $(OBJDIR), $(UNIT_TEST_UTIL_SRCS:.cc=.o))
 UNIT_TEST_NAMES := $(addprefix $(OBJDIR), $(UNIT_TEST_SRCS:.cc=))
 
-# For normal manually-created TensorFlow Lite C   source files.
+COCO_OBJECT_DETECTION_OBJS := $(addprefix $(OBJDIR), \
+$(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(COCO_OBJECT_DETECTION_SRCS))))
+
+IMAGENET_IMAGE_CLASSIFICATION_OBJS := $(addprefix $(OBJDIR), \
+$(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(IMAGENET_IMAGE_CLASSIFICATION_SRCS))))
+
+INFERENCE_DIFF_OBJS := $(addprefix $(OBJDIR), \
+$(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(INFERENCE_DIFF_SRCS))))
+
+# For normal manually-created TensorFlow Lite C++ source files.
 $(OBJDIR)%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
@@ -382,7 +453,7 @@ $(OBJDIR)%.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 # The target that's compiled if there's no command-line arguments.
-all: $(LIB_PATH)  $(MINIMAL_BINARY) $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY) $(LABEL_IMAGE_BINARY)
+all: $(LIB_PATH)  $(MINIMAL_BINARY) $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY) $(LABEL_IMAGE_BINARY) evaluation
 
 # The target that's compiled for micro-controllers
 micro: $(LIB_PATH)
@@ -414,9 +485,35 @@ $(LABEL_IMAGE_BINARY): $(LABEL_IMAGE_OBJS) $(LIB_PATH)
 
 label_image: $(LABEL_IMAGE_BINARY)
 
+$(COCO_OBJECT_DETECTION_BINARY): $(COCO_OBJECT_DETECTION_OBJS) $(LIB_PATH)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) \
+	-o $(COCO_OBJECT_DETECTION_BINARY) $(COCO_OBJECT_DETECTION_OBJS) \
+	$(LIBFLAGS) $(LIB_PATH) $(LDFLAGS) $(LDOPTS) $(LIBS)
+
+coco: $(COCO_OBJECT_DETECTION_BINARY)
+
+$(IMAGENET_IMAGE_CLASSIFICATION_BINARY): $(IMAGENET_IMAGE_CLASSIFICATION_OBJS) $(LIB_PATH)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) \
+	-o $(IMAGENET_IMAGE_CLASSIFICATION_BINARY) $(IMAGENET_IMAGE_CLASSIFICATION_OBJS) \
+	$(LIBFLAGS) $(LIB_PATH) $(LDFLAGS) $(LDOPTS) $(LIBS)
+
+imagenet: $(IMAGENET_IMAGE_CLASSIFICATION_BINARY)
+
+$(INFERENCE_DIFF_BINARY): $(INFERENCE_DIFF_OBJS) $(LIB_PATH)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) \
+	-o $(INFERENCE_DIFF_BINARY) $(INFERENCE_DIFF_OBJS) \
+	$(LIBFLAGS) $(LIB_PATH) $(LDFLAGS) $(LDOPTS) $(LIBS)
+
+inference_diff: $(INFERENCE_DIFF_BINARY)
+
 $(BENCHMARK_LIB) : $(LIB_PATH) $(BENCHMARK_LIB_OBJS)
 	@mkdir -p $(dir $@)
 	$(AR) $(ARFLAGS) $(BENCHMARK_LIB) $(LIB_OBJS) $(BENCHMARK_LIB_OBJS)
+
+evaluation: coco imagenet inference_diff
 
 benchmark_lib: $(BENCHMARK_LIB)
 
