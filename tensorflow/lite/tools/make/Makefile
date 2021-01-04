@@ -48,7 +48,7 @@ INCLUDES := \
 -I$(OBJDIR)
 # This is at the end so any globally-installed frameworks like protobuf don't
 # override local versions in the source tree.
-INCLUDES += -I/usr/local/include
+INCLUDES += -I/usr/include
 
 # These are the default libraries needed, but they can be added to or
 # overridden by the platform-specific settings in target makefiles.
@@ -62,8 +62,10 @@ LIBS := \
 # There are no rules for compiling objects for the host system (since we don't
 # generate things like the protobuf compiler that require that), so all of
 # these settings are for the target compiler.
-CFLAGS := -O3 -DNDEBUG -DCPU_SETSIZE=__CPU_SETSIZE -fPIC $(EXTRA_CFLAGS)
-CXXFLAGS := $(CFLAGS) --std=c++11 $(EXTRA_CXXFLAGS)
+CXXFLAGS += -O3 -DNDEBUG -DCPU_SETSIZE=__CPU_SETSIZE -DNNAPI_VERBOSE_VALIDATION -fPIC 
+CXXFLAGS += $(EXTRA_CXXFLAGS)
+CFLAGS := ${CXXFLAGS}
+CXXFLAGS += --std=c++11
 LDOPTS := -L/usr/local/lib
 ARFLAGS := -r
 TARGET_TOOLCHAIN_PREFIX :=
@@ -108,11 +110,6 @@ BENCHMARK_PERF_OPTIONS_BINARY_NAME := benchmark_model_performance_options
 MINIMAL_SRCS := \
 	tensorflow/lite/examples/minimal/minimal.cc
 
-LABEL_IMAGE_SRCS := \
-	tensorflow/lite/examples/label_image/bitmap_helpers.cc \
-	tensorflow/lite/examples/label_image/label_image.cc \
-	tensorflow/lite/tools/evaluation/utils.cc
-
 # What sources we want to compile, must be kept in sync with the main Bazel
 # build files.
 
@@ -129,6 +126,12 @@ PROFILE_SUMMARIZER_SRCS := \
 CMD_LINE_TOOLS_SRCS := \
 	tensorflow/lite/tools/command_line_flags.cc \
 	tensorflow/lite/tools/tool_params.cc
+	
+LABEL_IMAGE_SRCS := \
+	$(CMD_LINE_TOOLS_SRCS) \
+	tensorflow/lite/examples/label_image/bitmap_helpers.cc \
+	tensorflow/lite/examples/label_image/label_image.cc \
+	tensorflow/lite/tools/evaluation/utils.cc
 
 CORE_CC_ALL_SRCS := \
 $(wildcard tensorflow/lite/*.cc) \
@@ -224,7 +227,7 @@ endif
 # Not to include XNNPACK.
 CXXFLAGS += -DTFLITE_WITHOUT_XNNPACK
 
-BUILD_WITH_NNAPI ?= false
+BUILD_WITH_NNAPI ?= true
 ifeq ($(BUILD_WITH_NNAPI),true)
 	CORE_CC_ALL_SRCS += tensorflow/lite/delegates/nnapi/nnapi_delegate.cc
 	CORE_CC_ALL_SRCS += tensorflow/lite/delegates/nnapi/quant_lstm_sup.cc
@@ -252,8 +255,11 @@ BENCHMARK_SRCS_DIR := tensorflow/lite/tools/benchmark
 DELEGATE_PROVIDER_SRCS_DIR := tensorflow/lite/tools/delegates
 EVALUATION_UTILS_SRCS := \
   tensorflow/lite/tools/evaluation/utils.cc
-BENCHMARK_ALL_SRCS := \
-	$(wildcard $(BENCHMARK_SRCS_DIR)/*.cc) \
+BENCHMARK_ALL_SRCS := $(filter-out \
+	$(wildcard $(BENCHMARK_SRCS_DIR)/*_provider.cc), \
+	$(wildcard $(BENCHMARK_SRCS_DIR)/*.cc)) \
+	$(DELEGATE_PROVIDER_SRCS_DIR)/nnapi_delegate_provider.cc \
+	$(DELEGATE_PROVIDER_SRCS_DIR)/default_execution_provider.cc \
 	$(PROFILE_SUMMARIZER_SRCS) \
 	$(CMD_LINE_TOOLS_SRCS) \
 	$(EVALUATION_UTILS_SRCS)
@@ -266,11 +272,9 @@ BENCHMARK_LIB_SRCS := $(filter-out \
 	$(BENCHMARK_MAIN_SRC) \
 	$(BENCHMARK_PERF_OPTIONS_SRC) \
 	$(BENCHMARK_SRCS_DIR)/benchmark_plus_flex_main.cc \
-	$(DELEGATE_PROVIDER_SRCS_DIR)/default_execution_provider.cc \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/external_delegate_provider.cc \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/gpu_delegate_provider.cc \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/hexagon_delegate_provider.cc \
-	$(DELEGATE_PROVIDER_SRCS_DIR)/nnapi_delegate_provider.cc \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/xnnpack_delegate_provider.cc, \
 	$(BENCHMARK_ALL_SRCS))
 
@@ -302,9 +306,6 @@ BENCHMARK_PERF_OPTIONS_BINARY := $(BINDIR)$(BENCHMARK_PERF_OPTIONS_BINARY_NAME)
 MINIMAL_BINARY := $(BINDIR)minimal
 LABEL_IMAGE_BINARY := $(BINDIR)label_image
 
-CXX := $(CC_PREFIX)${TARGET_TOOLCHAIN_PREFIX}g++
-CC := $(CC_PREFIX)${TARGET_TOOLCHAIN_PREFIX}gcc
-AR := $(CC_PREFIX)${TARGET_TOOLCHAIN_PREFIX}ar
 
 MINIMAL_OBJS := $(addprefix $(OBJDIR), \
 $(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(MINIMAL_SRCS))))
@@ -339,7 +340,7 @@ $(OBJDIR)%.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 # The target that's compiled if there's no command-line arguments.
-all: $(LIB_PATH)  $(MINIMAL_BINARY) $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY)
+all: $(LIB_PATH)  $(MINIMAL_BINARY) $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY) $(LABEL_IMAGE_BINARY)
 
 # The target that's compiled for micro-controllers
 micro: $(LIB_PATH)
@@ -394,7 +395,7 @@ $(BENCHMARK_PERF_OPTIONS_BINARY) : $(BENCHMARK_PERF_OPTIONS_OBJ) $(BENCHMARK_LIB
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) \
 	-o $(BENCHMARK_PERF_OPTIONS_BINARY) $(BENCHMARK_PERF_OPTIONS_OBJ) \
-	$(LIBFLAGS) $(BENCHMARK_LIB) $(LDFLAGS) $(LIBS)
+	$(LIBFLAGS) -Wl,--allow-multiple-definition -Wl,--whole-archive $(BENCHMARK_LIB) -Wl,--as-needed $(LDFLAGS) $(LIBS)
 
 benchmark: $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY)
 

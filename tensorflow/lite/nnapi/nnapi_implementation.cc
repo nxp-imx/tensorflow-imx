@@ -131,7 +131,7 @@ uint32_t CalculateAndroidSdkVersion(NnApi const& nnapi) {
 
 const NnApi LoadNnApi() {
   NnApi nnapi = {};
-  nnapi.android_sdk_version = 0;
+  nnapi.android_sdk_version = 29;
 
 #ifdef __ANDROID__
   nnapi.android_sdk_version = GetAndroidSdkVersion();
@@ -147,13 +147,17 @@ const NnApi LoadNnApi() {
   // TODO(b/123243014): change RTLD_LOCAL? Assumes there can be multiple
   // instances of nn api RT
   static const char nnapi_library_name[] = "libneuralnetworks.so";
+  static const char nnapi_library_name1[] = "libneuralnetworks.so.1";
   libneuralnetworks = dlopen(nnapi_library_name, RTLD_LAZY | RTLD_LOCAL);
   if (libneuralnetworks == nullptr) {
-    const char* error = dlerror();
-    if (error) {
-      NNAPI_LOG("%s\n", error);
+    libneuralnetworks = dlopen(nnapi_library_name1, RTLD_LAZY | RTLD_LOCAL);
+    if (libneuralnetworks == nullptr) {
+        const char* error = dlerror();
+        if (error) {
+            NNAPI_LOG("%s\n", error);
+        }
+        NNAPI_LOG("nnapi error: unable to open library %s or %s", nnapi_library_name, nnapi_library_name1);
     }
-    NNAPI_LOG("nnapi error: unable to open library %s", nnapi_library_name);
   }
 
   nnapi.nnapi_exists = libneuralnetworks != nullptr;

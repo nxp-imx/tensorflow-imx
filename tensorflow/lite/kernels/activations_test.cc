@@ -2123,6 +2123,26 @@ TEST_P(PReluOpTest, PReluFloat32) {
                              }));
 }
 
+TEST_P(PReluOpTest, PReluConst) {
+  FloatPReluOpModel m({TensorType_FLOAT32, {1, 2, 2, 3}},
+                      {TensorType_FLOAT32, {1}});
+
+  m.SetInput({
+      0.0f, 0.0f, 0.0f,     // Row 1, Column 1
+      1.0f, 1.0f, 1.0f,     // Row 1, Column 2
+      -1.0f, -1.0f, -1.0f,  // Row 2, Column 1
+      -2.0f, -2.0f, -2.0f,  // Row 2, Column 2
+  });
+  m.SetAlpha({1.0f});
+  m.Invoke();
+  EXPECT_THAT(m.GetOutput(), ElementsAreArray({
+                                 0.0f, 0.0f, 0.0f,    // Row 1, Column 1
+                                 1.0f, 1.0f, 1.0f,    // Row 1, Column 2
+                                 -1.0f, -1.0f, -1.0f,  // Row 2, Column 1
+                                 -2.0f, -2.0f, -2.0f,  // Row 2, Column 2
+                             }));
+}
+
 TEST_P(PReluOpTest, PReluFloat32SameShapes) {
   FloatPReluOpModel m({TensorType_FLOAT32, {1, 2, 2, 3}},
                       {TensorType_FLOAT32, {1, 2, 2, 3}});
