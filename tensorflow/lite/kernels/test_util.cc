@@ -50,6 +50,7 @@ limitations under the License.
 #include "tensorflow/lite/tools/logging.h"
 #include "tensorflow/lite/tools/versioning/op_version.h"
 #include "tensorflow/lite/version.h"
+#include "tensorflow/lite/tools/evaluation/utils.h"
 
 namespace tflite {
 
@@ -215,6 +216,24 @@ void SingleOpModel::BuildInterpreter(std::vector<std::vector<int>> input_shapes,
     CHECK(interpreter_->ResizeInputTensor(input_idx, shape) == kTfLiteOk);
   }
 
+  const char *tflite_test_precision = std::getenv("TFLITE_TEST_PRECISION");
+  const char *tflite_test_delegate = std::getenv("TFLITE_TEST_DELEGATE");
+
+  if(tflite_test_precision && !std::strcmp(tflite_test_precision, "FP16")) {
+      allow_fp32_relax_to_fp16 = true;
+      LOG(INFO) << "Setting FP16 precission";
+  }
+  if(tflite_test_delegate && !std::strcmp(tflite_test_delegate, "NNAPI") ) {
+      auto delegate = evaluation::CreateNNAPIDelegate();
+      if(!delegate) {
+          LOG(INFO) << "NNAPI acceleration is unsupported on this platform.";
+      }
+      else {
+          SetDelegate(delegate.get());
+          LOG(INFO) << "Will use NNAPI delegate.";
+      }
+
+  }
   interpreter_->SetAllowFp16PrecisionForFp32(allow_fp32_relax_to_fp16);
 
   if (allocate_and_delegate) {
