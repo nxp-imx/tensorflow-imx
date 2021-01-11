@@ -110,6 +110,12 @@ http_archive(
     ],
 )
 
+new_local_repository (
+    name = "tim_vx",
+    path = "tensorflow/lite/delegates/vx-delegate/tim-vx",
+    build_file = "@//:tensorflow/lite/delegates/vx-delegate/tim-vx/BUILD.bazel",
+)
+
 # Required for dependency @com_github_grpc_grpc
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")

@@ -51,11 +51,41 @@ limitations under the License.
 #include "tensorflow/lite/tools/versioning/op_version.h"
 #include "tensorflow/lite/version.h"
 
+#include "tensorflow/lite/delegates/vx-delegate/delegate_main.h"
+
 namespace tflite {
 
 using ::testing::FloatNear;
 using ::testing::Matcher;
 
+<<<<<<< HEAD
+=======
+namespace {
+
+// Whether to enable (global) use of NNAPI. Note that this will typically
+// be set via a command-line flag.
+static bool force_use_nnapi = false;
+static bool force_use_vx_delegate = false;
+
+TfLiteDelegate* TestNnApiDelegate() {
+  static TfLiteDelegate* delegate = [] {
+    StatefulNnApiDelegate::Options options;
+    // In Android Q, the NNAPI delegate avoids delegation if the only device
+    // is the reference CPU. However, for testing purposes, we still want
+    // delegation coverage, so force use of this reference path.
+    options.accelerator_name = "nnapi-reference";
+    return new StatefulNnApiDelegate(options);
+  }();
+  return delegate;
+}
+
+TfLiteDelegate* TestOvxlibxxDelegate() {
+  return ::vx::delegate::Delegate::Create();
+}
+
+}  // namespace
+
+>>>>>>> d80be3bc3c3 (Init vx-delegate)
 std::vector<Matcher<float>> ArrayFloatNear(const std::vector<float>& values,
                                            float max_abs_error) {
   std::vector<Matcher<float>> matchers;
@@ -223,6 +253,20 @@ void SingleOpModel::BuildInterpreter(std::vector<std::vector<int>> input_shapes,
 }
 
 TfLiteStatus SingleOpModel::ApplyDelegate() {
+  /****
+  if (force_use_nnapi) {
+    delegate_ = TestNnApiDelegate();
+  }
+
+  if (force_use_vx_delegate) {
+    delegate_ = ::vx::delegate::Delegate::Create();
+  }
+
+  if (force_use_nnapi && force_use_vx_delegate) {
+    LOG(FATAL) << "Don't setup nnapi and vx_delgegate at the same time!";
+  }
+  ****/
+
   if (delegate_) {
     TFLITE_LOG(WARN) << "Having a manually-set TfLite delegate, and bypassing "
                         "KernelTestDelegateProviders";
@@ -264,6 +308,23 @@ bool SingleOpModel::GetForceUseNnapi() {
          delegate_params.Get<bool>("use_nnapi");
 }
 
+<<<<<<< HEAD
+=======
+// static
+bool SingleOpModel::GetForceUseNnapi() { return force_use_nnapi; }
+
+// static
+void SingleOpModel::SetForceUseVxDelegate(bool use_vx) {
+  force_use_vx_delegate = use_vx;
+}
+
+// static
+bool SingleOpModel::GetForceUseVxDelegate() {
+  return force_use_vx_delegate;
+}
+
+
+>>>>>>> d80be3bc3c3 (Init vx-delegate)
 int32_t SingleOpModel::GetTensorSize(int index) const {
   TfLiteTensor* t = interpreter_->tensor(index);
   CHECK(t);
