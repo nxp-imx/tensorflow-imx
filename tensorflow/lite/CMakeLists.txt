@@ -38,6 +38,14 @@ cmake_policy(SET CMP0028 NEW)
 # Enable MACOSX_RPATH (@rpath) for built dynamic libraries.
 cmake_policy(SET CMP0042 NEW)
 project(tensorflow-lite C CXX)
+
+# Check if CMAKE_SYSTEM_PROCESSOR is valid: In L5.10 the system processor is set to cortexa53-crypto, which is not known to tensorflow
+# dependencies
+if( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "cortexa53-crypto")
+  message(STATUS "Reseting CMAKE_SYSTEM_PROCESSOR to aarch64")
+  set(CMAKE_SYSTEM_PROCESSOR "aarch64")
+endif()
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(TENSORFLOW_SOURCE_DIR "" CACHE PATH
   "Directory that contains the TensorFlow project"
