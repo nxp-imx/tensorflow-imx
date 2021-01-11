@@ -613,6 +613,10 @@ class SingleOpModel {
 
   // Indicate whether the test has the NNAPI delegate applied.
   static bool GetForceUseNnapi();
+
+  static void SetForceUseVxDelegate(bool use_vsi);
+  static bool GetForceUseVxDelegate();
+
   int CountOpsExecutedByCpuKernel();
 
  protected:

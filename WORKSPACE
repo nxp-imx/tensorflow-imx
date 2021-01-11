@@ -21,3 +21,8 @@ tf_workspace1()
 load("@//tensorflow:workspace0.bzl", "tf_workspace0")
 
 tf_workspace0()
+
+local_repository (
+    name = "tim_vx",
+    path = "tensorflow/lite/delegates/vx-delegate/tim-vx",
+)
