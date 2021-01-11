@@ -291,6 +291,7 @@ void BenchmarkPerformanceOptions::CreatePerformanceOptions() {
   }
 
   if (benchmark_all || HasOption("nnapi")) {
+#if 0 //Hotfix for compilation using CMAKE without nnapi support
     std::string nnapi_accelerators = nnapi::GetStringDeviceNamesList();
     if (!nnapi_accelerators.empty()) {
       std::vector<std::string> device_names;
@@ -313,6 +314,7 @@ void BenchmarkPerformanceOptions::CreatePerformanceOptions() {
     BenchmarkParams params;
     params.AddParam("use_nnapi", BenchmarkParam::Create<bool>(true));
     all_run_params_.emplace_back(std::move(params));
+#endif
   }
 
 #if defined(TFLITE_ENABLE_HEXAGON)
