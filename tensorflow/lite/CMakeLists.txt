@@ -84,9 +84,9 @@ option(TFLITE_BUILD_SHARED_LIB "Build shared library instead of static" OFF)
 set(CMAKE_CXX_STANDARD 14)  # Some components require C++14.
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(_TFLITE_ENABLE_NNAPI "${TFLITE_ENABLE_NNAPI}")
-if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
-  set(_TFLITE_ENABLE_NNAPI OFF)
-endif()
+#if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
+#  set(_TFLITE_ENABLE_NNAPI OFF)
+#endif()
 set(_TFLITE_ENABLE_MMAP "${TFLITE_ENABLE_MMAP}")
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   # See https://github.com/tensorflow/tensorflow/blob/\
@@ -116,6 +116,7 @@ macro(populate_source_vars SOURCE_DIR SOURCES_VAR)
   foreach(FILE_FILTER ${ARGS_FILTER})
     list(FILTER FOUND_SOURCES EXCLUDE REGEX "${FILE_FILTER}")
   endforeach()
+  message(DEBUG "Found sources are: ${FOUND_SOURCES}")
   list(APPEND ${SOURCES_VAR} ${FOUND_SOURCES})
 endmacro()
 # Simplifies inclusion of non-test sources and headers from a directory
@@ -143,6 +144,7 @@ find_package(flatbuffers REQUIRED)
 find_package(gemmlowp REQUIRED)
 find_package(neon2sse REQUIRED)
 find_package(ruy REQUIRED)
+find_package(nsync REQUIRED)
 # Generate TensorFlow Lite FlatBuffer code.
 # We used to have an actual compilation logic with flatc but decided to use
 # schema_generated.h since flatc doesn't work with cross compilation.
@@ -328,6 +330,7 @@ endif()
 if(TFLITE_ENABLE_XNNPACK)
   find_package(fp16_headers REQUIRED)
   find_package(xnnpack REQUIRED)
+  message(DEBUG "Populating XNNPACK sources")
   populate_tflite_source_vars("delegates/xnnpack"
     TFLITE_DELEGATES_XNNPACK_SRCS
     FILTER ".*(_test|_tester)\\.(cc|h)"
@@ -442,6 +445,9 @@ add_library(tensorflow-lite ${LIB_TYPE}
   ${TFLITE_SOURCE_DIR}/schema/schema_utils.cc
   ${TFLITE_SOURCE_DIR}/tools/optimize/sparsity/format_converter.cc
   ${TFLITE_CMD_LINE_TOOLS_SRCS}
+  ${TF_SOURCE_DIR}/core/platform/default/logging.cc
+  ${TF_SOURCE_DIR}/core/platform/default/mutex.cc
+  ${TF_SOURCE_DIR}/core/platform/default/env_time.cc
 )
 
 if (TFLITE_BUILD_SHARED_LIB)
@@ -478,7 +484,7 @@ target_link_libraries(tensorflow-lite
     flatbuffers
     gemmlowp
     ruy
-    ${CMAKE_DL_LIBS}
+    nsync_cpp
     ${TFLITE_TARGET_DEPENDENCIES}
     ${CMAKE_DL_LIBS}
 )
@@ -569,16 +575,17 @@ target_compile_options(_pywrap_tensorflow_interpreter_wrapper
   PRIVATE ${TFLITE_TARGET_PRIVATE_OPTIONS}
 )
 if(TFLITE_BUILD_EVALTOOLS)
-    find_package(nsync REQUIRED)
+#    find_package(nsync REQUIRED)
     populate_tflite_source_vars("tools/evaluation/stages" TFLITE_EVALUATION_STAGES_SRCS RECURSE)
     populate_tflite_source_vars("tools/evaluation/proto" TFLITE_EVALUATION_PROTO_SRCS)
     
     list(APPEND TFLITE_EVALUATION_BINARY_SRCS
-        ${TF_SOURCE_DIR}/core/platform/default/logging.cc
-        ${TF_SOURCE_DIR}/core/platform/default/env_time.cc
-        ${TF_SOURCE_DIR}/core/platform/default/mutex.cc
+#        ${TF_SOURCE_DIR}/core/platform/default/logging.cc
+#        ${TF_SOURCE_DIR}/core/platform/default/env_time.cc
+#        ${TF_SOURCE_DIR}/core/platform/default/mutex.cc
         ${TF_SOURCE_DIR}/core/lib/jpeg/jpeg_mem.cc
         ${TF_SOURCE_DIR}/core/lib/jpeg/jpeg_handle.cc
+        ${TFLITE_SOURCE_DIR}/nnapi/sl/SupportLibrary.cc
         ${TFLITE_SOURCE_DIR}/profiling/time.cc
         ${TFLITE_SOURCE_DIR}/tools/evaluation/utils.cc
         ${TFLITE_SOURCE_DIR}/tools/evaluation/evaluation_delegate_provider.cc
@@ -637,7 +644,7 @@ if(TFLITE_BUILD_EVALTOOLS)
             absl::base
             absl::strings
             absl::flat_hash_map
-            nsync_cpp
+#            nsync_cpp
             ${TFLITE_PROTOBUF_LIB}
             "-ljpeg"
             ${CMAKE_DL_LIBS}

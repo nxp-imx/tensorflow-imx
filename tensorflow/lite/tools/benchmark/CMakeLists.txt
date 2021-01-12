@@ -22,6 +22,7 @@ populate_source_vars("${TFLITE_SOURCE_DIR}/tools/benchmark"
 )
 list(APPEND TFLITE_BENCHMARK_SRCS
   ${TF_SOURCE_DIR}/core/util/stats_calculator.cc
+  ${TFLITE_SOURCE_DIR}/nnapi/sl/SupportLibrary.cc
   ${TFLITE_SOURCE_DIR}/profiling/memory_info.cc
   ${TFLITE_SOURCE_DIR}/profiling/profile_summarizer.cc
   ${TFLITE_SOURCE_DIR}/profiling/profile_summary_formatter.cc
@@ -53,12 +54,12 @@ else()
   set(TFLITE_BENCHMARK_CC_OPTIONS "-DTFLITE_WITHOUT_XNNPACK")
 endif()  # TFLITE_ENABLE_XNNPACK
 
-if(CMAKE_SYSTEM_NAME MATCHES "Android")
   if(_TFLITE_ENABLE_NNAPI)
     list(APPEND TFLITE_BENCHMARK_SRCS
       ${TFLITE_SOURCE_DIR}/tools/delegates/nnapi_delegate_provider.cc
     )
   endif()  # _TFLITE_ENABLE_NNAPI
+if(CMAKE_SYSTEM_NAME MATCHES "Android")
   list(APPEND TFLITE_BENCHMARK_LIBS
     ${ANDROID_LOG_LIB}
     absl::strings
