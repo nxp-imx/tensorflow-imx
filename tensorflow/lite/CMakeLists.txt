@@ -44,6 +44,7 @@ project(tensorflow-lite C CXX)
 if( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "cortexa53-crypto")
   message(STATUS "Reseting CMAKE_SYSTEM_PROCESSOR to aarch64")
   set(CMAKE_SYSTEM_PROCESSOR "aarch64")
+  CMAKE_CXX_FLAGS_RELEASE += "-O3"
 endif()
 
 set(TENSORFLOW_SOURCE_DIR "" CACHE PATH
@@ -82,9 +83,9 @@ option(TFLITE_ENABLE_XNNPACK "Enable XNNPACK backend" ON)
 set(CMAKE_CXX_STANDARD 14)  # Some components require C++14.
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(_TFLITE_ENABLE_NNAPI "${TFLITE_ENABLE_NNAPI}")
-if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
-  set(_TFLITE_ENABLE_NNAPI OFF)
-endif()
+#if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
+#  set(_TFLITE_ENABLE_NNAPI OFF)
+#endif()
 set(_TFLITE_ENABLE_MMAP "${TFLITE_ENABLE_MMAP}")
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   # See https://github.com/tensorflow/tensorflow/blob/\
@@ -114,6 +115,7 @@ macro(populate_source_vars SOURCE_DIR SOURCES_VAR)
   foreach(FILE_FILTER ${ARGS_FILTER})
     list(FILTER FOUND_SOURCES EXCLUDE REGEX "${FILE_FILTER}")
   endforeach()
+  message(DEBUG "Found sources are: ${FOUND_SOURCES}")
   list(APPEND ${SOURCES_VAR} ${FOUND_SOURCES})
 endmacro()
 # Simplifies inclusion of non-test sources and headers from a directory
@@ -278,6 +280,7 @@ else()
 endif()
 if(TFLITE_ENABLE_XNNPACK)
   find_package(xnnpack REQUIRED)
+  message(DEBUG "Populating XNNPACK sources")
   populate_tflite_source_vars("delegates/xnnpack"
     TFLITE_DELEGATES_XNNPACK_SRCS
     FILTER ".*(_test|_tester)\\.(cc|h)"
@@ -436,7 +439,7 @@ else()
   set(TFLITE_BENCHMARK_CC_OPTIONS "-DTFLITE_WITHOUT_XNNPACK")
 endif()  # TFLITE_ENABLE_XNNPACK
 
-if(CMAKE_SYSTEM_NAME MATCHES "Android")
+#if(CMAKE_SYSTEM_NAME MATCHES "Android")
   if(_TFLITE_ENABLE_NNAPI)
     list(APPEND TFLITE_BENCHMARK_SRCS
       ${TFLITE_SOURCE_DIR}/tools/delegates/nnapi_delegate_provider.cc
@@ -446,7 +449,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Android")
     ${ANDROID_LOG_LIB}
     absl::strings
   )
-endif()  # Android
+#endif()  # Android
 
 if(TFLITE_ENABLE_GPU)
   list(APPEND TFLITE_BENCHMARK_SRCS
