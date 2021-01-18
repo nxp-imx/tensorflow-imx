@@ -468,3 +468,30 @@ target_link_libraries(benchmark_model
     ${TFLITE_BENCHMARK_LIBS}
 )
 
+# label_image tool
+list(APPEND TFLITE_CMD_LINE_TOOLS_SRCS
+    ${TFLITE_SOURCE_DIR}/tools/command_line_flags.cc
+    ${TFLITE_SOURCE_DIR}/tools/tool_params.cc
+)
+
+list(APPEND TFLITE_LABEL_IMAGE_SRCS
+    ${TFLITE_SOURCE_DIR}/examples/label_image/bitmap_helpers.cc
+    ${TFLITE_SOURCE_DIR}/examples/label_image/label_image.cc
+    ${TFLITE_SOURCE_DIR}/tools/evaluation/utils.cc
+)
+
+add_executable(label_image
+  EXCLUDE_FROM_ALL
+  ${TFLITE_CMD_LINE_TOOLS_SRCS}
+  ${TFLITE_LABEL_IMAGE_SRCS}
+)
+
+target_compile_options(label_image
+  PRIVATE
+  ${TFLITE_BENCHMARK_CC_OPTIONS}
+)
+
+target_link_libraries(label_image
+  ${TFLITE_BENCHMARK_LIBS}
+)
+
