@@ -22,8 +22,7 @@ endif()
 OverridableFetchContent_Declare(
   neon2sse
   GIT_REPOSITORY https://github.com/intel/ARM_NEON_2_x86_SSE
-  GIT_TAG master
-  GIT_SHALLOW TRUE
+  GIT_TAG 1200fe90bb174a6224a525ee60148671a786a71f
   GIT_PROGRESS TRUE
   SOURCE_DIR "${CMAKE_BINARY_DIR}/neon2sse"
 )

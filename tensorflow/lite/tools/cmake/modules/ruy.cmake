@@ -21,10 +21,8 @@ include(OverridableFetchContent)
 
 OverridableFetchContent_Declare(
   ruy
-  GIT_REPOSITORY https://github.com/google/ruy
-  GIT_TAG master # TODO
-  GIT_SHALLOW TRUE
-  GIT_PROGRESS TRUE
+  URL https://github.com/google/ruy/archive/54774a7a2cf85963777289193629d4bd42de4a59.zip
+  URL_HASH SHA256=da5ec0cc07472bdb21589b0b51c8f3d7f75d2ed6230b794912adf213838d289a
   SOURCE_DIR "${CMAKE_BINARY_DIR}/ruy"
 )
 OverridableFetchContent_GetProperties(ruy)
