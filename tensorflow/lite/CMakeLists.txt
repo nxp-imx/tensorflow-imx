@@ -44,7 +44,6 @@ project(tensorflow-lite C CXX)
 if( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "cortexa53-crypto")
   message(STATUS "Reseting CMAKE_SYSTEM_PROCESSOR to aarch64")
   set(CMAKE_SYSTEM_PROCESSOR "aarch64")
-  CMAKE_CXX_FLAGS_RELEASE += "-O3"
 endif()
 
 set(TENSORFLOW_SOURCE_DIR "" CACHE PATH

@@ -23,7 +23,7 @@ include(OverridableFetchContent)
 OverridableFetchContent_Declare(
   abseil-cpp
   GIT_REPOSITORY https://github.com/abseil/abseil-cpp
-  GIT_TAG 20200225.2 # TODO: What version does GRPC and TFLite need?
+  GIT_TAG df3ea785d8c30a9503321a3d35ee7d35808f190d
   GIT_SHALLOW TRUE
   GIT_PROGRESS TRUE
   PREFIX "${CMAKE_BINARY_DIR}"
