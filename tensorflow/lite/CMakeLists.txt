@@ -83,7 +83,7 @@ option(TFLITE_ENABLE_FLEX "Enable SELECT_TF_OPS" OFF) # TODO: Add support
 option(TFLITE_ENABLE_XNNPACK "Enable XNNPACK backend" ON)
 option(TFLITE_BUILD_EVALTOOLS "Build TensorFlow Lite evaluation tools" OFF)
 option(TFLITE_BUILD_SHARED_LIB "Build shared library instead of static" OFF)
-
+option(TFLITE_BUILD_TESTS "Build unit test" OFF)
 set(CMAKE_CXX_STANDARD 14)  # Some components require C++14.
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(_TFLITE_ENABLE_NNAPI "${TFLITE_ENABLE_NNAPI}")
@@ -119,7 +119,6 @@ macro(populate_source_vars SOURCE_DIR SOURCES_VAR)
   foreach(FILE_FILTER ${ARGS_FILTER})
     list(FILTER FOUND_SOURCES EXCLUDE REGEX "${FILE_FILTER}")
   endforeach()
-  message(DEBUG "Found sources are: ${FOUND_SOURCES}")
   list(APPEND ${SOURCES_VAR} ${FOUND_SOURCES})
 endmacro()
 # Simplifies inclusion of non-test sources and headers from a directory
@@ -138,6 +137,54 @@ macro(populate_tf_source_vars RELATIVE_DIR SOURCES_VAR)
     "${TF_SOURCE_DIR}/${RELATIVE_DIR}" ${SOURCES_VAR} ${ARGN}
   )
 endmacro()
+# Inclusion of test sources from a directory
+# SOURCE_DIR: Directory to search for files.
+# SOURCES_VAR: Variable to append with all matching *.cc and *.h files.
+macro(find_tflite_tests_sources RELATIVE_DIR TEST_SOURCE_VAR)
+  file(GLOB _test_sources "${TFLITE_SOURCE_DIR}/${RELATIVE_DIR}/*test.cc")
+  list(APPEND ${TEST_SOURCE_VAR} ${_test_sources})
+endmacro()
+# Simplifies adding a test to compile
+# TC_SRC: Test case source file (*_test.cc)
+# [PREFIX expr] prefix used for target to avoid duplicates
+function(add_unit_test TC_SRC)
+  cmake_parse_arguments(ARGS "" "PREFIX" "" ${ARGN})
+  if(ARGS_PREFIX)
+    set(_prefix "${ARGS_PREFIX}_")
+  else()
+    set(_prefix "")
+  endif()
+  get_filename_component(_name ${TC_SRC} NAME_WE)
+  set(_target "${_prefix}${_name}")
+  message(DEBUG "Adding test: ${_target} (${TC_SRC})")
+  add_executable("${_target}" EXCLUDE_FROM_ALL)
+  target_sources(
+    ${_target}
+    PRIVATE
+    ${TC_SRC}
+    $<TARGET_OBJECTS:tflite_test_utils>
+  )
+  target_link_libraries(${_target}
+      PRIVATE
+      tensorflow-lite
+      gtest_main
+      gmock
+      re2
+      absl::hashtablez_sampler
+      ${CMAKE_DL_LIBS}
+  )
+  target_compile_options(${_target} PRIVATE "-Wno-narrowing") #kernels/quantize_test
+  add_dependencies(tests ${_target})
+endfunction()
+# Add all unit test from a directory
+# RELATIVE_DIR Directory relative to TFLITE_SOURCE_DIR to get tests
+function(add_unit_tests RELATIVE_DIR)
+  find_tflite_tests_sources(${RELATIVE_DIR} TFLITE_TESTS_SRCS)
+  foreach(SRC ${TFLITE_TESTS_SRCS})
+    add_unit_test(${SRC} ${ARGN})
+  endforeach()
+endfunction()
+
 # Find TensorFlow Lite dependencies.
 find_package(absl REQUIRED)
 find_package(eigen REQUIRED)
@@ -148,6 +195,11 @@ find_package(gemmlowp REQUIRED)
 find_package(neon2sse REQUIRED)
 find_package(ruy REQUIRED)
 find_package(nsync REQUIRED)
+if(TFLITE_BUILD_TESTS)
+  find_package(GoogleTest)
+  find_package(re2)
+  add_custom_target(tests)
+endif()
 # Generate TensorFlow Lite FlatBuffer code.
 # We used to have an actual compilation logic with flatc but decided to use
 # schema_generated.h since flatc doesn't work with cross compilation.
@@ -184,6 +236,7 @@ endif()
 if(CMAKE_SYSTEM_NAME MATCHES "Android")
   find_library(ANDROID_LOG_LIB log)
 endif()
+
 # Build a list of source files to compile into the TF Lite library.
 populate_tflite_source_vars("." TFLITE_SRCS)
 
@@ -309,6 +362,12 @@ if(_TFLITE_ENABLE_NNAPI)
   if(${TFLITE_ENABLE_NNAPI_VERBOSE_VALIDATION})
     list(APPEND TFLITE_TARGET_PUBLIC_OPTIONS "-DNNAPI_VERBOSE_VALIDATION")
   endif()
+  if(TFLITE_BUILD_TESTS)
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS "${TFLITE_SOURCE_DIR}/tools/delegates/nnapi_delegate_provider.cc")
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS "${TFLITE_SOURCE_DIR}/tools/delegates/default_execution_provider.cc")
+    add_unit_tests("delegates/nnapi" PREFIX "nnapi")
+    add_unit_tests("nnapi" PREFIX "nnapi")
+  endif()
 else()
   set(TFLITE_DELEGATES_NNAPI_SRCS
     "${TFLITE_SOURCE_DIR}/delegates/nnapi/nnapi_delegate_disabled.cc"
@@ -319,7 +378,6 @@ else()
 endif()
 if(TFLITE_ENABLE_XNNPACK)
   find_package(xnnpack REQUIRED)
-  message(DEBUG "Populating XNNPACK sources")
   populate_tflite_source_vars("delegates/xnnpack"
     TFLITE_DELEGATES_XNNPACK_SRCS
     FILTER ".*(_test|_tester)\\.(cc|h)"
@@ -327,6 +385,13 @@ if(TFLITE_ENABLE_XNNPACK)
   list(APPEND TFLITE_TARGET_DEPENDENCIES
     XNNPACK
   )
+  if(TFLITE_BUILD_TESTS)
+    file(GLOB _tmp "${TFLITE_SOURCE_DIR}/delegates/xnnpack/*tester.cc")
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS ${_tmp})
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS "${TFLITE_SOURCE_DIR}/tools/delegates/xnnpack_delegate_provider.cc")
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS "${TFLITE_SOURCE_DIR}/tools/delegates/default_execution_provider.cc")
+    add_unit_tests("delegates/xnnpack" PREFIX "xnnpack")
+  endif()
 endif()
 if (TFLITE_ENABLE_RESOURCE)
   populate_tflite_source_vars("experimental/resource"
@@ -628,5 +693,42 @@ if(TFLITE_BUILD_EVALTOOLS)
             PRIVATE
             ${TFLITE_BENCHMARK_CC_OPTIONS})
     endforeach()
+endif()
+
+# unit test dependencies
+if(TFLITE_BUILD_TESTS)
+    file(GLOB UTILS_SRC "${TFLITE_SOURCE_DIR}/kernels/*test_util.cc")
+    file(GLOB DELEGATE_UTILS_SRC "${TFLITE_SOURCE_DIR}/delegates/utils/dummy_delegate/*.cc")
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS 
+        ${TFLITE_SOURCE_DIR}/tools/versioning/op_version.cc 
+        ${TFLITE_SOURCE_DIR}/kernels/internal/test_util.cc 
+        ${TFLITE_SOURCE_DIR}/kernels/acceleration_test_util_internal.cc
+        ${TFLITE_SOURCE_DIR}/kernels/test_delegate_providers.cc
+        ${TFLITE_SOURCE_DIR}/delegates/utils/simple_delegate.cc 
+        ${TFLITE_SOURCE_DIR}/delegates/utils.cc
+        ${TFLITE_SOURCE_DIR}/delegates/interpreter_utils.cc
+        ${TFLITE_SOURCE_DIR}/delegates/delegate_test_util.cc
+        ${TFLITE_SOURCE_DIR}/delegates/nnapi/acceleration_test_list.cc 
+        ${TFLITE_SOURCE_DIR}/delegates/nnapi/acceleration_test_util.cc 
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/utils.cc 
+        ${TFLITE_SOURCE_DIR}/tools/optimize/model_utils.cc 
+        ${TFLITE_SOURCE_DIR}/tools/optimize/quantization_utils.cc 
+        ${TFLITE_SOURCE_DIR}/tools/optimize/operator_property.cc
+        ${TF_SOURCE_DIR}/core/platform/default/logging.cc 
+        ${TF_SOURCE_DIR}/core/platform/default/env_time.cc
+        ${TFLITE_SOURCE_DIR}/schema/schema_conversion_utils.cc
+    )
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS ${UTILS_SRC})
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS ${DELEGATE_UTILS_SRC})
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS ${TFLITE_CMD_LINE_TOOLS_SRCS})
+    add_library(tflite_test_utils OBJECT EXCLUDE_FROM_ALL ${TFLITE_UNIT_TEST_UTIL_SRCS} )
+    target_link_libraries(tflite_test_utils PUBLIC tensorflow-lite)
+endif()
+
+if(TFLITE_BUILD_TESTS)
+  add_unit_tests(".")
+  add_unit_tests("c")
+  add_unit_tests("delegates" PREFIX "delegates")
+  add_unit_tests("kernels" PREFIX "kernels")
 endif()
 
