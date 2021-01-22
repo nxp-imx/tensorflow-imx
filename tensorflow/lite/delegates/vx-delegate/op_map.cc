@@ -49,6 +49,7 @@ limitations under the License.
 #include "tim/vx/ops/resize.h"
 #include "tim/vx/ops/reverse.h"
 #include "tim/vx/ops/simple_operations.h"
+#include "tim/vx/ops/slice.h"
 #include "tim/vx/ops/softmax.h"
 #include "tim/vx/ops/space2batch.h"
 #include "tim/vx/ops/space2depth.h"
@@ -1286,6 +1287,60 @@ struct LeakyReluMapper : public OpMapperBase<TfLiteLeakyReluParams> {
   }
 };
 
+struct Slice : public OpMapperBase<EmptyStructPlaceholder> {
+  bool IsOpSupported(TfLiteContext* context,
+                     TfLiteNode* node,
+                     const TfLiteRegistration* registration) const override {
+    int input_index = node->inputs->data[0];
+    int output_index = node->outputs->data[0];
+    int input_dim_size = context->tensors[input_index].dims->size;
+    int batch_in = context->tensors[input_index].dims->data[0];
+    int batch_out = context->tensors[output_index].dims->data[0];
+
+    if (input_dim_size > 3 && (batch_in != batch_out)) {
+      LOG(ERROR) << "vx-delegate doesn't support slice in batch.";
+      return false;
+    }
+  }
+
+  bool HandleMapOp(vx::delegate::Delegate* delegate,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
+                   const void* params) override {
+    LOG(INFO) << "Create Slice op";
+    auto input_tensor = inputs[0];
+    auto begin_tensor = inputs[1];
+    auto size_tensor = inputs[2];
+    uint32_t input_dims = input_tensor->GetShape().size();
+    uint32_t begin_size = begin_tensor->GetShape()[0];
+    uint32_t size_size = size_tensor->GetShape()[0];
+    std::vector<int32_t> begin(begin_size);
+    std::vector<int32_t> size(size_size);
+    begin_tensor->CopyDataFromTensor(begin.data());
+    size_tensor->CopyDataFromTensor(size.data());
+
+    std::reverse(begin.begin(), begin.end());
+    std::reverse(size.begin(), size.end());
+
+    for (int i = 0; i < size.size(); i++) {
+      if (size[i] == -1) { // If size[i] == -1, that means extract all elements
+                           // of demension i.
+        size[i] = input_tensor->GetShape()[i];
+      }
+    }
+    
+    auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::Slice>(
+        input_dims, begin, size);
+
+    (*op).BindInputs(inputs);
+    (*op).BindOutputs(outputs);
+
+    delegate->GetOps().push_back(std::move(op));
+
+    return true;
+  }
+};
+
 template <typename T_OperationType>
 struct LogicalOpMapper : public OpMapperBase<EmptyStructPlaceholder> {
   std::string name_;
@@ -1413,6 +1468,7 @@ static const std::map<int, createIOpMapItemFunc> reg = {
     REGISTER_OP_MAPPER(kTfLiteBuiltinLogicalOr,
                        LogicalOpMapper<tim::vx::ops::LogicalOr>,
                        "Or"),
+    REGISTER_OP_MAPPER(kTfLiteBuiltinSlice, Slice),
 
 #undef REGISTER_OP_MAPPTER
 };
