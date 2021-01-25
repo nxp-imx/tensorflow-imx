@@ -13,27 +13,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if(TARGET ruy OR ruy_POPULATED)
-  return()
+if(TARGET GoogleTest OR GoogleTest_POPULATED)
+    return()
 endif()
 
 include(OverridableFetchContent)
 
 OverridableFetchContent_Declare(
-  ruy
-  URL https://github.com/google/ruy/archive/5bb02fbf90824c2eb6cd7418f766c593106a332b.zip
-  URL_HASH SHA256=d8f9dc52c0a52c8470e2e0b60bc16cba91853d812846c075f7ed8404990b003d
-  SOURCE_DIR "${CMAKE_BINARY_DIR}/ruy"
+  GoogleTest
+  URL https://github.com/google/googletest/archive/b6cd405286ed8635ece71c72f118e659f4ade3fb.zip
+  URL_HASH SHA256=ff7a82736e158c077e76188232eac77913a15dac0b22508c390ab3f88e6d6d86
+  
+  SOURCE_DIR "${CMAKE_BINARY_DIR}/googletest"
 )
-OverridableFetchContent_GetProperties(ruy)
-if(NOT ruy_POPULATED)
-  OverridableFetchContent_Populate(ruy)
+    
+OverridableFetchContent_GetProperties(GoogleTest)
+if(NOT GoogleTest_POPULATED)
+  OverridableFetchContent_Populate(GoogleTest)
 endif()
 
-set(RUY_SOURCE_DIR "${ruy_SOURCE_DIR}" CACHE PATH "RUY source directory")
-
 add_subdirectory(
-  "${CMAKE_CURRENT_LIST_DIR}/ruy"
-  "${ruy_BINARY_DIR}"
-  EXCLUDE_FROM_ALL
+  "${googletest_SOURCE_DIR}"
+  "${googletest_BINARY_DIR}"
+)
+
+include_directories(
+  AFTER
+  "${googletest_SOURCE_DIR}/googletest/include"
+  "${googletest_SOURCE_DIR}/googlemock/include"
 )
