@@ -48,6 +48,7 @@ limitations under the License.
 #include "tim/vx/ops/reshape.h"
 #include "tim/vx/ops/resize.h"
 #include "tim/vx/ops/reverse.h"
+#include "tim/vx/ops/select.h"
 #include "tim/vx/ops/simple_operations.h"
 #include "tim/vx/ops/slice.h"
 #include "tim/vx/ops/softmax.h"
@@ -1335,6 +1336,8 @@ struct Slice : public OpMapperBase<EmptyStructPlaceholder> {
       LOG(ERROR) << "vx-delegate doesn't support slice in batch.";
       return false;
     }
+
+    return true;
   }
 
   bool HandleMapOp(vx::delegate::Delegate* delegate,
@@ -1365,6 +1368,56 @@ struct Slice : public OpMapperBase<EmptyStructPlaceholder> {
     
     auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::Slice>(
         input_dims, begin, size);
+
+    (*op).BindInputs(inputs);
+    (*op).BindOutputs(outputs);
+
+    delegate->GetOps().push_back(std::move(op));
+
+    return true;
+  }
+};
+
+struct Select : public OpMapperBase<EmptyStructPlaceholder> {
+  bool IsOpSupported(TfLiteContext* context,
+                     TfLiteNode* node,
+                     const TfLiteRegistration* registration) const override {
+    int condition_index = node->inputs->data[0];
+    int input_x_index = node->inputs->data[1];
+    if (context->tensors[condition_index].dims->size !=
+        context->tensors[input_x_index].dims->size) {
+      LOG(ERROR) << "condition and input must have the same rank";
+      return false;
+    }
+    for (int i = 1; i < node->inputs->size; i++) {
+      int input_index = node->inputs->data[i];
+      auto input_type = context->tensors[input_index].type;
+      if (input_type == kTfLiteBool || input_type == kTfLiteInt8 ||
+          input_type == kTfLiteUInt8) {
+        LOG(ERROR) << "Bool type input is not supported";
+        return false;
+      }
+    }
+    for (int i = 0; i < node->outputs->size; i++) {
+      int output_index = node->outputs->data[i];
+      auto output_type = context->tensors[output_index].type;
+      if (output_type == kTfLiteBool || output_type == kTfLiteInt8 ||
+          output_type == kTfLiteUInt8) {
+        LOG(ERROR) << "Bool type output is not supported";
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  bool HandleMapOp(vx::delegate::Delegate* delegate,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
+                   const void* params) override {
+    LOG(INFO) << "Create Select op";
+
+    auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::Select>();
 
     (*op).BindInputs(inputs);
     (*op).BindOutputs(outputs);
@@ -1504,6 +1557,8 @@ static const std::map<int, createIOpMapItemFunc> reg = {
                        LogicalOpMapper<tim::vx::ops::LogicalOr>,
                        "Or"),
     REGISTER_OP_MAPPER(kTfLiteBuiltinSlice, Slice),
+    REGISTER_OP_MAPPER(kTfLiteBuiltinSelect, Select),
+    REGISTER_OP_MAPPER(kTfLiteBuiltinSelectV2, Select),
 
 #undef REGISTER_OP_MAPPER
 };
