@@ -182,7 +182,7 @@ function(add_unit_tests RELATIVE_DIR)
 endfunction()
 
 # Find TensorFlow Lite dependencies.
-find_package(absl REQUIRED CONFIG)
+find_package(absl REQUIRED)
 find_package(eigen REQUIRED)
 find_package(farmhash REQUIRED)
 find_package(fft2d REQUIRED)
@@ -336,6 +336,7 @@ else()
   )
 endif()
 if(TFLITE_ENABLE_XNNPACK)
+  set(CMAKE_ASM_FLAGS "" CACHE STRING "ASM flags" FORCE)
   find_package(xnnpack REQUIRED)
   populate_tflite_source_vars("delegates/xnnpack"
     TFLITE_DELEGATES_XNNPACK_SRCS
