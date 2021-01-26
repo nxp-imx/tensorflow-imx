@@ -520,7 +520,6 @@ if(TFLITE_ENABLE_GPU)
 endif()  # TFLITE_ENABLE_GPU
 
 add_executable(benchmark_model
-  EXCLUDE_FROM_ALL
   ${TFLITE_BENCHMARK_SRCS}
 )
 target_compile_options(benchmark_model
@@ -544,7 +543,6 @@ list(APPEND TFLITE_LABEL_IMAGE_SRCS
 )
 
 add_executable(label_image
-  EXCLUDE_FROM_ALL
   ${TFLITE_CMD_LINE_TOOLS_SRCS}
   ${TFLITE_LABEL_IMAGE_SRCS}
 )
