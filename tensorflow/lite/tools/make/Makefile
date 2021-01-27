@@ -64,6 +64,7 @@ LIBS := \
 # these settings are for the target compiler.
 CFLAGS := -O3 -DNDEBUG -DCPU_SETSIZE=__CPU_SETSIZE -fPIC $(EXTRA_CFLAGS)
 CXXFLAGS := $(CFLAGS) --std=c++11 $(EXTRA_CXXFLAGS)
+#CXXFLAGS := $(CFLAGS) --std=c++14 $(EXTRA_CXXFLAGS)
 LDOPTS := -L/usr/local/lib
 ARFLAGS := -r
 TARGET_TOOLCHAIN_PREFIX :=
@@ -236,6 +237,25 @@ else
 	CORE_CC_ALL_SRCS += tensorflow/lite/nnapi/nnapi_implementation_disabled.cc
 endif
 
+# Support VX_DELEGATE
+BUILD_WITH_VX_DELEGATE ?= true
+ifeq ($(BUILD_WITH_VX_DELEGATE), true)
+	ifeq ($(TIM_VX_DIR), )
+        $(error "Please set your TIM_VX_DIR")
+	endif
+	TIM_VX_DIR = /home/yzw/code/mygithub/TIM-VX/
+	INCLUDES += -I./tensorflow/lite/delegates/vx-delegate
+	INCLUDES += -I./tensorflow/core/platform
+	INCLUDES += -I./tensorflow/core/platform/default
+	INCLUDES += -I$(TIM_VX_DIR)/include
+	CORE_CC_ALL_SRCS += tensorflow/lite/delegates/vx-delegate/delegate_main.cc
+	CORE_CC_ALL_SRCS += tensorflow/lite/delegates/vx-delegate/op_map.cc
+	CORE_CC_ALL_SRCS += tensorflow/core/platform/default/logging.cc
+	CORE_CC_ALL_SRCS += tensorflow/core/platform/default/env_time.cc
+	LIBS += -L$(TIM_VX_DIR)/build/src/tim/vx -l tim-vx
+	LIBS += -L$(TIM_VX_DIR)/prebuilt-sdk/x86_64_linux/lib -lEmulator -lvdtproxy -lCLC -lGAL -lOpenVX -lOpenVXU -lVSC -lArchModelSw -lNNArchPerf
+endif
+
 ifeq ($(TARGET),ios)
 	CORE_CC_EXCLUDE_SRCS += tensorflow/lite/minimal_logging_android.cc
 	CORE_CC_EXCLUDE_SRCS += tensorflow/lite/minimal_logging_default.cc
@@ -339,7 +359,7 @@ $(OBJDIR)%.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 # The target that's compiled if there's no command-line arguments.
-all: $(LIB_PATH)  $(MINIMAL_BINARY) $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY)
+all: $(LIB_PATH)  $(MINIMAL_BINARY) $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY) $(LABEL_IMAGE_BINARY)
 
 # The target that's compiled for micro-controllers
 micro: $(LIB_PATH)
