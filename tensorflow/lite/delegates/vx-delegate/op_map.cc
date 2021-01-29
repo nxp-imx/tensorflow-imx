@@ -669,7 +669,7 @@ struct L2NormalizationMapper
   }
 };
 
-struct ReshapeMapper : public OpMapperBase<TfLiteLocalResponseNormParams> {
+struct ReshapeMapper : public OpMapperBase<TfLiteReshapeParams> {
   bool HandleMapOp(vx::delegate::Delegate* delegate,
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
@@ -1267,6 +1267,35 @@ struct ReduceOpMapper : public OpMapperBase<TfLiteReducerParams> {
   }
 };
 
+struct ExpandDimsMapper : public OpMapperBase<EmptyStructPlaceholder> {
+  bool HandleMapOp(vx::delegate::Delegate* delegate,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
+                   const void* params) override {
+    LOG(INFO) << "Create ExpandDims op";
+
+    auto input_shape = inputs[0]->GetShape();
+    int axis = 0;
+    inputs[1]->CopyDataFromTensor(&axis);
+    auto output_shape = outputs[0]->GetShape();
+    uint32_t new_axis =
+        vx::delegate::utils::ConvertAxis(axis, output_shape.size());
+
+    std::vector<uint32_t> expanded_shape(input_shape);
+    expanded_shape.insert(expanded_shape.begin() + new_axis, 1);
+
+    auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::Reshape>(
+        expanded_shape);
+
+    (*op).BindInput(inputs[0]);
+    (*op).BindOutputs(outputs);
+
+    delegate->GetOps().push_back(std::move(op));
+
+    return true;
+  }
+};
+
 struct LeakyReluMapper : public OpMapperBase<TfLiteLeakyReluParams> {
   bool HandleMapOp(vx::delegate::Delegate* delegate,
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
@@ -1389,6 +1418,7 @@ static const std::map<int, createIOpMapItemFunc> reg = {
     REGISTER_OP_MAPPER(kTfLiteBuiltinReshape, ReshapeMapper),
     REGISTER_OP_MAPPER(kTfLiteBuiltinStridedSlice, StridedSliceMapper),
     REGISTER_OP_MAPPER(kTfLiteBuiltinPad, PadMapper),
+    REGISTER_OP_MAPPER(kTfLiteBuiltinExpandDims, ExpandDimsMapper),
     REGISTER_OP_MAPPER(
         kTfLiteBuiltinAbs, SimpleOpMapper<tim::vx::ops::Abs>, "Abs"),
     REGISTER_OP_MAPPER(
