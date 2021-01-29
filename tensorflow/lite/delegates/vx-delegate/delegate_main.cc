@@ -274,6 +274,8 @@ std::shared_ptr<tim::vx::Tensor> CreateTensor(
     case tim::vx::TensorAttribute::VARIABLE:
       break;
     case tim::vx::TensorAttribute::CONSTANT:
+    case (tim::vx::TensorAttribute)(tim::vx::TensorAttribute::CONSTANT |
+                                    tim::vx::TensorAttribute::INPUT):
       tensor_data = reinterpret_cast<const uint8_t*>(tensor->data.raw_const);
       if (perm.size() > 0) {
         std::vector<uint8_t> data_transposed;
@@ -497,6 +499,13 @@ TfLiteStatus Delegate::Invoke(const OpData& op_data,
           tim::vx::TensorAttribute attr = tim::vx::TensorAttribute::TRANSIENT;
           if (IsConstTensor(tensor)) {
             attr = tim::vx::TensorAttribute::CONSTANT;
+            for (int i = 0; i < node->inputs->size; i++) {
+              if (tensor_idx == node->inputs->data[i]) {
+                attr = (tim::vx::TensorAttribute)(
+                    tim::vx::TensorAttribute::CONSTANT |
+                    tim::vx::TensorAttribute::INPUT);
+              }
+            }
             GetTransposePerm(builtin_code, port_idx, tensor, perm);
           } else if (IsVariableTensor(tensor)) {
             attr = tim::vx::TensorAttribute::VARIABLE;
