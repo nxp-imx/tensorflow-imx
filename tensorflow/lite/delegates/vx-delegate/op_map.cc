@@ -596,6 +596,8 @@ struct DepthwiseConv2dMapper : public Conv2dKind<TfLiteDepthwiseConvParams> {
     (*op).BindOutputs(outputs);
 
     delegate->GetOps().push_back(std::move(op));
+
+    return true;
   }
 };
 
@@ -621,6 +623,8 @@ struct ConcatenationMapper
     (*op).BindOutputs(outputs);
 
     delegate->GetOps().push_back(std::move(op));
+
+    return true;
   }
 };
 
