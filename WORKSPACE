@@ -110,11 +110,23 @@ http_archive(
     ],
 )
 
-new_local_repository (
+http_archive(
     name = "tim_vx",
-    path = "tensorflow/lite/delegates/vx-delegate/tim-vx",
-    build_file = "@//:tensorflow/lite/delegates/vx-delegate/tim-vx/BUILD.bazel",
+    strip_prefix = "TIM-VX-1.1.28",
+    sha256 = "97fc9e8336e62369cf5ff2343ecfce3d003c0b971dd84dab7b3ef278d9df120f",
+    urls = [
+	"https://github.com/VeriSilicon/TIM-VX/archive/v1.1.28.tar.gz",
+    ],
 )
+
+#
+# For developers: Enable below for development build
+#
+#new_local_repository (
+#    name = "tim_vx",
+#    path = "tensorflow/lite/delegates/vx-delegate/tim-vx",
+#    build_file = "@//:tensorflow/lite/delegates/vx-delegate/tim-vx/BUILD.bazel",
+#)
 
 # Required for dependency @com_github_grpc_grpc
 
