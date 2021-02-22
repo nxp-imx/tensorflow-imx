@@ -40,6 +40,7 @@ load("//third_party/ruy:workspace.bzl", ruy = "repo")
 load("//third_party/sobol_data:workspace.bzl", sobol_data = "repo")
 load("//third_party/vulkan_headers:workspace.bzl", vulkan_headers = "repo")
 load("//third_party/toolchains/remote_config:configs.bzl", "initialize_rbe_configs")
+load("//third_party/tim_vx:workspace.bzl", tim_vx = "repo")
 
 def initialize_third_party():
     """ Load third party repositories.  See above load() statements. """
@@ -62,6 +63,7 @@ def initialize_third_party():
     sobol_data()
     vulkan_headers()
     ruy()
+    tim_vx()
 
 # Sanitize a dependency so that it works correctly from code that includes
 # TensorFlow as a submodule.
