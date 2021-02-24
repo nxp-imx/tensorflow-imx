@@ -40,6 +40,8 @@ limitations under the License.
 #include "tensorflow/lite/delegates/xnnpack/xnnpack_delegate.h"
 #endif
 
+#include "tensorflow/lite/delegates/vx-delegate/delegate_main.h"
+
 #include "tensorflow/lite/c/common.h"
 
 namespace tflite {
@@ -91,6 +93,8 @@ TfLiteDelegatePtr CreateXNNPACKDelegate(
     const TfLiteXNNPackDelegateOptions* options);
 #endif
 TfLiteDelegatePtr CreateXNNPACKDelegate(int num_threads);
+
+TfLiteDelegatePtr CreateVXDelegate();
 }  // namespace evaluation
 }  // namespace tflite
 
