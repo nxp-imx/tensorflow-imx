@@ -35,6 +35,7 @@ cc_library(
         ":hexagon_delegate_provider",
         ":nnapi_delegate_provider",
         ":xnnpack_delegate_provider",
+        ":vx_delegate_provider",
     ],
     alwayslink = 1,
 )
@@ -90,6 +91,17 @@ cc_library(
     alwayslink = 1,
 )
 
+cc_library(
+    name = "vx_delegate_provider",
+    srcs = ["vx_delegate_provider.cc"],
+    copts = common_copts,
+    deps = [
+        ":delegate_provider_hdr",
+        "//tensorflow/lite/tools/evaluation:utils",
+        "//tensorflow/lite/delegates/vx-delegate:vx_delegate",
+    ],
+    alwayslink = 1,
+)
 cc_library(
     name = "hexagon_delegate_provider",
     srcs = ["hexagon_delegate_provider.cc"],
