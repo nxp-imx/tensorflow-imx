@@ -568,6 +568,7 @@ BUILTIN_KERNEL_SRCS = [
     "depthwise_conv.cc",
     "dequantize.cc",
     "detection_postprocess.cc",
+    "vsi_npu_precompiled.cc",
     "div.cc",
     "elementwise.cc",
     "embedding_lookup.cc",
