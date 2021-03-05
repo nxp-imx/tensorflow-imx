@@ -400,6 +400,7 @@ std::unique_ptr<vx::delegate::OpData> Delegate::Init(
             output_tensors.end(),
             std::back_inserter(op_data->subgraph_outputs));
 
+  const auto& supported_customs = vx::op_map::SupportedBuiltinCustomOps();
   const auto& supported_builtins = vx::op_map::SupportedBuiltinOps();
   operations_.resize(params->nodes_to_replace->size);
   for (int i = 0; i < params->nodes_to_replace->size; i++) {
@@ -412,15 +413,21 @@ std::unique_ptr<vx::delegate::OpData> Delegate::Init(
 
     auto& operation = operations_[i];
 
+    if(reg->custom_name){
+      operation.custom_name = reg->custom_name;
+    }
     operation.builtin_code = reg->builtin_code;
+    bool isbuiltinOp = operation.custom_name.empty();
     std::copy(
         inputs.begin(), inputs.end(), std::back_inserter(operation.inputs));
     std::copy(
         outputs.begin(), outputs.end(), std::back_inserter(operation.outputs));
 
-    auto& builtin_op = supported_builtins.at(reg->builtin_code);
     std::vector<int> states;
-    if (builtin_op->GetStateTensorIndexes(context, node, reg, states)) {
+    if ((isbuiltinOp && supported_builtins.at(reg->builtin_code)
+                ->GetStateTensorIndexes(context, node, reg, states) )|| (!isbuiltinOp &&
+        supported_customs.at(operation.custom_name)
+            ->GetStateTensorIndexes(context, node, reg, states))) {
       std::copy(
           states.begin(), states.end(), std::back_inserter(operation.states));
 
@@ -429,11 +436,19 @@ std::unique_ptr<vx::delegate::OpData> Delegate::Init(
                 states.end(),
                 std::back_inserter(op_data->subgraph_states));
     }
-    if (node->builtin_data) {
-      operation.builtin_data.resize(builtin_op->GetParamSize());
+
+    if(!isbuiltinOp && node->user_data) {
+      operation.builtin_data.resize(supported_customs.at(operation.custom_name)->GetParamSize());
+      memcpy(operation.builtin_data.data(),
+             node->user_data,
+             operation.builtin_data.size());
+    }else if (isbuiltinOp && node->builtin_data) {
+      operation.builtin_data.resize(supported_builtins.at(reg->builtin_code)->GetParamSize());
       memcpy(operation.builtin_data.data(),
              node->builtin_data,
              operation.builtin_data.size());
+    }else{
+      continue;
     }
   }
 
@@ -480,6 +495,7 @@ TfLiteStatus Delegate::Invoke(const OpData& op_data,
     // create op
     for (const auto& op_info : operations_) {
       auto& builtin_code = op_info.builtin_code;
+      auto& custom_name = op_info.custom_name;
       auto& inputs = op_info.inputs;
       ;
       auto& outputs = op_info.outputs;
@@ -526,13 +542,23 @@ TfLiteStatus Delegate::Invoke(const OpData& op_data,
       std::vector<std::shared_ptr<tim::vx::Tensor>> states_tensors =
           MapIndexesToTensors(state_tensors_, states);
 
-      vx::op_map::SupportedBuiltinOps()
-          .at(builtin_code)
-          ->MapOp(this,
-                  inputs_tensors,
-                  outputs_tensors,
-                  states_tensors,
-                  builtin_data.data());
+      if (!custom_name.empty()) {
+        vx::op_map::SupportedBuiltinCustomOps()
+            .at(custom_name)
+            ->MapOp(this,
+                    inputs_tensors,
+                    outputs_tensors,
+                    states_tensors,
+                    builtin_data.data());
+      } else {
+        vx::op_map::SupportedBuiltinOps()
+            .at(builtin_code)
+            ->MapOp(this,
+                    inputs_tensors,
+                    outputs_tensors,
+                    states_tensors,
+                    builtin_data.data());
+      }
     }
 
     LOG(INFO) << "Verifying graph";

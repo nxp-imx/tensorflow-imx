@@ -56,6 +56,7 @@ limitations under the License.
 #include "tim/vx/ops/split.h"
 #include "tim/vx/ops/stridedslice.h"
 #include "tim/vx/ops/transpose.h"
+#include "tim/vx/ops/nbg.h"
 #include "utils.h"
 
 namespace {
@@ -1504,7 +1505,26 @@ static const std::map<int, createIOpMapItemFunc> reg = {
                        "Or"),
     REGISTER_OP_MAPPER(kTfLiteBuiltinSlice, Slice),
 
-#undef REGISTER_OP_MAPPTER
+#undef REGISTER_OP_MAPPER
+};
+
+struct NBGOpMap : public OpMapperBase<TfLiteVsiNpuParams> {
+  bool HandleMapOp(vx::delegate::Delegate* delegate,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
+                   const void* params) override {
+    LOG(INFO) << "Create NBG op";
+    const auto builtin = reinterpret_cast<const TfLiteVsiNpuParams*>(params);
+    auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::NBG>(
+        reinterpret_cast<const char *>(builtin->binary), builtin->input_count, builtin->output_cout);
+
+    (*op).BindInputs(inputs);
+    (*op).BindOutputs(outputs);
+
+    delegate->GetOps().push_back(std::move(op));
+
+    return true;
+  }
 };
 
 static const std::map<std::string, createIOpMapItemFunc> custom_reg = {
@@ -1514,7 +1534,7 @@ static const std::map<std::string, createIOpMapItemFunc> custom_reg = {
   }
 
     REGISTER_CUSTOM_OP("WRNN_BIDI_SEQGRU", CustomOpMap),
-
+    REGISTER_CUSTOM_OP("vsi-npu",NBGOpMap),
 #undef REGISTER_CUSTOM_OP
 };
 

@@ -71,6 +71,7 @@ class Delegate {
  private:
   struct OperationDataType {
     int builtin_code;
+    std::string custom_name;
     std::vector<int> inputs;
     std::vector<int> outputs;
     std::vector<int> states;
