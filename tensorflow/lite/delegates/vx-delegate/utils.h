@@ -25,8 +25,9 @@ namespace vx {
 namespace delegate {
 namespace utils {
 
-// Remap channel_dim according to transpose order.
-int32_t MapChannelDim(const std::vector<uint32_t>& perm, int32_t channel_dim) {
+// transpose channel_dim while doing transpose operation.
+inline int32_t TransposeChannelDim(const std::vector<uint32_t>& perm,
+                                   int32_t channel_dim) {
   if (channel_dim < 0) {
     LOG(ERROR) << "invalid channel_dim";
     return -1;
@@ -36,12 +37,12 @@ int32_t MapChannelDim(const std::vector<uint32_t>& perm, int32_t channel_dim) {
       return i;
     }
   }
-  LOG(ERROR) << "Cant not find channle_dim";
+  LOG(ERROR) << "Can't find channle_dim";
   return -1;
 }
 
 // Convert the perm in TfLite to the perm in vx-delegate when transpose.
-std::vector<uint32_t> GetOvxTransposePerm(const std::vector<uint32_t>& perm) {
+inline std::vector<uint32_t> GetOvxTransposePerm(const std::vector<uint32_t>& perm) {
   std::vector<uint32_t> perm_out(perm.rbegin(), perm.rend());
   std::vector<uint32_t> perm_in, ovx_perm;
   for (int i = perm.size() - 1; i >= 0; i--) {
