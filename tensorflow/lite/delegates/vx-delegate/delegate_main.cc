@@ -23,6 +23,7 @@ limitations under the License.
 #include <vector>
 
 #include "op_map.h"
+#include "utils.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tensorflow/lite/context_util.h"
 #include "tensorflow/lite/kernels/internal/reference/reference_ops.h"
@@ -155,11 +156,15 @@ bool IsVariableTensor(const TfLiteTensor* tensor) {
 
 tim::vx::TensorSpec CreateTensorSpec(
     const TfLiteTensor* tensor,
-    const std::vector<int32_t>& perm,
+    const std::vector<uint32_t>& perm,
     tim::vx::TensorAttribute attr = tim::vx::TensorAttribute::TRANSIENT) {
   tim::vx::DataType datatype = TfLiteDtypeToVsiDtype(tensor->type);
   std::vector<uint32_t> dims(TfLiteTensorDims(tensor));
   tim::vx::ShapeType whcn_shape(dims.size());
+  const TfLiteAffineQuantization* params =
+      reinterpret_cast<const TfLiteAffineQuantization*>(
+          tensor->quantization.params);
+  int32_t channel_dim = params->quantized_dimension;
 
   if (dims.size() == 0) {
     // Use rank 1, shape {1} operand for TFLite scalar tensors.
@@ -171,16 +176,13 @@ tim::vx::TensorSpec CreateTensorSpec(
     for (size_t i = 0; i < perm.size(); i++) {
       whcn_shape[i] = dims[perm[i]];
     }
+    channel_dim = vx::delegate::utils::TransposeChannelDim(perm, channel_dim);
     std::reverse(whcn_shape.begin(), whcn_shape.end());
   } else {
     whcn_shape.assign(dims.rbegin(), dims.rend());
   }
 
   if (tensor->quantization.type == kTfLiteAffineQuantization) {
-    const TfLiteAffineQuantization* params =
-        reinterpret_cast<const TfLiteAffineQuantization*>(
-            tensor->quantization.params);
-
     std::vector<float> scales(params->scale->data,
                               params->scale->data + params->scale->size);
     std::vector<int32_t> zero_points(
@@ -191,8 +193,9 @@ tim::vx::TensorSpec CreateTensorSpec(
     if (scales.size() > 1) {
       qtype = tim::vx::QuantType::SYMMETRIC_PER_CHANNEL;
     }
-    int32_t channel_dim = whcn_shape.size() - params->quantized_dimension - 1;
-    tim::vx::Quantization quantization(qtype, channel_dim, scales, zero_points);
+    int32_t new_channel_dim = whcn_shape.size() - channel_dim - 1;
+    tim::vx::Quantization quantization(
+        qtype, new_channel_dim, scales, zero_points);
 
     return tim::vx::TensorSpec(datatype, whcn_shape, attr, quantization);
   }
@@ -201,7 +204,7 @@ tim::vx::TensorSpec CreateTensorSpec(
 }
 
 bool TransposeTensorData(const TfLiteTensor* tensor,
-                         const std::vector<int32_t>& perm,
+                         const std::vector<uint32_t>& perm,
                          std::vector<uint8_t>& data_out) {
   const uint8_t* tensor_data =
       reinterpret_cast<const uint8_t*>(tensor->data.raw_const);
@@ -265,7 +268,7 @@ std::shared_ptr<tim::vx::Tensor> CreateTensor(
     std::shared_ptr<tim::vx::Graph>& graph,
     const TfLiteTensor* tensor,
     const tim::vx::TensorAttribute& attr,
-    const std::vector<int32_t>& perm) {
+    const std::vector<uint32_t>& perm) {
   const uint8_t* tensor_data = nullptr;
   tim::vx::TensorSpec spec = CreateTensorSpec(tensor, perm, attr);
   switch (attr) {
@@ -307,7 +310,7 @@ std::vector<std::shared_ptr<tim::vx::Tensor>> MapIndexesToTensors(
 void GetTransposePerm(int32_t op,
                       size_t port_idx,
                       const TfLiteTensor* tensor,
-                      std::vector<int32_t>& perm) {
+                      std::vector<uint32_t>& perm) {
   std::vector<uint32_t> dims(TfLiteTensorDims(tensor));
   switch (op) {
     case kTfLiteBuiltinConv2d:
@@ -492,7 +495,7 @@ TfLiteStatus Delegate::Invoke(const OpData& op_data,
       for (size_t port_idx = 0; port_idx < inputs_outputs.size(); port_idx++) {
         int tensor_idx = inputs_outputs[port_idx];
         if (-1 != tensor_idx && tensors_[tensor_idx].get() == nullptr) {
-          std::vector<int32_t> perm;
+          std::vector<uint32_t> perm;
           auto tensor = &(context->tensors[tensor_idx]);
           tim::vx::TensorAttribute attr = tim::vx::TensorAttribute::TRANSIENT;
           if (IsConstTensor(tensor)) {

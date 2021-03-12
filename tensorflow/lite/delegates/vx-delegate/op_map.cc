@@ -125,7 +125,7 @@ std::shared_ptr<tim::vx::Tensor> TransposeInputTensor(
   auto transposed_tensor_spec = original_tensor->GetSpec().AsTransientSpec();
   if (transposed_tensor_spec.quantization_.Type() ==
       tim::vx::QuantType::SYMMETRIC_PER_CHANNEL) {
-    int32_t new_channel_dim = vx::delegate::utils::MapChannelDim(
+    int32_t new_channel_dim = vx::delegate::utils::TransposeChannelDim(
         perm, transposed_tensor_spec.quantization_.ChannelDim());
     transposed_tensor_spec.quantization_.SetChannelDim(new_channel_dim);
   }
