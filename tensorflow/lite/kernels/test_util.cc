@@ -250,7 +250,6 @@ void SingleOpModel::BuildInterpreter(std::vector<std::vector<int>> input_shapes,
 }
 
 TfLiteStatus SingleOpModel::ApplyDelegate() {
-  /****
   if (force_use_nnapi) {
     delegate_ = TestNnApiDelegate();
   }
@@ -262,7 +261,6 @@ TfLiteStatus SingleOpModel::ApplyDelegate() {
   if (force_use_nnapi && force_use_vx_delegate) {
     LOG(FATAL) << "Don't setup nnapi and vx_delgegate at the same time!";
   }
-  ****/
 
   if (delegate_) {
     TFLITE_LOG(WARN) << "Having a manually-set TfLite delegate, and bypassing "
@@ -313,7 +311,9 @@ bool SingleOpModel::GetForceUseNnapi() {
 }
 
 // static
-//bool SingleOpModel::GetForceUseNnapi() { return force_use_nnapi; }
+void SingleOpModel::SetForceUseNnapi(bool use_nnapi) {
+  force_use_nnapi = use_nnapi;
+}
 
 // static
 void SingleOpModel::SetForceUseVxDelegate(bool use_vx) {
@@ -324,7 +324,6 @@ void SingleOpModel::SetForceUseVxDelegate(bool use_vx) {
 bool SingleOpModel::GetForceUseVxDelegate() {
   return force_use_vx_delegate;
 }
-
 
 int32_t SingleOpModel::GetTensorSize(int index) const {
   TfLiteTensor* t = interpreter_->tensor(index);

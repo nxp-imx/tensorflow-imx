@@ -39,13 +39,13 @@ bool InitKernelTest(int* argc, char** argv) {
       params->Set<std::string>("nnapi_accelerator_name", "nnapi-reference");
       params->Set("disable_nnapi_cpu", false);
     }
-
- /*
+  }
   bool use_nnapi = false;
   bool use_vx_delegate = false;
   std::vector<tflite::Flag> flags = {
       tflite::Flag::CreateFlag("use_nnapi", &use_nnapi, "Use NNAPI"),
-      tflite::Flag::CreateFlag("use_vx_delegate", &use_vx_delegate, "Use versilicon delegate"),
+      tflite::Flag::CreateFlag("use_vx_delegate", &use_vx_delegate,
+                               "Use versilicon delegate"),
   };
   tflite::Flags::Parse(argc, const_cast<const char**>(argv), flags);
 
@@ -55,8 +55,6 @@ bool InitKernelTest(int* argc, char** argv) {
   if (use_vx_delegate) {
     tflite::SingleOpModel::SetForceUseVxDelegate(true);
   }
-  */
-}
 }
 }  // namespace
 

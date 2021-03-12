@@ -2,6 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "vx_delegate",
+    copts = ["-Wno-c++11-narrowing"],
     srcs = [
         "delegate_main.cc",
         "op_map.cc",
