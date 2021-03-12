@@ -28,7 +28,7 @@ class VxDelegateProvider : public DelegateProvider {
 
   std::vector<Flag> CreateFlags(ToolParams* params) const final;
 
-  void LogParams(const ToolParams& params) const final;
+  void LogParams(const ToolParams& params, bool verbose) const final;
 
   TfLiteDelegatePtr CreateTfLiteDelegate(const ToolParams& params) const final;
 
@@ -43,7 +43,7 @@ std::vector<Flag> VxDelegateProvider::CreateFlags(
   return flags;
 }
 
-void VxDelegateProvider::LogParams(const ToolParams& params) const {
+void VxDelegateProvider::LogParams(const ToolParams& params, bool verbose) const {
   TFLITE_LOG(INFO) << "Use VXdelegate : [" << params.Get<bool>("use_vxdelegate")
                    << "]";
 }
