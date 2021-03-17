@@ -276,6 +276,9 @@ ifeq ($(BUILD_WITH_NNAPI),true)
 	CORE_CC_ALL_SRCS += tensorflow/lite/delegates/nnapi/quant_lstm_sup.cc
 	CORE_CC_ALL_SRCS += tensorflow/lite/nnapi/nnapi_implementation.cc
 	CORE_CC_ALL_SRCS += tensorflow/lite/nnapi/nnapi_util.cc
+	UNIT_TEST_UTIL_SRCS += \
+		tensorflow/lite/tools/delegates/nnapi_delegate_provider.cc  \
+		tensorflow/lite/tools/delegates/default_execution_provider.cc
 	LIBS += -lrt
 else
 	CORE_CC_ALL_SRCS += tensorflow/lite/delegates/nnapi/nnapi_delegate_disabled.cc
