@@ -41,9 +41,7 @@ limitations under the License.
 #if defined __ANDROID__ || defined __unix__
 #define TFLITE_NNAPI_ALLOW_MMAP_SHARING
 #include <sys/mman.h>
-#include <sys/stat.h>
 #include <unistd.h>
-#include <fcntl.h>
 #endif
 
 #include "tensorflow/lite/allocation.h"
@@ -645,20 +643,27 @@ namespace nnapi {
 
 #ifdef TFLITE_NNAPI_ALLOW_MMAP_SHARING
 NNMemory::NNMemory(const NnApi* nnapi, const char* name, size_t size)
-#ifndef __ANDROID__
-    : name_(name)
-#endif
 {
     if (name && size > 0) {
         nnapi_ = nnapi;
         byte_size_ = size;
         auto map_flag = MAP_SHARED;
-#if defined __ANDROID__
-        fd_ = nnapi_->ASharedMemory_create(name, size);
-#else
-        fd_ = shm_open(name, O_RDWR|O_CREAT, 0666);
-        ftruncate(fd_, size);
+#ifndef __ANDROID__
+        // Each call to ASharedMemory_create produces a unique memory space, hence
+        // name should not be used to create the shared memory file, otherwise
+        // two calls to create memory regions using the same 'name', will collide.
+        char shm_name_buffer[L_tmpnam];
+        if (tmpnam(shm_name_buffer) == nullptr) {
+            throw new std::runtime_error("NN Memory failed");
+        }
+        // tmpnam will produce a string containing with slashes, but shm_open
+        // won't like that.
+        shm_region_name = std::string(name) + std::string(shm_name_buffer);
+        std::replace(shm_region_name.begin(), shm_region_name.end(), '/', '-');
 #endif
+        TFLITE_LOG(TFLITE_LOG_INFO, "Unique name is %s", shm_region_name.c_str());
+        fd_ = nnapi_->ASharedMemory_create(shm_region_name.c_str(), size);
+
         data_ptr_ = reinterpret_cast<uint8_t*>(
             mmap(nullptr, size, PROT_READ | PROT_WRITE, map_flag, fd_, 0));
         nnapi_->ANeuralNetworksMemory_createFromFd(
@@ -681,7 +686,10 @@ NNMemory::~NNMemory() {
   }
   if (fd_ > 0) close(fd_);
   #if !defined(__ANDROID__)
-  if (name_) unlink(name_);
+  if (!shm_region_name.empty()) {
+      TFLITE_LOG(TFLITE_LOG_INFO, "removing temporary file name %s", shm_region_name.c_str());
+      shm_unlink(shm_region_name.c_str());
+  }
   #endif
 #endif
 }
