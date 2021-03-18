@@ -4638,14 +4638,6 @@ TfLiteStatus NNAPIDelegateKernel::BuildGraph(
   // Create shared memory pool for inputs and outputs.
   std::string input_pool_name = "input_pool" + std::to_string(graph_index);
   std::string output_pool_name = "output_pool" + std::to_string(graph_index);
-
-  // create separate NNMemory for NPU and GPU to avoid error
-  const char *use_gpu_inference = std::getenv("USE_GPU_INFERENCE");
-  if(use_gpu_inference && (std::strcmp(use_gpu_inference, "1") == 0)) {
-      TFLITE_LOG(TFLITE_LOG_INFO, "Using GPU inference");
-      input_pool_name += "_gpu";
-      output_pool_name += "_gpu";
-  }
   nn_input_memory_.reset(
       new NNMemory(nnapi_, input_pool_name.data(), total_input_byte_size));
   nn_output_memory_.reset(
