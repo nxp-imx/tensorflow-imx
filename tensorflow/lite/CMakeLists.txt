@@ -195,7 +195,7 @@ find_package(ruy REQUIRED)
 if(TFLITE_BUILD_TESTS)
   find_package(GoogleTest)
   find_package(re2)
-  add_custom_target(tests)
+  add_custom_target(tests ALL)
 endif()
 # Generate TensorFlow Lite FlatBuffer code.
 # We used to have an actual compilation logic with flatc but decided to use
