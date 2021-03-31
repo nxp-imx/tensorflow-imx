@@ -19,6 +19,7 @@ limitations under the License.
 #include <cstdint>
 #include <vector>
 
+#include "delegate_main.h"
 #include "tensorflow/core/platform/logging.h"
 
 namespace vx {
@@ -76,6 +77,31 @@ std::vector<T> TransposeVec(const std::vector<T>& input,
   }
 
   return output;
+}
+
+inline int32_t CalcWeightSizeForBilinear(int32_t scale) {
+  return 2 * scale - scale % 2;
+}
+
+inline int32_t CalcPadSizeForBilinear(int32_t scale) { return scale / 2; }
+
+void GenerateWeightsDataForBilinear(float* data,
+                                    const std::vector<uint32_t>& weight_shape,
+                                    uint32_t scale_w,
+                                    uint32_t scale_h);
+
+void GenerateWeightDataForNearest(float* data,
+                                  const std::vector<uint32_t>& weight_shape);
+
+template <typename T>
+inline void Quantize(const std::vector<float>& data, float scale,
+                               int32_t zero_point, std::vector<T>& quant_data) {
+  for (const auto& f : data) {
+    quant_data.push_back(static_cast<T>(std::max<float>(
+        std::numeric_limits<T>::min(),
+        std::min<float>(std::numeric_limits<T>::max(),
+                        std::round(zero_point + (f / scale))))));
+  }
 }
 
 }  // namespace utils

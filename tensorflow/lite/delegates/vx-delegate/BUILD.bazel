@@ -6,6 +6,7 @@ cc_library(
     srcs = [
         "delegate_main.cc",
         "op_map.cc",
+        "utils.cc",
     ],
     hdrs = [
         "delegate_main.h",

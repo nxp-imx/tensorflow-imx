@@ -58,6 +58,7 @@ limitations under the License.
 #include "tim/vx/ops/stridedslice.h"
 #include "tim/vx/ops/transpose.h"
 #include "tim/vx/ops/nbg.h"
+#include "tim/vx/ops/deconv.h"
 #include "utils.h"
 
 namespace {
@@ -182,6 +183,100 @@ std::shared_ptr<tim::vx::Tensor> ReverseInputTensor(
   delegate->GetTensors().push_back(reversed_tensor);
 
   return reversed_tensor;
+}
+
+bool ResizeToTransposeConv(
+    vx::delegate::Delegate* delegate,
+    std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
+    std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
+    tim::vx::ResizeType resizeType,
+    uint32_t channel,
+    uint32_t scale_w,
+    uint32_t scale_h) {
+  uint32_t kernel_w = 0;
+  uint32_t kernel_h = 0;
+  uint32_t pad_w = 0;
+  uint32_t pad_h = 0;
+  std::vector<float> weight_data;
+
+  if (resizeType == tim::vx::ResizeType::BILINEAR) {
+    kernel_w = vx::delegate::utils::CalcWeightSizeForBilinear(scale_w);
+    kernel_h = vx::delegate::utils::CalcWeightSizeForBilinear(scale_h);
+
+    pad_w = vx::delegate::utils::CalcPadSizeForBilinear(scale_w);
+    pad_h = vx::delegate::utils::CalcPadSizeForBilinear(scale_h);
+
+    weight_data.resize(kernel_h * kernel_w * channel * channel);
+    vx::delegate::utils::GenerateWeightsDataForBilinear(
+        weight_data.data(),
+        {kernel_w, kernel_h, channel, channel},
+        scale_w,
+        scale_h);
+  } else if (resizeType == tim::vx::ResizeType::NEAREST_NEIGHBOR) {
+    kernel_w = scale_w;
+    kernel_h = scale_h;
+
+    pad_w = 0;
+    pad_h = 0;
+
+    weight_data.resize(kernel_h * kernel_w * channel * channel);
+    vx::delegate::utils::GenerateWeightDataForNearest(
+        weight_data.data(), {kernel_w, kernel_h, channel, channel});
+  }
+
+  auto weight_spec = tim::vx::TensorSpec(tim::vx::DataType::FLOAT32,
+                                         {kernel_w, kernel_h, channel, channel},
+                                         tim::vx::TensorAttribute::CONSTANT);
+  std::shared_ptr<tim::vx::Tensor> weight_tensor;
+
+  auto input_type = inputs[0]->GetDataType();
+  auto input_quant = inputs[0]->GetQuantization();
+  uint32_t kernel_size = kernel_h * kernel_w * channel * channel;
+  std::vector<uint8_t> weight_quant_data(kernel_size);
+
+  if (input_quant.Type() == tim::vx::QuantType::ASYMMETRIC) {
+    float scale = input_quant.Scales()[0];
+    int32_t zp = input_quant.ZeroPoints()[0];
+    if (input_type == tim::vx::DataType::INT8) {
+      std::vector<int8_t> quant_i8;
+      vx::delegate::utils::Quantize<int8_t>(
+          weight_data, scale, zp, quant_i8);
+      weight_spec.SetDataType(tim::vx::DataType::INT8);
+      memcpy(weight_quant_data.data(), quant_i8.data(), kernel_size);
+    } else if (input_type == tim::vx::DataType::UINT8) {
+      std::vector<uint8_t> quant_u8;
+      vx::delegate::utils::Quantize<uint8_t>(
+          weight_data, scale, zp, quant_u8);
+      weight_spec.SetDataType(tim::vx::DataType::UINT8);
+      memcpy(weight_quant_data.data(), quant_u8.data(), kernel_size);
+    }
+
+    weight_spec.SetQuantization(input_quant);
+    weight_tensor = delegate->GetGraph()->CreateTensor(
+        weight_spec, weight_quant_data.data());
+  } else {
+    weight_tensor =
+        delegate->GetGraph()->CreateTensor(weight_spec, weight_data.data());
+  }
+
+  std::array<uint32_t, 2> ksize{kernel_w, kernel_h};
+  std::array<uint32_t, 2> stride{scale_w, scale_h};
+  std::array<uint32_t, 2> output_padding{0, 0};
+  std::array<uint32_t, 4> pad{pad_w, pad_w, pad_h, pad_h};
+
+  auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::DeConv2d>(
+      channel, tim::vx::PadType::SAME, ksize, stride, output_padding, pad);
+
+  std::vector<std::shared_ptr<tim::vx::Tensor>> final_inputs;
+  auto input = TransposeInputTensor(delegate, inputs[0], {1, 2, 0, 3});
+  final_inputs.push_back(input);
+  final_inputs.push_back(weight_tensor);
+
+  (*op).BindInputs(final_inputs);
+  (*op).BindOutput(outputs[0]);
+
+  delegate->GetOps().push_back(std::move(op));
+  return true;
 }
 
 enum class ActionTargetType { INPUT, OUTPUT, STATE };
@@ -380,7 +475,11 @@ struct SimpleOpMapper : public OpMapperBase<EmptyStructPlaceholder> {
 
 template <typename T_OperationType, typename T_Param>
 struct SimpleOpWithFusedActiovationMapper
-    : public OpMapperBase<T_Param, FusedActivationAction<0, T_Param>> {
+    : public OpMapperBase<T_Param,
+                          TransposeInputAction<0, 1, 2, 0, 3>,
+                          TransposeInputAction<1, 1, 2, 0, 3>,
+                          FusedActivationAction<0, T_Param>,
+                          TransposeOutputAction<0, 2, 0, 1, 3>> {
   std::string name_;
 
   SimpleOpWithFusedActiovationMapper(std::string name) : name_(name) {}
@@ -533,6 +632,79 @@ struct Conv2dMapper : public Conv2dKind<TfLiteConvParams> {
   }
 };
 
+struct TransposeConvMapper
+    : public OpMapperBase<TfLiteTransposeConvParams,
+                          TransposeOutputAction<0, 2, 0, 1, 3>> {
+  virtual bool IsOpSupported(TfLiteContext* context,
+                             TfLiteNode* node,
+                             const TfLiteRegistration* registration) const {
+    auto kernel_tensor = context->tensors[node->inputs->data[1]];
+    if (kernel_tensor.quantization.type == kTfLiteAffineQuantization &&
+        reinterpret_cast<TfLiteAffineQuantization*>(
+            kernel_tensor.quantization.params)
+                ->scale->size > 1) {
+      LOG(INFO) << "per-channel input is not supported in transpose conv";
+      return false;
+    }
+    return true;
+  }
+  bool HandleMapOp(vx::delegate::Delegate* delegate,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
+                   const void* params) override {
+    LOG(INFO) << "Create TransposeConv op";
+    auto transposed_tensor_spec = inputs[0]->GetSpec().AsTransientSpec();
+    const auto builtin =
+        reinterpret_cast<const TfLiteTransposeConvParams*>(params);
+    auto padding = TflitePadTypeToVsiPadType(builtin->padding);
+    auto stride_width = builtin->stride_width;
+    auto stride_height = builtin->stride_height;
+
+    std::vector<int32_t> output_shape(inputs[0]->GetShape()[0]);
+    inputs[0]->CopyDataFromTensor(output_shape.data());
+
+    uint32_t input_width = inputs[2]->GetShape()[1];
+    uint32_t input_height = inputs[2]->GetShape()[2];
+    uint32_t ksize_width = inputs[1]->GetShape()[1];
+    uint32_t ksize_height = inputs[1]->GetShape()[2];
+    uint32_t weights = inputs[1]->GetShape()[3];
+    int32_t pad_left_inter =
+        static_cast<int32_t>(ksize_width + stride_width * (input_width - 1) -
+                             output_shape[1]) /
+        2;
+    uint32_t pad_left = pad_left_inter > 0 ? pad_left_inter : 0;
+    uint32_t pad_right = pad_left;
+    int32_t pad_top_inter =
+        static_cast<int32_t>(ksize_height + stride_width * (input_height - 1) -
+                             output_shape[2]) /
+        2;
+    uint32_t pad_top = pad_top_inter > 0 ? pad_top_inter : 0;
+    uint32_t pad_bottom = pad_top;
+    std::array<uint32_t, 2> ksize{ksize_width, ksize_height};
+    std::array<uint32_t, 2> stride{stride_width, stride_height};
+    std::array<uint32_t, 2> output_padding{0 , 0};
+    std::array<uint32_t, 4> pad{pad_left, pad_right, pad_top, pad_bottom};
+
+    auto input_data = TransposeInputTensor(delegate, inputs[1], {1, 2, 0, 3});
+    auto input_kernel = TransposeInputTensor(delegate, inputs[2], {1, 2, 0, 3});
+
+    auto op =
+        delegate->GetGraph()->CreateOperation<tim::vx::ops::DeConv2d>(
+            weights, padding, ksize, stride, output_padding, pad);
+
+    std::vector<std::shared_ptr<tim::vx::Tensor>> input_tensor;
+    input_tensor.push_back(input_kernel);
+    input_tensor.push_back(input_data);
+    if (inputs.size() == 4) {
+      input_tensor.push_back(inputs[3]);
+    }
+    (*op).BindInputs(input_tensor);
+    (*op).BindOutputs(outputs);
+
+    delegate->GetOps().push_back(std::move(op));
+    return true;
+  }
+};
 template <tim::vx::PoolType poolType>
 struct Pool2dMapper : public Conv2dKind<TfLitePoolParams> {
   virtual bool IsOpSupported(TfLiteContext* context,
@@ -879,22 +1051,23 @@ using MulMapper =
 template <tim::vx::ResizeType resizeType>
 struct ResizeMapper
     : public OpMapperBase<TfLiteResizeNearestNeighborParams,
-                          TransposeInputAction<0, 1, 2, 0, 3>,
                           TransposeOutputAction<0, 2, 0, 1, 3>> {
   virtual bool IsOpSupported(TfLiteContext* context,
                              TfLiteNode* node,
                              const TfLiteRegistration* registration) const {
     LOG(INFO) << "Check Resize(" << static_cast<int>(resizeType) << ")";
-    if (resizeType == tim::vx::ResizeType::BILINEAR) {
-      int input_index = node->inputs->data[0];
-      if (context->tensors[input_index].type == kTfLiteInt8 &&
-          context->tensors[input_index].quantization.type ==
-              kTfLiteNoQuantization) {
-        LOG(ERROR) << "Int8 input without quantization is not supported in "
-                      "ResizeBilinear";
-        return false;
-      }
+
+    int input_index = node->inputs->data[0];
+    if ((context->tensors[input_index].type == kTfLiteInt8 ||
+         context->tensors[input_index].type == kTfLiteUInt8) &&
+        context->tensors[input_index].quantization.type ==
+            kTfLiteNoQuantization) {
+      LOG(ERROR)
+          << "Int8 or uint8 input without quantization is not supported in "
+             "Resize";
+      return false;
     }
+
     int size_tensor_idx = node->inputs->data[1];
     const uint8_t* tensor_data = reinterpret_cast<const uint8_t*>(
         context->tensors[size_tensor_idx].data.raw_const);
@@ -906,6 +1079,28 @@ struct ResizeMapper
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
                    const void* params) override {
     LOG(INFO) << "Creating Resize(" << static_cast<int>(resizeType) << ") op";
+    auto input_shape = inputs[0]->GetShape();
+    uint32_t resize_rank = inputs[1]->GetShape()[0];
+    std::vector<int32_t> output_shape(resize_rank);
+    inputs[1]->CopyDataFromTensor(output_shape.data());
+
+    int32_t channel = input_shape[0];
+    int32_t scale_w = output_shape[1] / input_shape[1];
+    int32_t scale_h = output_shape[0] / input_shape[2];
+
+    bool is_scale_integer = !((output_shape[1] % input_shape[1]) ||
+                              (output_shape[0] % input_shape[2]));
+    // turn off bilinear optimization by default.
+    bool enable_bilinear = false;
+    bool can_resize_to_transposeconv =
+        is_scale_integer &&
+        ((enable_bilinear && resizeType == tim::vx::ResizeType::BILINEAR) ||
+         (resizeType == tim::vx::ResizeType::NEAREST_NEIGHBOR));
+
+    if (can_resize_to_transposeconv) {
+      return ResizeToTransposeConv(
+          delegate, inputs, outputs, resizeType, channel, scale_w, scale_h);
+    }
     const auto builtin =
         reinterpret_cast<const TfLiteResizeNearestNeighborParams*>(params);
     auto size_tensor = inputs[1];
@@ -921,7 +1116,9 @@ struct ResizeMapper
         size[0],
         size[1]);
 
-    (*op).BindInput(inputs[0]);
+    auto input = TransposeInputTensor(delegate, inputs[0], {1, 2, 0, 3});
+
+    (*op).BindInput(input);
     (*op).BindOutput(outputs[0]);
 
     delegate->GetOps().push_back(std::move(op));
@@ -1557,6 +1754,7 @@ static const std::map<int, createIOpMapItemFunc> reg = {
                        LogicalOpMapper<tim::vx::ops::LogicalOr>,
                        "Or"),
     REGISTER_OP_MAPPER(kTfLiteBuiltinSlice, Slice),
+    REGISTER_OP_MAPPER(kTfLiteBuiltinTransposeConv, TransposeConvMapper),
     REGISTER_OP_MAPPER(kTfLiteBuiltinSelect, Select),
     REGISTER_OP_MAPPER(kTfLiteBuiltinSelectV2, Select),
 
