@@ -59,6 +59,7 @@ limitations under the License.
 #include "tim/vx/ops/transpose.h"
 #include "tim/vx/ops/nbg.h"
 #include "tim/vx/ops/deconv.h"
+#include "tim/vx/ops/stack.h"
 #include "utils.h"
 
 namespace {
@@ -1645,6 +1646,49 @@ struct LogicalOpMapper : public OpMapperBase<EmptyStructPlaceholder> {
   }
 };
 
+struct PackMapper : public OpMapperBase<TfLitePackParams> {
+  virtual bool IsOpSupported(TfLiteContext* context,
+                             TfLiteNode* node,
+                             const TfLiteRegistration* registration) const {
+    auto input_tensor = context->tensors[node->inputs->data[0]];
+    if (input_tensor.type == kTfLiteInt32 || input_tensor.type == kTfLiteInt8 ||
+        (input_tensor.dims->size == 1 && (input_tensor.type == kTfLiteInt8 ||
+                                          input_tensor.type == kTfLiteUInt8))) {
+      return false;
+    }
+    return true;
+  }
+  bool HandleMapOp(vx::delegate::Delegate* delegate,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
+                   const void* params) override {
+    LOG(INFO) << "Creating Pack op";
+    const auto builtin =
+        reinterpret_cast<const TfLitePackParams*>(params);
+    auto axis = builtin->axis < 0
+                    ? inputs[0]->GetShape().size() * 2 + builtin->axis
+                    : inputs[0]->GetShape().size() - builtin->axis;
+    if (inputs[0]->GetShape().size() == 1) {
+      auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::Stack>(
+          1, inputs.size());
+      if (builtin->axis == 1) {
+        outputs[0] = TransposeOutputTensor(delegate, outputs[0], {1, 0});
+      }
+      (*op).BindInputs(inputs);
+      (*op).BindOutputs(outputs);
+      delegate->GetOps().push_back(std::move(op));
+    }else{
+      auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::Stack>(
+        axis, inputs.size());
+      (*op).BindInputs(inputs);
+      (*op).BindOutputs(outputs);
+      delegate->GetOps().push_back(std::move(op));
+    }
+
+    return true;
+  }
+};
+
 using createIOpMapItemFunc = std::function<std::unique_ptr<IOpMapper>()>;
 static const std::map<int, createIOpMapItemFunc> reg = {
 #define REGISTER_OP_MAPPER(TFLITE_OP_CODE, MAPPER_TYPE, ...)                  \
@@ -1757,6 +1801,7 @@ static const std::map<int, createIOpMapItemFunc> reg = {
     REGISTER_OP_MAPPER(kTfLiteBuiltinTransposeConv, TransposeConvMapper),
     REGISTER_OP_MAPPER(kTfLiteBuiltinSelect, Select),
     REGISTER_OP_MAPPER(kTfLiteBuiltinSelectV2, Select),
+    REGISTER_OP_MAPPER(kTfLiteBuiltinPack, PackMapper),
 
 #undef REGISTER_OP_MAPPER
 };
