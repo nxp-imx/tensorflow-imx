@@ -20,6 +20,7 @@ else
 		HOST_OS := osx
 	endif
 endif
+HOST_OS := linux
 
 HOST_ARCH := $(shell if uname -m | grep -q i[345678]86; then echo x86_32; else uname -m; fi)
 
@@ -45,10 +46,16 @@ INCLUDES := \
 -I$(MAKEFILE_DIR)/downloads/cpuinfo/include \
 -I$(MAKEFILE_DIR)/downloads/cpuinfo/src \
 -I$(MAKEFILE_DIR)/downloads/cpuinfo/deps/clog/include \
+-I$(MAKEFILE_DIR)/downloads/googletest/googletest/include \
+-I$(MAKEFILE_DIR)/downloads/googletest/googlemock/include \
+-I$(MAKEFILE_DIR)/downloads/re2/ \
+-I$(MAKEFILE_DIR)/../evaluation/stages \
+-I$(MAKEFILE_DIR)/../../..tensorflow/core/lib/jpeg/ \
 -I$(OBJDIR)
+
 # This is at the end so any globally-installed frameworks like protobuf don't
 # override local versions in the source tree.
-INCLUDES += -I/usr/local/include
+INCLUDES += -I/usr/include
 
 # These are the default libraries needed, but they can be added to or
 # overridden by the platform-specific settings in target makefiles.
@@ -57,14 +64,18 @@ LIBS := \
 -lpthread \
 -lm \
 -lz \
--ldl
+-ldl \
+-lprotobuf \
+-ljpeg
 
 # There are no rules for compiling objects for the host system (since we don't
 # generate things like the protobuf compiler that require that), so all of
 # these settings are for the target compiler.
-CFLAGS := -O3 -DNDEBUG -DCPU_SETSIZE=__CPU_SETSIZE -fPIC $(EXTRA_CFLAGS)
-CXXFLAGS := $(CFLAGS) --std=c++11 $(EXTRA_CXXFLAGS)
-LDOPTS := -L/usr/local/lib
+CXXFLAGS += -O3 -DNDEBUG -DCPU_SETSIZE=__CPU_SETSIZE -DNNAPI_VERBOSE_VALIDATION -fPIC -Wno-narrowing
+CXXFLAGS += $(EXTRA_CXXFLAGS)
+CFLAGS := ${CXXFLAGS}
+CXXFLAGS += --std=c++14
+#LDOPTS := -L/usr/local/lib
 ARFLAGS := -r
 TARGET_TOOLCHAIN_PREFIX :=
 CC_PREFIX :=
@@ -108,11 +119,6 @@ BENCHMARK_PERF_OPTIONS_BINARY_NAME := benchmark_model_performance_options
 MINIMAL_SRCS := \
 	tensorflow/lite/examples/minimal/minimal.cc
 
-LABEL_IMAGE_SRCS := \
-	tensorflow/lite/examples/label_image/bitmap_helpers.cc \
-	tensorflow/lite/examples/label_image/label_image.cc \
-	tensorflow/lite/tools/evaluation/utils.cc
-
 # What sources we want to compile, must be kept in sync with the main Bazel
 # build files.
 
@@ -129,6 +135,12 @@ PROFILE_SUMMARIZER_SRCS := \
 CMD_LINE_TOOLS_SRCS := \
 	tensorflow/lite/tools/command_line_flags.cc \
 	tensorflow/lite/tools/tool_params.cc
+	
+LABEL_IMAGE_SRCS := \
+	$(CMD_LINE_TOOLS_SRCS) \
+	tensorflow/lite/examples/label_image/bitmap_helpers.cc \
+	tensorflow/lite/examples/label_image/label_image.cc \
+	tensorflow/lite/tools/evaluation/utils.cc
 
 CORE_CC_ALL_SRCS := \
 $(wildcard tensorflow/lite/*.cc) \
@@ -192,6 +204,40 @@ $(wildcard tensorflow/lite/tools/make/downloads/cpuinfo/src/*/mock*.c) \
 tensorflow/lite/tflite_with_xnnpack.cc \
 $(MINIMAL_SRCS)
 
+UNIT_TEST_ALL_SRCS := \
+$(wildcard tensorflow/lite/*test.cc) \
+$(wildcard tensorflow/lite/kernels/*test.cc) \
+$(wildcard tensorflow/lite/delegates/nnapi/*test.cc) \
+$(wildcard tensorflow/lite/delegates/utils/*test.cc) \
+$(wildcard tensorflow/lite/delegates/*test.cc) \
+$(wildcard tensorflow/lite/c/*test.cc)
+
+UNIT_TEST_EXCLUDE_SRCS := \
+tensorflow/lite/model_xnnpack_test.cc \
+tensorflow/lite/delegates/nnapi/nnapi_delegate_errno_test.cc \
+tensorflow/lite/delegates/nnapi/nnapi_delegate_signed_quantization_test.cc \
+tensorflow/lite/delegates/nnapi/nnapi_delegate_device_selection_test.cc
+
+UNIT_TEST_SRCS := $(filter-out $(UNIT_TEST_EXCLUDE_SRCS), $(UNIT_TEST_ALL_SRCS))
+UNIT_TEST_UTIL_SRCS := \
+$(CMD_LINE_TOOLS_SRCS) \
+$(wildcard tensorflow/lite/kernels/*test_util.cc) \
+tensorflow/lite/tools/versioning/op_version.cc \
+tensorflow/lite/kernels/internal/test_util.cc \
+tensorflow/lite/kernels/acceleration_test_util_internal.cc \
+$(wildcard tensorflow/lite/delegates/utils/dummy_delegate/*.cc ) \
+tensorflow/lite/delegates/utils/simple_delegate.cc \
+tensorflow/lite/delegates/utils.cc \
+tensorflow/lite/delegates/interpreter_utils.cc \
+tensorflow/lite/delegates/nnapi/acceleration_test_list.cc \
+tensorflow/lite/delegates/nnapi/acceleration_test_util.cc \
+tensorflow/lite/tools/evaluation/utils.cc \
+tensorflow/lite/tools/optimize/model_utils.cc \
+tensorflow/lite/tools/optimize/quantization_utils.cc \
+tensorflow/lite/tools/optimize/operator_property.cc \
+tensorflow/core/platform/default/logging.cc \
+tensorflow/core/platform/default/env_time.cc
+
 BUILD_WITH_MMAP ?= true
 ifeq ($(BUILD_TYPE),micro)
 	BUILD_WITH_MMAP=false
@@ -224,12 +270,15 @@ endif
 # Not to include XNNPACK.
 CXXFLAGS += -DTFLITE_WITHOUT_XNNPACK
 
-BUILD_WITH_NNAPI ?= false
+BUILD_WITH_NNAPI ?= true
 ifeq ($(BUILD_WITH_NNAPI),true)
 	CORE_CC_ALL_SRCS += tensorflow/lite/delegates/nnapi/nnapi_delegate.cc
 	CORE_CC_ALL_SRCS += tensorflow/lite/delegates/nnapi/quant_lstm_sup.cc
 	CORE_CC_ALL_SRCS += tensorflow/lite/nnapi/nnapi_implementation.cc
 	CORE_CC_ALL_SRCS += tensorflow/lite/nnapi/nnapi_util.cc
+	UNIT_TEST_UTIL_SRCS += \
+		tensorflow/lite/tools/delegates/nnapi_delegate_provider.cc  \
+		tensorflow/lite/tools/delegates/default_execution_provider.cc
 	LIBS += -lrt
 else
 	CORE_CC_ALL_SRCS += tensorflow/lite/delegates/nnapi/nnapi_delegate_disabled.cc
@@ -251,9 +300,13 @@ TF_LITE_CC_SRCS := $(filter-out $(CORE_CC_EXCLUDE_SRCS), $(CORE_CC_ALL_SRCS))
 BENCHMARK_SRCS_DIR := tensorflow/lite/tools/benchmark
 DELEGATE_PROVIDER_SRCS_DIR := tensorflow/lite/tools/delegates
 EVALUATION_UTILS_SRCS := \
-  tensorflow/lite/tools/evaluation/utils.cc
-BENCHMARK_ALL_SRCS := \
-	$(wildcard $(BENCHMARK_SRCS_DIR)/*.cc) \
+  tensorflow/lite/tools/evaluation/utils.cc \
+
+BENCHMARK_ALL_SRCS := $(filter-out \
+	$(wildcard $(BENCHMARK_SRCS_DIR)/*_provider.cc), \
+	$(wildcard $(BENCHMARK_SRCS_DIR)/*.cc)) \
+	$(DELEGATE_PROVIDER_SRCS_DIR)/nnapi_delegate_provider.cc \
+	$(DELEGATE_PROVIDER_SRCS_DIR)/default_execution_provider.cc \
 	$(PROFILE_SUMMARIZER_SRCS) \
 	$(CMD_LINE_TOOLS_SRCS) \
 	$(EVALUATION_UTILS_SRCS)
@@ -266,13 +319,64 @@ BENCHMARK_LIB_SRCS := $(filter-out \
 	$(BENCHMARK_MAIN_SRC) \
 	$(BENCHMARK_PERF_OPTIONS_SRC) \
 	$(BENCHMARK_SRCS_DIR)/benchmark_plus_flex_main.cc \
-	$(DELEGATE_PROVIDER_SRCS_DIR)/default_execution_provider.cc \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/external_delegate_provider.cc \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/gpu_delegate_provider.cc \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/hexagon_delegate_provider.cc \
-	$(DELEGATE_PROVIDER_SRCS_DIR)/nnapi_delegate_provider.cc \
 	$(DELEGATE_PROVIDER_SRCS_DIR)/xnnpack_delegate_provider.cc, \
 	$(BENCHMARK_ALL_SRCS))
+
+EVALUATION_BINARY_SRCS := \
+	tensorflow/core/platform/default/logging.cc \
+	tensorflow/core/platform/default/env_time.cc \
+	tensorflow/core/lib/jpeg/jpeg_mem.cc \
+	tensorflow/core/lib/jpeg/jpeg_handle.cc \
+	tensorflow/lite/tools/evaluation/utils.cc \
+	tensorflow/lite/tools/evaluation/tasks/task_executor_main.cc \
+	tensorflow/lite/tools/evaluation/tasks/task_executor.cc \
+	tensorflow/lite/tools/evaluation/proto/evaluation_stages.pb.cc \
+	tensorflow/lite/tools/evaluation/proto/evaluation_config.pb.cc \
+	tensorflow/lite/tools/evaluation/proto/preprocessing_steps.pb.cc \
+	tensorflow/lite/tools/evaluation/stages/image_classification_stage.cc \
+	tensorflow/lite/tools/evaluation/stages/object_detection_stage.cc \
+	tensorflow/lite/tools/evaluation/stages/object_detection_average_precision_stage.cc \
+	tensorflow/lite/tools/evaluation/stages/image_preprocessing_stage.cc \
+	tensorflow/lite/tools/evaluation/stages/tflite_inference_stage.cc \
+	tensorflow/lite/tools/evaluation/stages/topk_accuracy_eval_stage.cc \
+	tensorflow/lite/tools/evaluation/stages/utils/image_metrics.cc \
+	tensorflow/lite/tools/evaluation/stages/inference_profiler_stage.cc \
+	tensorflow/lite/tools/evaluation/evaluation_delegate_provider.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/hash/internal/hash.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/hash/internal/city.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/container/internal/hashtablez_sampler.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/container/internal/hashtablez_sampler_force_weak_definition.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/synchronization/mutex.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/synchronization/internal/per_thread_sem.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/synchronization/internal/create_thread_identity.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/synchronization/internal/waiter.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/debugging/symbolize.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/debugging/stacktrace.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/debugging/internal/demangle.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/debugging/internal/vdso_support.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/debugging/internal/elf_mem_image.cc \
+	tensorflow/lite/tools/make/downloads/absl/absl/debugging/internal/address_is_readable.cc \
+	$(CMD_LINE_TOOLS_SRCS) \
+	$(DELEGATE_PROVIDER_SRCS_DIR)/nnapi_delegate_provider.cc \
+	$(DELEGATE_PROVIDER_SRCS_DIR)/default_execution_provider.cc \
+
+COCO_OBJECT_DETECTION_BINARY_NAME := coco_object_detection_run_eval
+COCO_OBJECT_DETECTION_SRCS := \
+	tensorflow/lite/tools/evaluation/tasks/coco_object_detection/run_eval.cc \
+	$(EVALUATION_BINARY_SRCS)
+
+IMAGENET_IMAGE_CLASSIFICATION_BINARY_NAME := imagenet_image_classification_run_eval
+IMAGENET_IMAGE_CLASSIFICATION_SRCS := \
+	tensorflow/lite/tools/evaluation/tasks/imagenet_image_classification/run_eval.cc \
+	$(EVALUATION_BINARY_SRCS)
+
+INFERENCE_DIFF_BINARY_NAME := inference_diff_run_eval
+INFERENCE_DIFF_SRCS := \
+	tensorflow/lite/tools/evaluation/tasks/inference_diff/run_eval.cc \
+	$(EVALUATION_BINARY_SRCS)
 
 # These target-specific makefiles should modify or replace options like
 # CXXFLAGS or LIBS to work for a specific targeted architecture. All logic
@@ -301,10 +405,10 @@ BENCHMARK_BINARY := $(BINDIR)$(BENCHMARK_BINARY_NAME)
 BENCHMARK_PERF_OPTIONS_BINARY := $(BINDIR)$(BENCHMARK_PERF_OPTIONS_BINARY_NAME)
 MINIMAL_BINARY := $(BINDIR)minimal
 LABEL_IMAGE_BINARY := $(BINDIR)label_image
+COCO_OBJECT_DETECTION_BINARY := $(BINDIR)$(COCO_OBJECT_DETECTION_BINARY_NAME)
+IMAGENET_IMAGE_CLASSIFICATION_BINARY := $(BINDIR)$(IMAGENET_IMAGE_CLASSIFICATION_BINARY_NAME)
+INFERENCE_DIFF_BINARY := $(BINDIR)$(INFERENCE_DIFF_BINARY_NAME)
 
-CXX := $(CC_PREFIX)${TARGET_TOOLCHAIN_PREFIX}g++
-CC := $(CC_PREFIX)${TARGET_TOOLCHAIN_PREFIX}gcc
-AR := $(CC_PREFIX)${TARGET_TOOLCHAIN_PREFIX}ar
 
 MINIMAL_OBJS := $(addprefix $(OBJDIR), \
 $(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(MINIMAL_SRCS))))
@@ -324,6 +428,19 @@ $(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(BENCHMARK_PERF_OPTIONS_SRC))))
 BENCHMARK_LIB_OBJS := $(addprefix $(OBJDIR), \
 $(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(BENCHMARK_LIB_SRCS))))
 
+UNIT_TEST_OBJS := $(addprefix $(OBJDIR), $(UNIT_TEST_SRCS:.cc=.o))
+UNIT_TEST_UTIL_OBJS := $(addprefix $(OBJDIR), $(UNIT_TEST_UTIL_SRCS:.cc=.o))
+UNIT_TEST_NAMES := $(addprefix $(OBJDIR), $(UNIT_TEST_SRCS:.cc=))
+
+COCO_OBJECT_DETECTION_OBJS := $(addprefix $(OBJDIR), \
+$(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(COCO_OBJECT_DETECTION_SRCS))))
+
+IMAGENET_IMAGE_CLASSIFICATION_OBJS := $(addprefix $(OBJDIR), \
+$(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(IMAGENET_IMAGE_CLASSIFICATION_SRCS))))
+
+INFERENCE_DIFF_OBJS := $(addprefix $(OBJDIR), \
+$(patsubst %.cc,%.o,$(patsubst %.c,%.o,$(INFERENCE_DIFF_SRCS))))
+
 # For normal manually-created TensorFlow Lite C++ source files.
 $(OBJDIR)%.o: %.cpp
 	@mkdir -p $(dir $@)
@@ -339,7 +456,7 @@ $(OBJDIR)%.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 # The target that's compiled if there's no command-line arguments.
-all: $(LIB_PATH)  $(MINIMAL_BINARY) $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY)
+all: $(LIB_PATH)  $(MINIMAL_BINARY) $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY) $(LABEL_IMAGE_BINARY) 
 
 # The target that's compiled for micro-controllers
 micro: $(LIB_PATH)
@@ -371,9 +488,35 @@ $(LABEL_IMAGE_BINARY): $(LABEL_IMAGE_OBJS) $(LIB_PATH)
 
 label_image: $(LABEL_IMAGE_BINARY)
 
+$(COCO_OBJECT_DETECTION_BINARY): $(COCO_OBJECT_DETECTION_OBJS) $(LIB_PATH)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) \
+	-o $(COCO_OBJECT_DETECTION_BINARY) $(COCO_OBJECT_DETECTION_OBJS) \
+	$(LIBFLAGS) $(LIB_PATH) $(LDFLAGS) $(LDOPTS) $(LIBS)
+
+coco: $(COCO_OBJECT_DETECTION_BINARY)
+
+$(IMAGENET_IMAGE_CLASSIFICATION_BINARY): $(IMAGENET_IMAGE_CLASSIFICATION_OBJS) $(LIB_PATH)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) \
+	-o $(IMAGENET_IMAGE_CLASSIFICATION_BINARY) $(IMAGENET_IMAGE_CLASSIFICATION_OBJS) \
+	$(LIBFLAGS) $(LIB_PATH) $(LDFLAGS) $(LDOPTS) $(LIBS)
+
+imagenet: $(IMAGENET_IMAGE_CLASSIFICATION_BINARY)
+
+$(INFERENCE_DIFF_BINARY): $(INFERENCE_DIFF_OBJS) $(LIB_PATH)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) \
+	-o $(INFERENCE_DIFF_BINARY) $(INFERENCE_DIFF_OBJS) \
+	$(LIBFLAGS) $(LIB_PATH) $(LDFLAGS) $(LDOPTS) $(LIBS)
+
+inference_diff: $(INFERENCE_DIFF_BINARY)
+
 $(BENCHMARK_LIB) : $(LIB_PATH) $(BENCHMARK_LIB_OBJS)
 	@mkdir -p $(dir $@)
 	$(AR) $(ARFLAGS) $(BENCHMARK_LIB) $(LIB_OBJS) $(BENCHMARK_LIB_OBJS)
+
+evaluation: coco imagenet inference_diff
 
 benchmark_lib: $(BENCHMARK_LIB)
 
@@ -394,9 +537,41 @@ $(BENCHMARK_PERF_OPTIONS_BINARY) : $(BENCHMARK_PERF_OPTIONS_OBJ) $(BENCHMARK_LIB
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) \
 	-o $(BENCHMARK_PERF_OPTIONS_BINARY) $(BENCHMARK_PERF_OPTIONS_OBJ) \
-	$(LIBFLAGS) $(BENCHMARK_LIB) $(LDFLAGS) $(LIBS)
+	$(LIBFLAGS) -Wl,--allow-multiple-definition -Wl,--whole-archive $(BENCHMARK_LIB) -Wl,--as-needed $(LDFLAGS) $(LIBS)
 
 benchmark: $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY)
+
+tests: $(UNIT_TEST_NAMES)
+
+LIB_DIRS := \
+-L$(MAKEFILE_DIR)/downloads/googletest/build/lib/ \
+-L$(MAKEFILE_DIR)/downloads/re2/build/ \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/algorithm \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/base \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/container \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/debugging \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/flags \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/hash \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/memory \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/meta \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/numeric \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/strings \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/synchronization \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/time \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/types \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/utility \
+-L$(MAKEFILE_DIR)/downloads/absl/build/absl/status \
+
+
+
+$(UNIT_TEST_NAMES): %: %.o $(UNIT_TEST_UTIL_OBJS) $(LIB_PATH)
+	@mkdir -p $(dir $@) 
+	$(CXX) $(CXXFLAGS) $(INCLUDES) \
+	-o $@ $@.o $(UNIT_TEST_UTIL_OBJS) \
+	$(LIB_PATH) $(LIBFLAGS) $(LDFLAGS) $(LIBS) \
+	$(LIB_DIRS) \
+	-lgtest -lgtest_main -lgmock -lre2 \
+	-labsl_synchronization -labsl_stacktrace -labsl_scoped_set_env -labsl_raw_hash_set -labsl_debugging_internal -labsl_examine_stack -labsl_failure_signal_handler -labsl_leak_check -labsl_leak_check_disable -labsl_symbolize -labsl_demangle_internal -labsl_flags -labsl_flags_config -labsl_flags_internal -labsl_flags_marshalling -labsl_flags_parse -labsl_flags_registry -labsl_flags_usage -labsl_flags_usage_internal -labsl_flags_program_name -labsl_city -labsl_hash -labsl_hashtablez_sampler -labsl_str_format_internal -labsl_strings -labsl_strings_internal -labsl_graphcycles_internal -labsl_civil_time -labsl_time -labsl_time_zone -labsl_bad_any_cast_impl -labsl_bad_optional_access -labsl_bad_variant_access -labsl_base -labsl_malloc_internal -labsl_dynamic_annotations -labsl_int128 -labsl_throw_delegate -labsl_status -labsl_raw_logging_internal -labsl_log_severity -labsl_spinlock_wait -labsl_periodic_sampler -labsl_exponential_biased -labsl_cord 
 
 libdir:
 	@echo $(LIBDIR)

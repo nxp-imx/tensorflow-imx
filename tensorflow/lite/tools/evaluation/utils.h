@@ -34,6 +34,7 @@ limitations under the License.
 #if defined(__ANDROID__) && (defined(__arm__) || defined(__aarch64__))
 #include "tensorflow/lite/delegates/hexagon/hexagon_delegate.h"
 #endif
+#include "tensorflow/lite/delegates/nnapi/nnapi_delegate.h"
 
 // TODO(b/149248802): include XNNPACK delegate when the issue is resolved.
 #if !defined(__Fuchsia__) || defined(TFLITE_WITHOUT_XNNPACK)

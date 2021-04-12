@@ -50,13 +50,14 @@ RELATIVE_MAKEFILE_PATH = os.path.join(RELATIVE_MAKE_DIR, 'Makefile')
 DOWNLOAD_SCRIPT_PATH = os.path.join(MAKE_DIR, 'download_dependencies.sh')
 
 # Setup cross compiling
-TARGET = os.environ.get('TENSORFLOW_TARGET')
+TARGET = 'yocto'
 if TARGET == 'rpi':
   os.environ['CXX'] = 'arm-linux-gnueabihf-g++'
   os.environ['CC'] = 'arm-linux-gnueabihf-gcc'
 elif TARGET == 'aarch64':
   os.environ['CXX'] = 'aarch64-linux-gnu-g++'
   os.environ['CC'] = 'aarch64-linux-gnu-gcc'
+MAKE_CROSS_OPTIONS = ['TARGET=linux', 'TARGET_ARCH=aarch64']
 
 MAKE_CROSS_OPTIONS = []
 for name in [
@@ -80,7 +81,7 @@ def get_build_cpus():
 def make_args(target='', quiet=True):
   """Construct make command line."""
   args = ([
-      'make', 'SHELL=/bin/bash', 'BUILD_WITH_NNAPI=false', '-C', TENSORFLOW_DIR
+      'make', 'SHELL=/bin/bash', 'BUILD_WITH_NNAPI=true', '-C', TENSORFLOW_DIR
   ] + MAKE_CROSS_OPTIONS +
           ['-f', RELATIVE_MAKEFILE_PATH, '-j',
            str(get_build_cpus())])
@@ -184,7 +185,7 @@ ext = Extension(
         os.path.join(DOWNLOADS_DIR, 'absl'),
         pybind11.get_include()
     ],
-    libraries=[LIB_TFLITE],
+    libraries=[LIB_TFLITE, 'rt'],
     library_dirs=[LIB_TFLITE_DIR])
 
 setup(

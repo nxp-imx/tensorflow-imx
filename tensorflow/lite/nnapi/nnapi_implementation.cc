@@ -65,21 +65,13 @@ void* LoadFunction(void* handle, const char* name, bool optional) {
 
 #ifndef __ANDROID__
 // Add /dev/shm implementation of shared memory for non-Android platforms
-int ASharedMemory_create(const char* /* name */, size_t size) {
+int ASharedMemory_create(const char*  name , size_t size) {
   // Each call to ASharedMemory_create produces a unique memory space, hence
-  // name should not be used to create the shared memory file, otherwise
+  // name should not be unique, otherwise
   // two calls to create memory regions using the same 'name', will collide.
-  char shm_name_buffer[L_tmpnam];
-  if (tmpnam(shm_name_buffer) == nullptr) {
-    return -1;
-  }
+  // Caller is responsible to provide a unique name.
 
-  // tmpnam will produce a string containing with slashes, but shm_open
-  // won't like that.
-  std::string shm_region_name = std::string(shm_name_buffer);
-  std::replace(shm_region_name.begin(), shm_region_name.end(), '/', '-');
-
-  int fd = shm_open(shm_region_name.c_str(), O_RDWR | O_CREAT, 0644);
+  int fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0644);
   if (fd < 0) {
     return fd;
   }
@@ -131,7 +123,7 @@ uint32_t CalculateAndroidSdkVersion(NnApi const& nnapi) {
 
 const NnApi LoadNnApi() {
   NnApi nnapi = {};
-  nnapi.android_sdk_version = 0;
+  nnapi.android_sdk_version = 29;
 
 #ifdef __ANDROID__
   nnapi.android_sdk_version = GetAndroidSdkVersion();
@@ -147,13 +139,17 @@ const NnApi LoadNnApi() {
   // TODO(b/123243014): change RTLD_LOCAL? Assumes there can be multiple
   // instances of nn api RT
   static const char nnapi_library_name[] = "libneuralnetworks.so";
+  static const char nnapi_library_name1[] = "libneuralnetworks.so.1";
   libneuralnetworks = dlopen(nnapi_library_name, RTLD_LAZY | RTLD_LOCAL);
   if (libneuralnetworks == nullptr) {
-    const char* error = dlerror();
-    if (error) {
-      NNAPI_LOG("%s\n", error);
+    libneuralnetworks = dlopen(nnapi_library_name1, RTLD_LAZY | RTLD_LOCAL);
+    if (libneuralnetworks == nullptr) {
+        const char* error = dlerror();
+        if (error) {
+            NNAPI_LOG("%s\n", error);
+        }
+        NNAPI_LOG("nnapi error: unable to open library %s or %s", nnapi_library_name, nnapi_library_name1);
     }
-    NNAPI_LOG("nnapi error: unable to open library %s", nnapi_library_name);
   }
 
   nnapi.nnapi_exists = libneuralnetworks != nullptr;

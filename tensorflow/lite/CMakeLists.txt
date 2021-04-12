@@ -26,7 +26,7 @@
 # - Many features in experimental
 # - Host Tools (i.e conversion / analysis tools etc.)
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.15)
 if(NOT CMAKE_BUILD_TYPE)
   message(STATUS "Setting build type to Release, for debug builds use"
     "'-DCMAKE_BUILD_TYPE=Debug'.")
@@ -38,6 +38,14 @@ cmake_policy(SET CMP0028 NEW)
 # Enable MACOSX_RPATH (@rpath) for built dynamic libraries.
 cmake_policy(SET CMP0042 NEW)
 project(tensorflow-lite C CXX)
+
+# Check if CMAKE_SYSTEM_PROCESSOR is valid: In L5.10 the system processor is set to cortexa53-crypto, which is not known to tensorflow
+# dependencies
+if( ${CMAKE_SYSTEM_PROCESSOR} STREQUAL "cortexa53-crypto")
+  message(STATUS "Reseting CMAKE_SYSTEM_PROCESSOR to aarch64")
+  set(CMAKE_SYSTEM_PROCESSOR "aarch64")
+endif()
+
 set(TENSORFLOW_SOURCE_DIR "" CACHE PATH
   "Directory that contains the TensorFlow project"
 )
@@ -71,12 +79,15 @@ option(TFLITE_ENABLE_GPU "Enable GPU" OFF)
 # This is currently not supported.
 option(TFLITE_ENABLE_FLEX "Enable SELECT_TF_OPS" OFF) # TODO: Add support
 option(TFLITE_ENABLE_XNNPACK "Enable XNNPACK backend" ON)
+option(TFLITE_BUILD_TESTS "Build unit test" OFF)
+option(TFLITE_BUILD_EVALTOOLS "Build TensorFlow Lite evaluation tools" OFF)
+
 set(CMAKE_CXX_STANDARD 14)  # Some components require C++14.
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(_TFLITE_ENABLE_NNAPI "${TFLITE_ENABLE_NNAPI}")
-if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
-  set(_TFLITE_ENABLE_NNAPI OFF)
-endif()
+#if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
+#  set(_TFLITE_ENABLE_NNAPI OFF)
+#endif()
 set(_TFLITE_ENABLE_MMAP "${TFLITE_ENABLE_MMAP}")
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   # See https://github.com/tensorflow/tensorflow/blob/\
@@ -124,8 +135,56 @@ macro(populate_tf_source_vars RELATIVE_DIR SOURCES_VAR)
     "${TF_SOURCE_DIR}/${RELATIVE_DIR}" ${SOURCES_VAR} ${ARGN}
   )
 endmacro()
+# Inclusion of test sources from a directory
+# SOURCE_DIR: Directory to search for files.
+# SOURCES_VAR: Variable to append with all matching *.cc and *.h files.
+macro(find_tflite_tests_sources RELATIVE_DIR TEST_SOURCE_VAR)
+  file(GLOB _test_sources "${TFLITE_SOURCE_DIR}/${RELATIVE_DIR}/*test.cc")
+  list(APPEND ${TEST_SOURCE_VAR} ${_test_sources})
+endmacro()
+# Simplifies adding a test to compile
+# TC_SRC: Test case source file (*_test.cc)
+# [PREFIX expr] prefix used for target to avoid duplicates
+function(add_unit_test TC_SRC)
+  cmake_parse_arguments(ARGS "" "PREFIX" "" ${ARGN})
+  if(ARGS_PREFIX)
+    set(_prefix "${ARGS_PREFIX}_")
+  else()
+    set(_prefix "")
+  endif()
+  get_filename_component(_name ${TC_SRC} NAME_WE)
+  set(_target "${_prefix}${_name}")
+  message(DEBUG "Adding test: ${_target} (${TC_SRC})")
+  add_executable("${_target}" EXCLUDE_FROM_ALL)
+  target_sources(
+    ${_target}
+    PRIVATE
+    ${TC_SRC}
+    $<TARGET_OBJECTS:tflite_test_utils>
+  )
+  target_link_libraries(${_target}
+      PRIVATE
+      tensorflow-lite
+      gtest_main
+      gmock
+      re2
+      absl::hashtablez_sampler
+      ${CMAKE_DL_LIBS}
+  )
+  target_compile_options(${_target} PRIVATE "-Wno-narrowing") #kernels/quantize_test
+  add_dependencies(tests ${_target})
+endfunction()
+# Add all unit test from a directory
+# RELATIVE_DIR Directory relative to TFLITE_SOURCE_DIR to get tests
+function(add_unit_tests RELATIVE_DIR)
+  find_tflite_tests_sources(${RELATIVE_DIR} TFLITE_TESTS_SRCS)
+  foreach(SRC ${TFLITE_TESTS_SRCS})
+    add_unit_test(${SRC} ${ARGN})
+  endforeach()
+endfunction()
+
 # Find TensorFlow Lite dependencies.
-find_package(absl REQUIRED CONFIG)
+find_package(absl REQUIRED)
 find_package(eigen REQUIRED)
 find_package(farmhash REQUIRED)
 find_package(fft2d REQUIRED)
@@ -133,6 +192,11 @@ find_package(flatbuffers REQUIRED)
 find_package(gemmlowp REQUIRED)
 find_package(neon2sse REQUIRED)
 find_package(ruy REQUIRED)
+if(TFLITE_BUILD_TESTS)
+  find_package(GoogleTest)
+  find_package(re2)
+  add_custom_target(tests ALL)
+endif()
 # Generate TensorFlow Lite FlatBuffer code.
 # We used to have an actual compilation logic with flatc but decided to use
 # schema_generated.h since flatc doesn't work with cross compilation.
@@ -169,6 +233,7 @@ endif()
 if(CMAKE_SYSTEM_NAME MATCHES "Android")
   find_library(ANDROID_LOG_LIB log)
 endif()
+
 # Build a list of source files to compile into the TF Lite library.
 populate_tflite_source_vars("." TFLITE_SRCS)
 if(_TFLITE_ENABLE_MMAP)
@@ -260,6 +325,12 @@ if(_TFLITE_ENABLE_NNAPI)
   populate_tflite_source_vars(
     "nnapi" TFLITE_NNAPI_SRCS FILTER "(_disabled)\\.(cc|h)$"
   )
+  if(TFLITE_BUILD_TESTS)
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS "${TFLITE_SOURCE_DIR}/tools/delegates/nnapi_delegate_provider.cc")
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS "${TFLITE_SOURCE_DIR}/tools/delegates/default_execution_provider.cc")
+    add_unit_tests("delegates/nnapi" PREFIX "nnapi")
+    add_unit_tests("nnapi" PREFIX "nnapi")
+  endif()
 else()
   set(TFLITE_DELEGATES_NNAPI_SRCS
     "${TFLITE_SOURCE_DIR}/delegates/nnapi/nnapi_delegate_disabled.cc"
@@ -269,6 +340,7 @@ else()
   )
 endif()
 if(TFLITE_ENABLE_XNNPACK)
+  set(CMAKE_ASM_FLAGS "" CACHE STRING "ASM flags" FORCE)
   find_package(xnnpack REQUIRED)
   populate_tflite_source_vars("delegates/xnnpack"
     TFLITE_DELEGATES_XNNPACK_SRCS
@@ -277,6 +349,13 @@ if(TFLITE_ENABLE_XNNPACK)
   list(APPEND TFLITE_TARGET_DEPENDENCIES
     XNNPACK
   )
+  if(TFLITE_BUILD_TESTS)
+    file(GLOB _tmp "${TFLITE_SOURCE_DIR}/delegates/xnnpack/*tester.cc")
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS ${_tmp})
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS "${TFLITE_SOURCE_DIR}/tools/delegates/xnnpack_delegate_provider.cc")
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS "${TFLITE_SOURCE_DIR}/tools/delegates/default_execution_provider.cc")
+    add_unit_tests("delegates/xnnpack" PREFIX "xnnpack")
+  endif()
 endif()
 if (TFLITE_ENABLE_RESOURCE)
   populate_tflite_source_vars("experimental/resource"
@@ -428,7 +507,7 @@ else()
   set(TFLITE_BENCHMARK_CC_OPTIONS "-DTFLITE_WITHOUT_XNNPACK")
 endif()  # TFLITE_ENABLE_XNNPACK
 
-if(CMAKE_SYSTEM_NAME MATCHES "Android")
+#if(CMAKE_SYSTEM_NAME MATCHES "Android")
   if(_TFLITE_ENABLE_NNAPI)
     list(APPEND TFLITE_BENCHMARK_SRCS
       ${TFLITE_SOURCE_DIR}/tools/delegates/nnapi_delegate_provider.cc
@@ -438,7 +517,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Android")
     ${ANDROID_LOG_LIB}
     absl::strings
   )
-endif()  # Android
+#endif()  # Android
 
 if(TFLITE_ENABLE_GPU)
   list(APPEND TFLITE_BENCHMARK_SRCS
@@ -447,7 +526,6 @@ if(TFLITE_ENABLE_GPU)
 endif()  # TFLITE_ENABLE_GPU
 
 add_executable(benchmark_model
-  EXCLUDE_FROM_ALL
   ${TFLITE_BENCHMARK_SRCS}
 )
 target_compile_options(benchmark_model
@@ -457,4 +535,127 @@ target_compile_options(benchmark_model
 target_link_libraries(benchmark_model
     ${TFLITE_BENCHMARK_LIBS}
 )
+
+# label_image tool
+list(APPEND TFLITE_CMD_LINE_TOOLS_SRCS
+    ${TFLITE_SOURCE_DIR}/tools/command_line_flags.cc
+    ${TFLITE_SOURCE_DIR}/tools/tool_params.cc
+)
+
+list(APPEND TFLITE_LABEL_IMAGE_SRCS
+    ${TFLITE_SOURCE_DIR}/examples/label_image/bitmap_helpers.cc
+    ${TFLITE_SOURCE_DIR}/examples/label_image/label_image.cc
+    ${TFLITE_SOURCE_DIR}/tools/evaluation/utils.cc
+)
+
+add_executable(label_image
+  ${TFLITE_CMD_LINE_TOOLS_SRCS}
+  ${TFLITE_LABEL_IMAGE_SRCS}
+)
+
+target_compile_options(label_image
+  PRIVATE
+  ${TFLITE_BENCHMARK_CC_OPTIONS}
+)
+
+target_link_libraries(label_image
+  ${TFLITE_BENCHMARK_LIBS}
+)
+
+# unit test dependencies
+if(TFLITE_BUILD_TESTS)
+    file(GLOB UTILS_SRC "${TFLITE_SOURCE_DIR}/kernels/*test_util.cc")
+    file(GLOB DELEGATE_UTILS_SRC "${TFLITE_SOURCE_DIR}/delegates/utils/dummy_delegate/*.cc")
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS 
+        ${TFLITE_SOURCE_DIR}/tools/versioning/op_version.cc 
+        ${TFLITE_SOURCE_DIR}/kernels/internal/test_util.cc 
+        ${TFLITE_SOURCE_DIR}/kernels/acceleration_test_util_internal.cc 
+        ${TFLITE_SOURCE_DIR}/delegates/utils/simple_delegate.cc 
+        ${TFLITE_SOURCE_DIR}/delegates/utils.cc 
+        ${TFLITE_SOURCE_DIR}/delegates/interpreter_utils.cc 
+        ${TFLITE_SOURCE_DIR}/delegates/nnapi/acceleration_test_list.cc 
+        ${TFLITE_SOURCE_DIR}/delegates/nnapi/acceleration_test_util.cc 
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/utils.cc 
+        ${TFLITE_SOURCE_DIR}/tools/optimize/model_utils.cc 
+        ${TFLITE_SOURCE_DIR}/tools/optimize/quantization_utils.cc 
+        ${TFLITE_SOURCE_DIR}/tools/optimize/operator_property.cc 
+        ${TF_SOURCE_DIR}/core/platform/default/logging.cc 
+        ${TF_SOURCE_DIR}/core/platform/default/env_time.cc
+    )
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS ${UTILS_SRC})
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS ${DELEGATE_UTILS_SRC})
+    list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS ${TFLITE_CMD_LINE_TOOLS_SRCS})
+    add_library(tflite_test_utils OBJECT EXCLUDE_FROM_ALL ${TFLITE_UNIT_TEST_UTIL_SRCS} )
+    target_link_libraries(tflite_test_utils PUBLIC tensorflow-lite)
+endif()
+
+if(TFLITE_BUILD_TESTS)
+  add_unit_tests(".")
+  add_unit_tests("c")
+  add_unit_tests("delegates" PREFIX "delegates")
+  add_unit_tests("kernels" PREFIX "kernels")
+endif()
+
+if(TFLITE_BUILD_EVALTOOLS)
+    populate_tflite_source_vars("tools/evaluation/stages" TFLITE_EVALUATION_STAGES_SRCS RECURSE)
+    populate_tflite_source_vars("tools/evaluation/proto" TFLITE_EVALUATION_PROTO_SRCS)
+    
+    list(APPEND TFLITE_EVALUATION_BINARY_SRCS
+        ${TF_SOURCE_DIR}/core/platform/default/logging.cc
+        ${TF_SOURCE_DIR}/core/platform/default/env_time.cc
+        ${TF_SOURCE_DIR}/core/lib/jpeg/jpeg_mem.cc
+        ${TF_SOURCE_DIR}/core/lib/jpeg/jpeg_handle.cc
+        ${TFLITE_SOURCE_DIR}/profiling/time.cc
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/utils.cc
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/evaluation_delegate_provider.cc
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/tasks/task_executor_main.cc
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/tasks/task_executor.cc
+        ${TFLITE_SOURCE_DIR}/tools/delegates/default_execution_provider.cc
+    )
+    list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_CMD_LINE_TOOLS_SRCS})
+    list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_EVALUATION_STAGES_SRCS})
+    list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_EVALUATION_PROTO_SRCS})
+    if(TFLITE_ENABLE_NNAPI)
+        list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_SOURCE_DIR}/tools/delegates/nnapi_delegate_provider.cc)
+    endif()
+    if(TFLITE_ENABLE_XNNPACK)
+        list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_SOURCE_DIR}/tools/delegates/xnnpack_delegate_provider.cc)
+    endif()
+
+
+    add_executable(coco_object_detection_run_eval
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/tasks/coco_object_detection/run_eval.cc
+        ${TFLITE_EVALUATION_BINARY_SRCS}
+    )
+
+    add_executable(imagenet_image_classification_run_eval
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/tasks/imagenet_image_classification/run_eval.cc
+        ${TFLITE_EVALUATION_BINARY_SRCS}
+    )
+
+    add_executable(inference_diff_run_eval
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/tasks/inference_diff/run_eval.cc
+        ${TFLITE_EVALUATION_BINARY_SRCS}
+    )
+    list(APPEND EVALTOOLS
+        coco_object_detection_run_eval
+        imagenet_image_classification_run_eval
+        inference_diff_run_eval
+    )
+
+    foreach(evaltool ${EVALTOOLS})
+        target_link_libraries(${evaltool}
+            tensorflow-lite
+            ${TFLITE_BENCHMARK_LIBS}
+            absl::base
+            absl::strings
+            absl::flat_hash_map
+            "-lprotobuf"
+            "-ljpeg"
+        )
+        target_compile_options(${evaltool}
+            PRIVATE
+            ${TFLITE_BENCHMARK_CC_OPTIONS})
+    endforeach()
+endif()
 
