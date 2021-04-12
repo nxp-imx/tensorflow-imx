@@ -653,26 +653,31 @@ namespace delegate {
 namespace nnapi {
 
 #ifdef TFLITE_NNAPI_ALLOW_MMAP_SHARING
-NNMemory::NNMemory(const NnApi* nnapi, const char* name, size_t size)
-#ifndef __ANDROID__
-    : name_(name)
-#endif
-{
-    if (name && size > 0) {
-        nnapi_ = nnapi;
-        byte_size_ = size;
-        auto map_flag = MAP_SHARED;
-#if defined __ANDROID__
-        fd_ = nnapi_->ASharedMemory_create(name, size);
+NNMemory::NNMemory(const NnApi* nnapi, const char* name, size_t size) {
+  if (name && size > 0) {
+    nnapi_ = nnapi;
+    byte_size_ = size;
+#ifdef __ANDROID__
+    fd_ = nnapi_->ASharedMemory_create(name, size);
 #else
-        fd_ = shm_open(name, O_RDWR|O_CREAT, 0666);
-        ftruncate(fd_, size);
-#endif
-        data_ptr_ = reinterpret_cast<uint8_t*>(
-            mmap(nullptr, size, PROT_READ | PROT_WRITE, map_flag, fd_, 0));
-        nnapi_->ANeuralNetworksMemory_createFromFd(
-            size, PROT_READ | PROT_WRITE, fd_, 0, &nn_memory_handle_);
+    // For non-Android platforms ASharedMemory_create needs unique name to
+    // create a shared memory object (see nnapi_implementation.cc).
+    char shm_name_buffer[L_tmpnam];
+    if (tmpnam(shm_name_buffer) == nullptr) {
+      shm_name_buffer[0] = '\0';
     }
+    // tmpnam will produce a string containing with slashes, but shm_open
+    // won't like that.
+    shm_region_name_ = std::string(name) + std::string(shm_name_buffer);
+    std::replace(shm_region_name_.begin(), shm_region_name_.end(), '/', '-');
+    fd_ = nnapi_->ASharedMemory_create(shm_region_name_.c_str(), size);
+#endif
+
+    data_ptr_ = reinterpret_cast<uint8_t*>(
+        mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0));
+    nnapi_->ANeuralNetworksMemory_createFromFd(size, PROT_READ | PROT_WRITE,
+                                               fd_, 0, &nn_memory_handle_);
+  }
 }
 #else
 NNMemory::NNMemory(const NnApi* /*nnapi*/, const char* /*name*/,
@@ -688,11 +693,11 @@ NNMemory::~NNMemory() {
   if (nn_memory_handle_) {
     nnapi_->ANeuralNetworksMemory_free(nn_memory_handle_);
   }
-  #if defined __ANDROID__
-  if (fd_ > 0) close(fd_);
-  #else
-  if (name_) unlink(name_);
-  #endif
+#ifdef __ANDROID__
+  if (fd_ >= 0) close(fd_);
+#else
+  if (!shm_region_name_.empty()) shm_unlink(shm_region_name_.c_str());
+#endif
 #endif
 }
 
