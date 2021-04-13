@@ -55,6 +55,7 @@ limitations under the License.
 #include "tim/vx/ops/space2batch.h"
 #include "tim/vx/ops/space2depth.h"
 #include "tim/vx/ops/split.h"
+#include "tim/vx/ops/squeeze.h"
 #include "tim/vx/ops/stridedslice.h"
 #include "tim/vx/ops/transpose.h"
 #include "tim/vx/ops/nbg.h"
@@ -240,14 +241,12 @@ bool ResizeToTransposeConv(
     int32_t zp = input_quant.ZeroPoints()[0];
     if (input_type == tim::vx::DataType::INT8) {
       std::vector<int8_t> quant_i8;
-      vx::delegate::utils::Quantize<int8_t>(
-          weight_data, scale, zp, quant_i8);
+      vx::delegate::utils::Quantize<int8_t>(weight_data, scale, zp, quant_i8);
       weight_spec.SetDataType(tim::vx::DataType::INT8);
       memcpy(weight_quant_data.data(), quant_i8.data(), kernel_size);
     } else if (input_type == tim::vx::DataType::UINT8) {
       std::vector<uint8_t> quant_u8;
-      vx::delegate::utils::Quantize<uint8_t>(
-          weight_data, scale, zp, quant_u8);
+      vx::delegate::utils::Quantize<uint8_t>(weight_data, scale, zp, quant_u8);
       weight_spec.SetDataType(tim::vx::DataType::UINT8);
       memcpy(weight_quant_data.data(), quant_u8.data(), kernel_size);
     }
@@ -373,9 +372,15 @@ struct OpMapperBase : public vx::op_map::IOpMapper {
         LOG(ERROR) << "Int64 input is not supported";
         return false;
       }
+      if (context->tensors[input_index].dims->size > 6) {
+        LOG(ERROR) << "vx-delegate doesn't support the tensor whose dimension "
+                      "is greater than 6.";
+        return false;
+      }
       for (int j = 0; j < context->tensors[input_index].dims->size; j++) {
         if (context->tensors[input_index].dims->data[j] == 0) {
-          LOG(ERROR) << "vx delegate doesn't support the tensor has 0 dim";
+          LOG(ERROR) << "vx-delegate doesn't support the tensor of which one "
+                        "of dims is 0";
           return false;
         }
       }
@@ -392,7 +397,8 @@ struct OpMapperBase : public vx::op_map::IOpMapper {
       }
       for (int j = 0; j < context->tensors[output_index].dims->size; j++) {
         if (context->tensors[output_index].dims->data[j] == 0) {
-          LOG(ERROR) << "vx-delegate doesn't support the tensor has 0 dim";
+          LOG(ERROR) << "vx-delegate doesn't support the tensor of which one "
+                        "of dims is 0";
           return false;
         }
       }
@@ -516,6 +522,14 @@ struct FullyConnectedMapper
                      const TfLiteRegistration* registration) const override {
     const auto builtin =
         reinterpret_cast<const TfLiteFullyConnectedParams*>(node->builtin_data);
+
+    auto input_tensor = context->tensors[node->inputs->data[0]];
+    auto weight_tensor = context->tensors[node->inputs->data[1]];
+
+    if (input_tensor.type != weight_tensor.type) {
+      LOG(ERROR) << "hybrid data type is not supported in fullyconnected.";
+      return false;
+    }
     if (builtin->weights_format ==
         kTfLiteFullyConnectedWeightsFormatShuffled4x16Int8) {
       LOG(ERROR) << "Shuffled weight is not supported";
@@ -595,6 +609,13 @@ struct Conv2dMapper : public Conv2dKind<TfLiteConvParams> {
   virtual bool IsOpSupported(TfLiteContext* context,
                              TfLiteNode* node,
                              const TfLiteRegistration* registration) const {
+    auto input_tensor = context->tensors[node->inputs->data[0]];
+    auto weight_tensor = context->tensors[node->inputs->data[1]];
+
+    if (input_tensor.type != weight_tensor.type) {
+      LOG(ERROR) << "hybrid data type is not supported in conv2d.";
+      return false;
+    }
     return true;
   }
 
@@ -683,15 +704,14 @@ struct TransposeConvMapper
     uint32_t pad_bottom = pad_top;
     std::array<uint32_t, 2> ksize{ksize_width, ksize_height};
     std::array<uint32_t, 2> stride{stride_width, stride_height};
-    std::array<uint32_t, 2> output_padding{0 , 0};
+    std::array<uint32_t, 2> output_padding{0, 0};
     std::array<uint32_t, 4> pad{pad_left, pad_right, pad_top, pad_bottom};
 
     auto input_data = TransposeInputTensor(delegate, inputs[1], {1, 2, 0, 3});
     auto input_kernel = TransposeInputTensor(delegate, inputs[2], {1, 2, 0, 3});
 
-    auto op =
-        delegate->GetGraph()->CreateOperation<tim::vx::ops::DeConv2d>(
-            weights, padding, ksize, stride, output_padding, pad);
+    auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::DeConv2d>(
+        weights, padding, ksize, stride, output_padding, pad);
 
     std::vector<std::shared_ptr<tim::vx::Tensor>> input_tensor;
     input_tensor.push_back(input_kernel);
@@ -739,6 +759,19 @@ struct Pool2dMapper : public Conv2dKind<TfLitePoolParams> {
 };
 
 struct DepthwiseConv2dMapper : public Conv2dKind<TfLiteDepthwiseConvParams> {
+  virtual bool IsOpSupported(TfLiteContext* context,
+                             TfLiteNode* node,
+                             const TfLiteRegistration* registration) const {
+    auto input_tensor = context->tensors[node->inputs->data[0]];
+    auto weight_tensor = context->tensors[node->inputs->data[1]];
+
+    if (input_tensor.type != weight_tensor.type) {
+      LOG(ERROR) << "hybrid data type is not supported in DepthwiseConv2d.";
+      return false;
+    }
+    return true;
+  }
+
   bool HandleMapOp(vx::delegate::Delegate* delegate,
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
@@ -1180,6 +1213,40 @@ struct SplitMapper : public OpMapperBase<TfLiteSplitParams> {
   }
 };
 
+struct SqueezeMapper : public OpMapperBase<TfLiteSqueezeParams> {
+  bool HandleMapOp(vx::delegate::Delegate* delegate,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
+                   std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
+                   const void* params) override {
+    LOG(INFO) << "Creating Squeeze op";
+    auto input_shape = inputs[0]->GetShape();
+    const auto builtin = reinterpret_cast<const TfLiteSqueezeParams*>(params);
+    std::vector<uint32_t> vx_axis(builtin->num_squeeze_dims);
+    if (builtin->num_squeeze_dims != 0) {
+      for (int i = 0; i < builtin->num_squeeze_dims; ++i) {
+        vx_axis[i] = vx::delegate::utils::ConvertAxis(builtin->squeeze_dims[i],
+                                                      input_shape.size());
+      }
+    } else { // tim-vx always needs axis. 
+      for (int i = 0; i < input_shape.size(); ++i) {
+        if (input_shape[i] == 1) {
+          vx_axis.push_back(i);
+        }
+      }
+    }
+
+    auto op =
+        delegate->GetGraph()->CreateOperation<tim::vx::ops::Squeeze>(vx_axis);
+
+    (*op).BindInputs(inputs);
+    (*op).BindOutputs(outputs);
+
+    delegate->GetOps().push_back(std::move(op));
+
+    return true;
+  }
+};
+
 struct Space2DepthMapper
     : public OpMapperBase<TfLiteSpaceToDepthParams,
                           TransposeInputAction<0, 1, 2, 0, 3>,
@@ -1558,12 +1625,12 @@ struct Slice : public OpMapperBase<EmptyStructPlaceholder> {
     std::reverse(size.begin(), size.end());
 
     for (int i = 0; i < size.size(); i++) {
-      if (size[i] == -1) { // If size[i] == -1, that means extract all elements
-                           // of demension i.
+      if (size[i] == -1) {  // If size[i] == -1, that means extract all elements
+                            // of demension i.
         size[i] = input_tensor->GetShape()[i];
       }
     }
-    
+
     auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::Slice>(
         input_dims, begin, size);
 
@@ -1756,6 +1823,7 @@ static const std::map<int, createIOpMapItemFunc> reg = {
                        ResizeMapper<tim::vx::ResizeType::BILINEAR>),
     REGISTER_OP_MAPPER(kTfLiteBuiltinAddN, AddNMapper),
     REGISTER_OP_MAPPER(kTfLiteBuiltinSplit, SplitMapper),
+    REGISTER_OP_MAPPER(kTfLiteBuiltinSqueeze, SqueezeMapper),
     REGISTER_OP_MAPPER(kTfLiteBuiltinSpaceToDepth, Space2DepthMapper),
     REGISTER_OP_MAPPER(kTfLiteBuiltinDepthToSpace, Depth2SpaceMapper),
     REGISTER_OP_MAPPER(kTfLiteBuiltinPrelu, PreluMapper),
@@ -1814,7 +1882,9 @@ struct NBGOpMap : public OpMapperBase<TfLiteVsiNpuParams> {
     LOG(INFO) << "Create NBG op";
     const auto builtin = reinterpret_cast<const TfLiteVsiNpuParams*>(params);
     auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::NBG>(
-        reinterpret_cast<const char *>(builtin->binary), builtin->input_count, builtin->output_cout);
+        reinterpret_cast<const char*>(builtin->binary),
+        builtin->input_count,
+        builtin->output_cout);
 
     (*op).BindInputs(inputs);
     (*op).BindOutputs(outputs);
@@ -1832,7 +1902,7 @@ static const std::map<std::string, createIOpMapItemFunc> custom_reg = {
   }
 
     REGISTER_CUSTOM_OP("WRNN_BIDI_SEQGRU", CustomOpMap),
-    REGISTER_CUSTOM_OP("vsi-npu",NBGOpMap),
+    REGISTER_CUSTOM_OP("vsi-npu", NBGOpMap),
 #undef REGISTER_CUSTOM_OP
 };
 

@@ -161,10 +161,6 @@ tim::vx::TensorSpec CreateTensorSpec(
   tim::vx::DataType datatype = TfLiteDtypeToVsiDtype(tensor->type);
   std::vector<uint32_t> dims(TfLiteTensorDims(tensor));
   tim::vx::ShapeType whcn_shape(dims.size());
-  const TfLiteAffineQuantization* params =
-      reinterpret_cast<const TfLiteAffineQuantization*>(
-          tensor->quantization.params);
-  int32_t channel_dim = params->quantized_dimension;
 
   if (dims.size() == 0) {
     // Use rank 1, shape {1} operand for TFLite scalar tensors.
@@ -176,13 +172,16 @@ tim::vx::TensorSpec CreateTensorSpec(
     for (size_t i = 0; i < perm.size(); i++) {
       whcn_shape[i] = dims[perm[i]];
     }
-    channel_dim = vx::delegate::utils::TransposeChannelDim(perm, channel_dim);
     std::reverse(whcn_shape.begin(), whcn_shape.end());
   } else {
     whcn_shape.assign(dims.rbegin(), dims.rend());
   }
 
   if (tensor->quantization.type == kTfLiteAffineQuantization) {
+    const TfLiteAffineQuantization* params =
+        reinterpret_cast<const TfLiteAffineQuantization*>(
+            tensor->quantization.params);
+    tim::vx::Quantization quantization;
     std::vector<float> scales(params->scale->data,
                               params->scale->data + params->scale->size);
     std::vector<int32_t> zero_points(
@@ -192,10 +191,17 @@ tim::vx::TensorSpec CreateTensorSpec(
     tim::vx::QuantType qtype = tim::vx::QuantType::ASYMMETRIC;
     if (scales.size() > 1) {
       qtype = tim::vx::QuantType::SYMMETRIC_PER_CHANNEL;
+      int32_t channel_dim = perm.size() > 1
+                                ? vx::delegate::utils::TransposeChannelDim(
+                                      perm, params->quantized_dimension)
+                                : params->quantized_dimension;
+      int32_t vx_channel_dim =
+          vx::delegate::utils::ConvertAxis(channel_dim, dims.size());
+      quantization =
+          tim::vx::Quantization(qtype, vx_channel_dim, scales, zero_points);
+    } else {
+      quantization = tim::vx::Quantization(qtype, scales[0], zero_points[0]);
     }
-    int32_t new_channel_dim = whcn_shape.size() - channel_dim - 1;
-    tim::vx::Quantization quantization(
-        qtype, new_channel_dim, scales, zero_points);
 
     return tim::vx::TensorSpec(datatype, whcn_shape, attr, quantization);
   }
