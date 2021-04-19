@@ -657,19 +657,6 @@ struct Conv2dMapper : public Conv2dKind<TfLiteConvParams> {
 struct TransposeConvMapper
     : public OpMapperBase<TfLiteTransposeConvParams,
                           TransposeOutputAction<0, 2, 0, 1, 3>> {
-  virtual bool IsOpSupported(TfLiteContext* context,
-                             TfLiteNode* node,
-                             const TfLiteRegistration* registration) const {
-    auto kernel_tensor = context->tensors[node->inputs->data[1]];
-    if (kernel_tensor.quantization.type == kTfLiteAffineQuantization &&
-        reinterpret_cast<TfLiteAffineQuantization*>(
-            kernel_tensor.quantization.params)
-                ->scale->size > 1) {
-      LOG(INFO) << "per-channel input is not supported in transpose conv";
-      return false;
-    }
-    return true;
-  }
   bool HandleMapOp(vx::delegate::Delegate* delegate,
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
@@ -687,19 +674,24 @@ struct TransposeConvMapper
 
     uint32_t input_width = inputs[2]->GetShape()[1];
     uint32_t input_height = inputs[2]->GetShape()[2];
-    uint32_t ksize_width = inputs[1]->GetShape()[1];
-    uint32_t ksize_height = inputs[1]->GetShape()[2];
+    uint32_t ksize_width = 0;
+    uint32_t ksize_height = 0;
+    if(inputs[1]->IsConstTensor()){
+      ksize_width = inputs[1]->GetShape()[0];
+      ksize_height = inputs[1]->GetShape()[1];
+    }else{
+      ksize_width = inputs[1]->GetShape()[1];
+      ksize_height = inputs[1]->GetShape()[2];
+    }
     uint32_t weights = inputs[1]->GetShape()[3];
     int32_t pad_left_inter =
         static_cast<int32_t>(ksize_width + stride_width * (input_width - 1) -
-                             output_shape[1]) /
-        2;
+                             output_shape[2]) / 2;
     uint32_t pad_left = pad_left_inter > 0 ? pad_left_inter : 0;
     uint32_t pad_right = pad_left;
     int32_t pad_top_inter =
-        static_cast<int32_t>(ksize_height + stride_width * (input_height - 1) -
-                             output_shape[2]) /
-        2;
+        static_cast<int32_t>(ksize_height + stride_height * (input_height - 1) -
+                             output_shape[1]) / 2;
     uint32_t pad_top = pad_top_inter > 0 ? pad_top_inter : 0;
     uint32_t pad_bottom = pad_top;
     std::array<uint32_t, 2> ksize{ksize_width, ksize_height};
@@ -707,15 +699,20 @@ struct TransposeConvMapper
     std::array<uint32_t, 2> output_padding{0, 0};
     std::array<uint32_t, 4> pad{pad_left, pad_right, pad_top, pad_bottom};
 
-    auto input_data = TransposeInputTensor(delegate, inputs[1], {1, 2, 0, 3});
-    auto input_kernel = TransposeInputTensor(delegate, inputs[2], {1, 2, 0, 3});
-
-    auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::DeConv2d>(
-        weights, padding, ksize, stride, output_padding, pad);
+    auto op =
+        delegate->GetGraph()->CreateOperation<tim::vx::ops::DeConv2d>(
+            weights, padding, ksize, stride, output_padding, pad);
 
     std::vector<std::shared_ptr<tim::vx::Tensor>> input_tensor;
-    input_tensor.push_back(input_kernel);
+    auto input_data = TransposeInputTensor(delegate, inputs[2], {1, 2, 0, 3});
     input_tensor.push_back(input_data);
+    if(inputs[1]->IsConstTensor()){
+      input_tensor.push_back(inputs[1]);
+    }else{
+      auto input_kernel = TransposeInputTensor(delegate, inputs[1], {1, 2, 0, 3});
+      input_tensor.push_back(input_kernel);
+    }
+
     if (inputs.size() == 4) {
       input_tensor.push_back(inputs[3]);
     }
@@ -726,6 +723,7 @@ struct TransposeConvMapper
     return true;
   }
 };
+
 template <tim::vx::PoolType poolType>
 struct Pool2dMapper : public Conv2dKind<TfLitePoolParams> {
   virtual bool IsOpSupported(TfLiteContext* context,

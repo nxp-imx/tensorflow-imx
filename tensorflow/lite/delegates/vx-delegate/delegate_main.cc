@@ -321,6 +321,7 @@ void GetTransposePerm(int32_t op,
   switch (op) {
     case kTfLiteBuiltinConv2d:
     case kTfLiteBuiltinDepthwiseConv2d:
+    case kTfLiteBuiltinTransposeConv:
       // filter
       if (port_idx == 1) {
         perm.resize(dims.size());
