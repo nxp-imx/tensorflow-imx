@@ -40,7 +40,9 @@ limitations under the License.
 #include "tensorflow/lite/delegates/xnnpack/xnnpack_delegate.h"
 #endif
 
+#ifdef TFLITE_WITH_VX
 #include "tensorflow/lite/delegates/vx-delegate/delegate_main.h"
+#endif
 
 #include "tensorflow/lite/c/common.h"
 
