@@ -47,7 +47,9 @@ limitations under the License.
 #include "tensorflow/lite/tools/command_line_flags.h"
 #include "tensorflow/lite/tools/delegates/delegate_provider.h"
 #include "tensorflow/lite/tools/evaluation/utils.h"
+#ifdef TFLITE_WITH_VX
 #include "tensorflow/lite/delegates/vx-delegate/delegate_main.h"
+#endif
 
 #if defined(__ANDROID__)
 #include "tensorflow/lite/delegates/gpu/delegate.h"
@@ -127,10 +129,12 @@ TfLiteDelegatePtr CreateGPUDelegate(Settings* s) {
 #endif
 }
 
+#ifdef TFLITE_WITH_VX
 TfLiteDelegatePtr CreateVxDelegate() {
   auto vsi_delegate = ::vx::delegate::Delegate::Create();
   return TfLiteDelegatePtr(vsi_delegate, [](TfLiteDelegate*) {});
 }
+#endif
 
 TfLiteDelegatePtrMap GetDelegates(Settings* s,
                                   const DelegateProviders& delegate_providers) {
@@ -141,6 +145,7 @@ TfLiteDelegatePtrMap GetDelegates(Settings* s,
 TfLiteDelegatePtrMap GetDelegates(Settings* s) {
 */
   TfLiteDelegatePtrMap delegates;
+#ifdef TFLITE_WITH_VX
   if(s->vx_delegate) {
     auto delegate = CreateVxDelegate();
     if (!delegate) {
@@ -149,6 +154,7 @@ TfLiteDelegatePtrMap GetDelegates(Settings* s) {
       delegates.emplace("vx-delegate", std::move(delegate));
     }
   }
+#endif
 
   if (s->gl_backend) {
     auto delegate = CreateGPUDelegate(s);

@@ -240,6 +240,7 @@ endif
 # Support VX_DELEGATE
 BUILD_WITH_VX_DELEGATE ?= true
 ifeq ($(BUILD_WITH_VX_DELEGATE), true)
+	CXXFLAGS += -DTFLITE_WITH_VX
 	ifeq ($(TIM_VX_DIR), )
         $(error "Please set your TIM_VX_DIR")
 	endif
