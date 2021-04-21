@@ -64,6 +64,7 @@ option(TFLITE_ENABLE_RESOURCE "Enable experimental support for resources" ON)
 option(TFLITE_ENABLE_NNAPI "Enable NNAPI (Android only)." ON)
 option(TFLITE_ENABLE_MMAP "Enable MMAP (unsupported on Windows)" ON)
 option(TFLITE_ENABLE_GPU "Enable GPU" OFF)
+option(TFLITE_ENABLE_VX "Enable VX Delegate" OFF)
 # This must be enabled when converting from TF models with SELECT_TF_OPS
 # enabled.
 # https://www.tensorflow.org/lite/guide/ops_select#converting_the_model
@@ -327,6 +328,12 @@ populate_tflite_source_vars("experimental/ruy/profiler"
 if(TFLITE_ENABLE_RUY)
   list(APPEND TFLITE_TARGET_PUBLIC_OPTIONS "-DTFLITE_WITH_RUY")
 endif()
+
+if(TFLITE_ENABLE_VX)
+  include(${CMAKE_SOURCE_DIR}/delegates/vx-delegate/CMakeLists.txt)
+  list(APPEND TFLITE_TARGET_PUBLIC_OPTIONS ${TFLITE_DELEGATES_VX_PUBLIC_OPTIONS})
+  list(APPEND TFLITE_TARGET_DEPENDENCIES ${TFLITE_DELEGATES_VX_DEPENDENCIES})
+endif()
 populate_tflite_source_vars("kernels"
   TFLITE_KERNEL_SRCS
   FILTER "(.*_test_util_internal|test_.*)\\.(cc|h)"
@@ -377,6 +384,7 @@ add_library(tensorflow-lite
   ${TFLITE_DELEGATES_NNAPI_SRCS}
   ${TFLITE_DELEGATES_SRCS}
   ${TFLITE_DELEGATES_XNNPACK_SRCS}
+  ${TFLITE_DELEGATES_VX_SRCS}
   ${TFLITE_EXPERIMENTAL_RESOURCE_SRCS}
   ${TFLITE_EXPERIMENTAL_RUY_PROFILER_SRCS}
   ${TFLITE_EXPERIMENTAL_RUY_SRCS}
@@ -439,9 +447,15 @@ add_library(_pywrap_tensorflow_interpreter_wrapper SHARED EXCLUDE_FROM_ALL
 # To remove "lib" prefix.
 set_target_properties(_pywrap_tensorflow_interpreter_wrapper PROPERTIES PREFIX "")
 
-target_include_directories(_pywrap_tensorflow_interpreter_wrapper
-  PUBLIC
-    ${TFLITE_INCLUDE_DIRS}
+if(TFLITE_ENABLE_VX)
+  list(APPEND TFLITE_BENCHMARK_SRCS
+    ${TFLITE_SOURCE_DIR}/tools/delegates/vx_delegate_provider.cc
+  )
+endif()
+
+add_executable(benchmark_model
+  EXCLUDE_FROM_ALL
+  ${TFLITE_BENCHMARK_SRCS}
 )
 
 target_link_libraries(_pywrap_tensorflow_interpreter_wrapper
