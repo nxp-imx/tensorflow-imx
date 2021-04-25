@@ -61,6 +61,7 @@ limitations under the License.
 #include "tim/vx/ops/nbg.h"
 #include "tim/vx/ops/deconv.h"
 #include "tim/vx/ops/stack.h"
+#include "tim/vx/ops/arg.h"
 #include "utils.h"
 
 namespace {
@@ -1754,6 +1755,37 @@ struct PackMapper : public OpMapperBase<TfLitePackParams> {
   }
 };
 
+template <typename T_OperationType>
+struct ArgOpMapper : public OpMapperBase<EmptyStructPlaceholder> {
+  std::string name_;
+
+  ArgOpMapper(std::string name) : name_(name) {}
+  virtual bool HandleMapOp(
+      vx::delegate::Delegate* delegate,
+      std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
+      std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
+      const void* params) {
+    LOG(INFO) << "Creating Arg" << name_ << " op";
+
+    auto axis_tensor = inputs[1];
+    std::vector<int> axis(axis_tensor->GetShape()[0]);
+    axis_tensor->CopyDataFromTensor(axis.data());
+
+    auto transform_axis =
+        vx::delegate::utils::ConvertAxis(axis[0], inputs[0]->GetShape().size());
+
+    auto op =
+        delegate->GetGraph()->CreateOperation<T_OperationType>(transform_axis);
+
+    (*op).BindInputs(inputs);
+    (*op).BindOutputs(outputs);
+
+    delegate->GetOps().push_back(std::move(op));
+
+    return true;
+  }
+};
+
 using createIOpMapItemFunc = std::function<std::unique_ptr<IOpMapper>()>;
 static const std::map<int, createIOpMapItemFunc> reg = {
 #define REGISTER_OP_MAPPER(TFLITE_OP_CODE, MAPPER_TYPE, ...)                  \
@@ -1868,6 +1900,10 @@ static const std::map<int, createIOpMapItemFunc> reg = {
     REGISTER_OP_MAPPER(kTfLiteBuiltinSelect, Select),
     REGISTER_OP_MAPPER(kTfLiteBuiltinSelectV2, Select),
     REGISTER_OP_MAPPER(kTfLiteBuiltinPack, PackMapper),
+    REGISTER_OP_MAPPER(
+        kTfLiteBuiltinArgMin, ArgOpMapper<tim::vx::ops::ArgMin>, "Min"),
+    REGISTER_OP_MAPPER(
+        kTfLiteBuiltinArgMax, ArgOpMapper<tim::vx::ops::ArgMax>, "Max"),
 
 #undef REGISTER_OP_MAPPER
 };
