@@ -59,13 +59,13 @@ elif TARGET == 'aarch64':
   os.environ['CC'] = 'aarch64-linux-gnu-gcc'
 MAKE_CROSS_OPTIONS = ['TARGET=linux', 'TARGET_ARCH=aarch64']
 
-MAKE_CROSS_OPTIONS = []
-for name in [
-    'TARGET', 'TARGET_ARCH', 'CC_PREFIX', 'EXTRA_CXXFLAGS', 'EXTRA_CFLAGS'
-]:
-  value = os.environ.get('TENSORFLOW_%s' % name)
-  if value:
-    MAKE_CROSS_OPTIONS.append('%s=%s' % (name, value))
+# MAKE_CROSS_OPTIONS = []
+# for name in [
+#     'TARGET', 'TARGET_ARCH', 'CC_PREFIX', 'EXTRA_CXXFLAGS', 'EXTRA_CFLAGS'
+# ]:
+#   value = os.environ.get('TENSORFLOW_%s' % name)
+#   if value:
+#     MAKE_CROSS_OPTIONS.append('%s=%s' % (name, value))
 
 
 # Check physical memory and if we are on a reasonable non small SOC machine
@@ -81,7 +81,7 @@ def get_build_cpus():
 def make_args(target='', quiet=True):
   """Construct make command line."""
   args = ([
-      'make', 'SHELL=/bin/bash', 'BUILD_WITH_NNAPI=true', '-C', TENSORFLOW_DIR
+      'make', 'SHELL=/bin/bash', 'BUILD_WITH_NNAPI=true', 'BUILD_WITH_VX_DELEGATE=true',  '-C', TENSORFLOW_DIR
   ] + MAKE_CROSS_OPTIONS +
           ['-f', RELATIVE_MAKEFILE_PATH, '-j',
            str(get_build_cpus())])
