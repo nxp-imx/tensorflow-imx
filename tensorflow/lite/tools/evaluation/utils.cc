@@ -187,5 +187,16 @@ TfLiteDelegatePtr CreateXNNPACKDelegate(int num_threads) {
   return CreateXNNPACKDelegate(&opts);
 }
 #endif
+
+#ifdef TFLITE_WITH_VX
+// VxDelegate supports x86, Android and ARM Linux
+TfLiteDelegatePtr CreateVXDelegate() {
+  return TfLiteDelegatePtr(
+      vx::delegate::VxDelegate(),
+      // VxDelegate() returns a singleton, so provide a no-op deleter.
+      [](TfLiteDelegate*) {});
+}
+#endif
+
 }  // namespace evaluation
 }  // namespace tflite
