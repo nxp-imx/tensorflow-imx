@@ -565,6 +565,7 @@ build:A311D --crosstool_top=@local_config_embedded_arm//:toolchain
 build:A311D --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
 build:A311D --cpu=aarch64
 build:A311D --define target_device=aarch64_A311D
+build --cxxopt -DTFLITE_WITH_VX
 
 # END TF REMOTE BUILD EXECUTION OPTIONS
 
