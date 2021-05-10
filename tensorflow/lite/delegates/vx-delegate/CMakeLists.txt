@@ -25,13 +25,10 @@ list(APPEND TFLITE_DELEGATES_VX_SRCS
   ${TF_SOURCE_DIR}/core/platform/default/env_time.cc
 )
 
-list(APPEND TFLITE_DELEGATES_VX_DEPENDENCIES
-  "-ltim-vx"
-  "-lCLC"
-  "-lGAL"
-  "-lOpenVX"
-  "-lOpenVXU"
-  "-lVSC"
-  "-lArchModelSw"
-  "-lNNArchPerf")
+if(NOT TIM_VX_INSTALL OR NOT EXISTS ${TIM_VX_INSTALL})
+  message(FATAL_ERROR "Set TIM_VX_INSTALL to tim-vx install folder(by make install) instead of ${TIM_VX_INSTALL}")
+endif()
 
+message("=== Building with TIM_VX_LIBRIRIES from ${TIM_VX_INSTALL}")
+include_directories(${TIM_VX_INSTALL}/include)
+list(APPEND TFLITE_DELEGATES_VX_DEPENDENCIES ${TIM_VX_INSTALL}/lib/libtim-vx.so)
