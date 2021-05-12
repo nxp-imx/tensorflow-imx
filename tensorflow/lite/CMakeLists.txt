@@ -32,7 +32,7 @@ if(NOT CMAKE_BUILD_TYPE)
     "'-DCMAKE_BUILD_TYPE=Debug'.")
   set(CMAKE_BUILD_TYPE "Release")
 endif()
-
+set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 # Double colon in target name means ALIAS or IMPORTED target.
 cmake_policy(SET CMP0028 NEW)
 # Enable MACOSX_RPATH (@rpath) for built dynamic libraries.
@@ -82,6 +82,7 @@ option(TFLITE_ENABLE_FLEX "Enable SELECT_TF_OPS" OFF) # TODO: Add support
 option(TFLITE_ENABLE_XNNPACK "Enable XNNPACK backend" ON)
 option(TFLITE_BUILD_TESTS "Build unit test" OFF)
 option(TFLITE_BUILD_EVALTOOLS "Build TensorFlow Lite evaluation tools" OFF)
+option(TFLITE_BUILD_SHARED_LIB "Build shared library instead of static" OFF)
 
 set(CMAKE_CXX_STANDARD 14)  # Some components require C++14.
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -236,7 +237,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Android")
 endif()
 
 # Build a list of source files to compile into the TF Lite library.
-populate_tflite_source_vars("." TFLITE_SRCS)
+populate_tflite_source_vars("." TFLITE_SRCS FILTER "tflite_with_xnnpack.(c|cc|h)$")
 if(_TFLITE_ENABLE_MMAP)
   list(FILTER TFLITE_SRCS EXCLUDE REGEX ".*mmap_allocation_disabled\\.cc$")
 else()
@@ -412,6 +413,10 @@ if(CMAKE_SYSTEM_NAME MATCHES "Android")
   )
 endif()
 
+list(APPEND TFLITE_CMD_LINE_TOOLS_SRCS
+    ${TFLITE_SOURCE_DIR}/tools/command_line_flags.cc
+    ${TFLITE_SOURCE_DIR}/tools/tool_params.cc
+)
 # Common include directories
 set(TFLITE_INCLUDE_DIRS
   "${TENSORFLOW_SOURCE_DIR}"
@@ -422,8 +427,12 @@ include_directories(
     ${TFLITE_INCLUDE_DIRS}
 )
 
+if(${TFLITE_BUILD_SHARED_LIB})
+  set(LIB_TYPE "SHARED")
+endif()
+
 # TFLite library
-add_library(tensorflow-lite
+add_library(tensorflow-lite ${LIB_TYPE}
   ${TFLITE_CORE_API_SRCS}
   ${TFLITE_CORE_SRCS}
   ${TFLITE_C_SRCS}
@@ -449,6 +458,12 @@ add_library(tensorflow-lite
   ${TFLITE_PROFILER_SRCS}
   ${TFLITE_SOURCE_DIR}/schema/schema_utils.cc
   ${TFLITE_SOURCE_DIR}/tools/optimize/sparsity/format_converter.cc
+  ${TFLITE_CMD_LINE_TOOLS_SRCS}
+)
+set_target_properties(tensorflow-lite
+    PROPERTIES
+        VERSION 2.4.1
+        SOVERSION  2.4.1
 )
 target_include_directories(tensorflow-lite
   PUBLIC
@@ -488,11 +503,9 @@ list(APPEND TFLITE_BENCHMARK_SRCS
   ${TFLITE_SOURCE_DIR}/profiling/profile_summarizer.cc
   ${TFLITE_SOURCE_DIR}/profiling/profile_summary_formatter.cc
   ${TFLITE_SOURCE_DIR}/profiling/time.cc
-  ${TFLITE_SOURCE_DIR}/tools/command_line_flags.cc
   ${TFLITE_SOURCE_DIR}/tools/delegates/default_execution_provider.cc
   ${TFLITE_SOURCE_DIR}/tools/evaluation/utils.cc
   ${TFLITE_SOURCE_DIR}/tools/optimize/sparsity/format_converter.cc
-  ${TFLITE_SOURCE_DIR}/tools/tool_params.cc
 )
 
 list(APPEND TFLITE_BENCHMARK_LIBS
@@ -551,11 +564,6 @@ target_link_libraries(benchmark_model
 )
 
 # label_image tool
-list(APPEND TFLITE_CMD_LINE_TOOLS_SRCS
-    ${TFLITE_SOURCE_DIR}/tools/command_line_flags.cc
-    ${TFLITE_SOURCE_DIR}/tools/tool_params.cc
-)
-
 list(APPEND TFLITE_LABEL_IMAGE_SRCS
     ${TFLITE_SOURCE_DIR}/examples/label_image/bitmap_helpers.cc
     ${TFLITE_SOURCE_DIR}/examples/label_image/label_image.cc
