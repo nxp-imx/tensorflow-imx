@@ -29,6 +29,7 @@ limitations under the License.
 #include "tensorflow/lite/kernels/internal/reference/reference_ops.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/internal/types.h"
+#include "tim/transform/layout_inference.h"
 
 namespace {
 
@@ -195,10 +196,7 @@ tim::vx::TensorSpec CreateTensorSpec(
     tim::vx::QuantType qtype = tim::vx::QuantType::ASYMMETRIC;
     if (scales.size() > 1) {
       qtype = tim::vx::QuantType::SYMMETRIC_PER_CHANNEL;
-      int32_t channel_dim = perm.size() > 1
-                                ? vx::delegate::utils::TransposeChannelDim(
-                                      perm, params->quantized_dimension)
-                                : params->quantized_dimension;
+      int32_t channel_dim = params->quantized_dimension;
       int32_t vx_channel_dim =
           vx::delegate::utils::ConvertAxis(channel_dim, dims.size());
       quantization =
@@ -477,7 +475,6 @@ TfLiteStatus Delegate::Invoke(const OpData& op_data,
                               TfLiteContext* context,
                               TfLiteNode* node) {
   LOG(INFO) << "Delegate::Invoke node:" << node->user_data;
-
   if (!compiled_) {
     // TODO(bo): Handling multi-thread use case
     context_ = tim::vx::Context::Create();
@@ -508,7 +505,6 @@ TfLiteStatus Delegate::Invoke(const OpData& op_data,
       auto& builtin_code = op_info.builtin_code;
       auto& custom_name = op_info.custom_name;
       auto& inputs = op_info.inputs;
-      ;
       auto& outputs = op_info.outputs;
       auto& states = op_info.states;
       auto& builtin_data = op_info.builtin_data;
@@ -527,7 +523,6 @@ TfLiteStatus Delegate::Invoke(const OpData& op_data,
           tim::vx::TensorAttribute attr = tim::vx::TensorAttribute::TRANSIENT;
           if (IsConstTensor(tensor)) {
             attr = tim::vx::TensorAttribute::CONSTANT;
-            GetTransposePerm(builtin_code, port_idx, tensor, perm);
           } else if (IsVariableTensor(tensor)) {
             attr = tim::vx::TensorAttribute::VARIABLE;
           } else {
@@ -573,7 +568,9 @@ TfLiteStatus Delegate::Invoke(const OpData& op_data,
     }
 
     LOG(INFO) << "Verifying graph";
-    compiled_ = graph_->Compile();
+    // Do layout inference and get a new graph(first) and a tensor map(second).
+    layout_infered_ = tim::transform::LayoutInference(graph_, context_);
+    compiled_ = layout_infered_.first->Compile();
     if (!compiled_) {
       LOG(FATAL) << "Failed to verify graph";
       return kTfLiteDelegateError;
@@ -586,46 +583,49 @@ TfLiteStatus Delegate::Invoke(const OpData& op_data,
   for (int tensor_idx : op_data.subgraph_inputs) {
     const TfLiteTensor& tf_tensor = context->tensors[tensor_idx];
     LOG(INFO) << "Copying input " << tensor_idx << ":" << tf_tensor.name;
-    auto* tensor = tensors_[tensor_idx].get();
-    if (!tensor) {
+    auto src_input_tensor = tensors_[tensor_idx];
+    if (!src_input_tensor.get()) {
       LOG(FATAL) << "Failed to copy input tensor!";
     }
 
     const void* tensor_data =
         reinterpret_cast<const void*>(tf_tensor.data.raw_const);
     // TODO(derekjchow): Check result
-    tensor->CopyDataToTensor(const_cast<void*>(tensor_data));
+    auto infered_input_tensor = layout_infered_.second[src_input_tensor];
+    infered_input_tensor->CopyDataToTensor(const_cast<void*>(tensor_data));
   }
 
   LOG(INFO) << "Invoking graph";
-  if (!graph_->Run()) {
+  if (!layout_infered_.first->Run()) {
     LOG(FATAL) << "Failed to run graph";
   }
 
   for (int tensor_idx : op_data.subgraph_outputs) {
     TfLiteTensor& tf_tensor = context->tensors[tensor_idx];
     LOG(INFO) << "Copying output " << tensor_idx << ":" << tf_tensor.name;
-    auto* tensor = tensors_[tensor_idx].get();
-    if (!tensor) {
+    auto src_output_tensor = tensors_[tensor_idx];
+    if (!src_output_tensor.get()) {
       LOG(FATAL) << "Failed to copy output tensor!";
     }
 
     void* tensor_data = reinterpret_cast<void*>(tf_tensor.data.raw);
     // TODO(derekjchow): Check result
-    tensor->CopyDataFromTensor(tensor_data);
+    auto infered_output_tesnor = layout_infered_.second[src_output_tensor];
+    infered_output_tesnor->CopyDataFromTensor(tensor_data);
   }
 
   // Copy output states to input states
   for (int tensor_idx : op_data.subgraph_states) {
     TfLiteTensor& tf_tensor = context->tensors[tensor_idx];
     LOG(INFO) << "Copying state " << tensor_idx << ":" << tf_tensor.name;
-    auto* tensor = state_tensors_[tensor_idx].get();
-    if (!tensor) {
+    auto src_state_tensor = state_tensors_[tensor_idx];
+    if (!src_state_tensor.get()) {
       LOG(FATAL) << "Disaster!";
     }
 
     void* tensor_data = reinterpret_cast<void*>(tf_tensor.data.raw);
-    tensor->CopyDataFromTensor(tensor_data);
+    auto infered_state_tensor = layout_infered_.second[src_state_tensor];
+    infered_state_tensor->CopyDataFromTensor(tensor_data);
   }
 
   return kTfLiteOk;

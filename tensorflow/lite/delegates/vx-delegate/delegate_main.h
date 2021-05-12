@@ -80,6 +80,10 @@ class Delegate {
 
   std::shared_ptr<tim::vx::Context> context_;
   std::shared_ptr<tim::vx::Graph> graph_;
+  //first: layout infered graph; second: map from src_tensor to infered_tensor.
+  std::pair<std::shared_ptr<tim::vx::Graph>,
+          std::map<std::shared_ptr<tim::vx::Tensor>,
+                   std::shared_ptr<tim::vx::Tensor>>> layout_infered_;
   std::vector<std::shared_ptr<tim::vx::Tensor>> tensors_;
   std::vector<std::shared_ptr<tim::vx::Tensor>> state_tensors_;
   std::vector<std::shared_ptr<tim::vx::Operation>> ops_;
