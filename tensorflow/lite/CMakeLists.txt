@@ -80,6 +80,7 @@ option(TFLITE_PYTHON_WRAPPER_BUILD_CMAKE2 "Configure Python wrapper build for pu
 option(TFLITE_ENABLE_FLEX "Enable SELECT_TF_OPS" OFF) # TODO: Add support
 option(TFLITE_ENABLE_XNNPACK "Enable XNNPACK backend" ON)
 option(TFLITE_BUILD_EVALTOOLS "Build TensorFlow Lite evaluation tools" OFF)
+option(TFLITE_BUILD_SHARED_LIB "Build shared library instead of static" OFF)
 
 set(CMAKE_CXX_STANDARD 14)  # Some components require C++14.
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -368,6 +369,10 @@ if(CMAKE_SYSTEM_NAME MATCHES "Android")
   )
 endif()
 
+list(APPEND TFLITE_CMD_LINE_TOOLS_SRCS
+    ${TFLITE_SOURCE_DIR}/tools/command_line_flags.cc
+    ${TFLITE_SOURCE_DIR}/tools/tool_params.cc
+)
 # Common include directories
 set(TFLITE_INCLUDE_DIRS
   "${TENSORFLOW_SOURCE_DIR}"
@@ -378,8 +383,12 @@ include_directories(
     ${TFLITE_INCLUDE_DIRS}
 )
 
+if(${TFLITE_BUILD_SHARED_LIB})
+  set(LIB_TYPE "SHARED")
+endif()
+
 # TFLite library
-add_library(tensorflow-lite
+add_library(tensorflow-lite ${LIB_TYPE}
   ${TFLITE_CORE_API_SRCS}
   ${TFLITE_CORE_SRCS}
   ${TFLITE_C_SRCS}
@@ -404,6 +413,23 @@ add_library(tensorflow-lite
   ${TFLITE_PROFILER_SRCS}
   ${TFLITE_SOURCE_DIR}/schema/schema_utils.cc
   ${TFLITE_SOURCE_DIR}/tools/optimize/sparsity/format_converter.cc
+  ${TFLITE_CMD_LINE_TOOLS_SRCS}
+)
+
+if (TFLITE_BUILD_SHARED_LIB)
+  #TODO: Add branch for windows (based on bazel - export all symbols)
+  if (APPLE)
+    target_link_options(tensorflow-lite PRIVATE "-Wl,-exported_symbols_list,${TENSORFLOW_SOURCE_DIR}/tensorflow/lite/tflite_exported_symbols.lds")
+  else ()
+    target_link_options(tensorflow-lite PRIVATE "-Wl,-z,defs")
+    target_link_options(tensorflow-lite PRIVATE "-Wl,--version-script,${TENSORFLOW_SOURCE_DIR}/tensorflow/lite/tflite_version_script.lds")
+  endif()
+endif()
+
+set_target_properties(tensorflow-lite
+    PROPERTIES
+        VERSION 2.5.0
+        SOVERSION  2.5.0
 )
 target_include_directories(tensorflow-lite
   PUBLIC
@@ -425,6 +451,7 @@ target_link_libraries(tensorflow-lite
     gemmlowp
     ruy
     ${TFLITE_TARGET_DEPENDENCIES}
+    ${CMAKE_DL_LIBS}
 )
 target_compile_options(tensorflow-lite
   PUBLIC ${TFLITE_TARGET_PUBLIC_OPTIONS}
