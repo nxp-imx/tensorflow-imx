@@ -28,6 +28,8 @@ limitations under the License.
 #include "tim/vx/graph.h"
 #include "tim/vx/operation.h"
 #include "tim/vx/tensor.h"
+#include "tim/lite/execution.h"
+#include "tim/lite/handle.h"
 
 namespace vx {
 namespace delegate {
@@ -54,12 +56,12 @@ class Delegate {
   Delegate();
   ~Delegate() {}
 
-  std::unique_ptr<OpData> Init(TfLiteContext* context,
+  virtual std::unique_ptr<OpData> Init(TfLiteContext* context,
                                const TfLiteDelegateParams* params);
-  TfLiteStatus Prepare(const OpData& op_data,
+  virtual TfLiteStatus Prepare(const OpData& op_data,
                        TfLiteContext* context,
                        TfLiteNode* node);
-  TfLiteStatus Invoke(const OpData& op_data,
+  virtual TfLiteStatus Invoke(const OpData& op_data,
                       TfLiteContext* context,
                       TfLiteNode* node);
   std::vector<std::shared_ptr<tim::vx::Operation>>& GetOps() { return ops_; }
@@ -67,6 +69,10 @@ class Delegate {
   std::vector<std::shared_ptr<tim::vx::Tensor>>& GetTensors() {
     return tensors_;
   }
+
+ protected:
+  virtual bool IsCompiled() const { return compiled_; }
+  virtual bool Compile(const OpData& op_data, TfLiteContext* context);
 
  private:
   struct OperationDataType {
@@ -84,6 +90,36 @@ class Delegate {
   std::vector<std::shared_ptr<tim::vx::Tensor>> state_tensors_;
   std::vector<std::shared_ptr<tim::vx::Operation>> ops_;
   std::vector<OperationDataType> operations_;
+  bool compiled_;
+};
+
+class LiteBuffer {
+  public:
+   LiteBuffer(size_t bytes, uint32_t align_size = 64);
+   ~LiteBuffer();
+   void* data() { return data_; }
+   size_t bytes() { return bytes_; }
+  private:
+   void* data_;
+   size_t bytes_;
+};
+
+class LiteDelegate : public Delegate {
+ public:
+  std::unique_ptr<OpData> Init(TfLiteContext* context,
+                               const TfLiteDelegateParams* params) override;
+  TfLiteStatus Invoke(const OpData& op_data,
+                      TfLiteContext* context,
+                      TfLiteNode* node) override;
+
+ protected:
+  bool IsCompiled() const override { return Delegate::IsCompiled() && compiled_; }
+  bool Compile(const OpData& op_data, TfLiteContext* context) override;
+
+ private:
+  std::shared_ptr<tim::lite::Execution> exec_;
+  std::vector<std::shared_ptr<LiteBuffer>> inputs_;
+  std::vector<std::shared_ptr<LiteBuffer>> outputs_;
   bool compiled_;
 };
 
