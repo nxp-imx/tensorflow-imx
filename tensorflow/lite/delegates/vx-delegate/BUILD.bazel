@@ -19,6 +19,7 @@ cc_library(
         "@org_tensorflow//tensorflow/core/platform:logging",
         "@tim_vx//prebuilt-sdk:VIV_SDK_LIB",
         "@tim_vx//:tim-vx_interface",
+        "@tim_vx//:tim-lite_interface",
     ],
     linkstatic=True,
 )
