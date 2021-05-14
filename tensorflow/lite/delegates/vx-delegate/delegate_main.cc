@@ -42,8 +42,6 @@ TfLiteRegistration DelegateNodeRegistration() {
     auto* params = reinterpret_cast<const TfLiteDelegateParams*>(buffer);
     std::unique_ptr<vx::delegate::Delegate> delegate(
         new vx::delegate::Delegate);
-    //std::unique_ptr<vx::delegate::Delegate> delegate(
-    //    new vx::delegate::LiteDelegate);
 
     std::unique_ptr<vx::delegate::OpData> op_data =
         delegate->Init(context, params);
@@ -476,59 +474,6 @@ TfLiteStatus Delegate::Invoke(const OpData& op_data,
                               TfLiteNode* node) {
   LOG(INFO) << "Delegate::Invoke node:" << node->user_data;
 
-  if (!Compile(op_data, context)) {
-    return kTfLiteDelegateError;
-  }
-  // TODO(derekjchow): Return error if compilation failed.
-  for (int tensor_idx : op_data.subgraph_inputs) {
-    const TfLiteTensor& tf_tensor = context->tensors[tensor_idx];
-    LOG(INFO) << "Copying input " << tensor_idx << ":" << tf_tensor.name;
-    auto* tensor = tensors_[tensor_idx].get();
-    if (!tensor) {
-      LOG(FATAL) << "Failed to copy input tensor!";
-    }
-
-    const void* tensor_data =
-        reinterpret_cast<const void*>(tf_tensor.data.raw_const);
-    // TODO(derekjchow): Check result
-    tensor->CopyDataToTensor(const_cast<void*>(tensor_data));
-  }
-
-  LOG(INFO) << "Invoking graph";
-  if (!graph_->Run()) {
-    LOG(FATAL) << "Failed to run graph";
-  }
-
-  for (int tensor_idx : op_data.subgraph_outputs) {
-    TfLiteTensor& tf_tensor = context->tensors[tensor_idx];
-    LOG(INFO) << "Copying output " << tensor_idx << ":" << tf_tensor.name;
-    auto* tensor = tensors_[tensor_idx].get();
-    if (!tensor) {
-      LOG(FATAL) << "Failed to copy output tensor!";
-    }
-
-    void* tensor_data = reinterpret_cast<void*>(tf_tensor.data.raw);
-    // TODO(derekjchow): Check result
-    tensor->CopyDataFromTensor(tensor_data);
-  }
-
-  // Copy output states to input states
-  for (int tensor_idx : op_data.subgraph_states) {
-    TfLiteTensor& tf_tensor = context->tensors[tensor_idx];
-    LOG(INFO) << "Copying state " << tensor_idx << ":" << tf_tensor.name;
-    auto* tensor = state_tensors_[tensor_idx].get();
-    if (!tensor) {
-      LOG(FATAL) << "Disaster!";
-    }
-
-    void* tensor_data = reinterpret_cast<void*>(tf_tensor.data.raw);
-    tensor->CopyDataFromTensor(tensor_data);
-  }
-
-  return kTfLiteOk;
-}
-
-bool Delegate::Compile(const OpData& op_data, TfLiteContext* context) {
   if (!compiled_) {
     // TODO(bo): Handling multi-thread use case
     context_ = tim::vx::Context::Create();
@@ -627,146 +572,62 @@ bool Delegate::Compile(const OpData& op_data, TfLiteContext* context) {
     compiled_ = graph_->Compile();
     if (!compiled_) {
       LOG(FATAL) << "Failed to verify graph";
-      return false;
+      return kTfLiteDelegateError;
     }
 
     LOG(INFO) << "Verified graph";
   }
-  return compiled_;
-}
 
-Delegate::Delegate() {}
-
-
-LiteBuffer::LiteBuffer(size_t bytes, uint32_t align_size)
-  : bytes_(bytes) {
-#define MEM_ALIGN(x, align) (((x) + ((align)-1)) & ~((align)-1))
-  uint32_t size = MEM_ALIGN(bytes, align_size);
-  data_ = aligned_alloc(align_size, size);
-#undef MEM_ALIGN
-}
-
-LiteBuffer::~LiteBuffer() {
-  if (data_) {
-    free(data_);
-  }
-}
-
-std::unique_ptr<vx::delegate::OpData> LiteDelegate::Init(
-    TfLiteContext* context, const TfLiteDelegateParams* params) {
-  auto op_data = Delegate::Init(context, params);
-  compiled_ = false;
-  return op_data;
-}
-
-TfLiteStatus LiteDelegate::Invoke(const OpData& op_data,
-                              TfLiteContext* context,
-                              TfLiteNode* node) {
-  if (!Compile(op_data, context)) {
-    return kTfLiteDelegateError;
-  }
   // TODO(derekjchow): Return error if compilation failed.
-  for (size_t i = 0; i < op_data.subgraph_inputs.size(); i ++) {
-    int tensor_idx = op_data.subgraph_inputs[i];
+  for (int tensor_idx : op_data.subgraph_inputs) {
     const TfLiteTensor& tf_tensor = context->tensors[tensor_idx];
     LOG(INFO) << "Copying input " << tensor_idx << ":" << tf_tensor.name;
-    auto buffer = inputs_[i];
-    if (!buffer) {
+    auto* tensor = tensors_[tensor_idx].get();
+    if (!tensor) {
       LOG(FATAL) << "Failed to copy input tensor!";
     }
 
     const void* tensor_data =
         reinterpret_cast<const void*>(tf_tensor.data.raw_const);
     // TODO(derekjchow): Check result
-    memcpy(buffer->data(), const_cast<void*>(tensor_data), buffer->bytes());
+    tensor->CopyDataToTensor(const_cast<void*>(tensor_data));
   }
 
-  LOG(INFO) << "Invoking execution";
-  if (!exec_->Exec()) {
-    LOG(FATAL) << "Failed to execution";
+  LOG(INFO) << "Invoking graph";
+  if (!graph_->Run()) {
+    LOG(FATAL) << "Failed to run graph";
   }
 
-  for (size_t i = 0; i < op_data.subgraph_outputs.size(); i ++) {
-    int tensor_idx = op_data.subgraph_outputs[i];
+  for (int tensor_idx : op_data.subgraph_outputs) {
     TfLiteTensor& tf_tensor = context->tensors[tensor_idx];
     LOG(INFO) << "Copying output " << tensor_idx << ":" << tf_tensor.name;
-    auto buffer = outputs_[i];
-    if (!buffer) {
+    auto* tensor = tensors_[tensor_idx].get();
+    if (!tensor) {
       LOG(FATAL) << "Failed to copy output tensor!";
     }
 
     void* tensor_data = reinterpret_cast<void*>(tf_tensor.data.raw);
     // TODO(derekjchow): Check result
-    memcpy(tensor_data, buffer->data(), buffer->bytes());
+    tensor->CopyDataFromTensor(tensor_data);
   }
 
-  // TODO:
   // Copy output states to input states
-  //for (int tensor_idx : op_data.subgraph_states) {
-  //  TfLiteTensor& tf_tensor = context->tensors[tensor_idx];
-  //  LOG(INFO) << "Copying state " << tensor_idx << ":" << tf_tensor.name;
-  //  auto* tensor = state_tensors_[tensor_idx].get();
-  //  if (!tensor) {
-  //    LOG(FATAL) << "Disaster!";
-  //  }
+  for (int tensor_idx : op_data.subgraph_states) {
+    TfLiteTensor& tf_tensor = context->tensors[tensor_idx];
+    LOG(INFO) << "Copying state " << tensor_idx << ":" << tf_tensor.name;
+    auto* tensor = state_tensors_[tensor_idx].get();
+    if (!tensor) {
+      LOG(FATAL) << "Disaster!";
+    }
 
-  //  void* tensor_data = reinterpret_cast<void*>(tf_tensor.data.raw);
-  //  tensor->CopyDataFromTensor(tensor_data);
-  //}
+    void* tensor_data = reinterpret_cast<void*>(tf_tensor.data.raw);
+    tensor->CopyDataFromTensor(tensor_data);
+  }
+
   return kTfLiteOk;
 }
 
-bool LiteDelegate::Compile(const OpData& op_data, TfLiteContext* context) {
-  if (!compiled_) {
-    if (Delegate::Compile(op_data, context)) {
-      size_t size = 0;
-      Delegate::GetGraph()->CompileToBinary(nullptr, &size);
-      std::vector<uint8_t> binary_data;
-      binary_data.resize(size);
-      Delegate::GetGraph()->CompileToBinary(binary_data.data(), &size);
-      exec_ = tim::lite::Execution::Create(binary_data.data(), binary_data.size());
-      if (!exec_) {
-        compiled_ = false;
-        return kTfLiteDelegateError;
-      }
-      inputs_.clear();
-      outputs_.clear();
-      // Create input tensors
-      std::vector<std::shared_ptr<tim::lite::Handle>> input_handles;
-      for (size_t i = 0; i < op_data.subgraph_inputs.size(); i ++) {
-        int tensor_idx = op_data.subgraph_inputs[i];
-        std::shared_ptr<LiteBuffer> buffer;
-        // Strip empty tensor for lite delegate
-        if (-1 != tensor_idx) {
-          const auto tensor = &(context->tensors[tensor_idx]);
-          auto buffer = std::make_shared<LiteBuffer>(tensor->bytes);
-          auto handle = exec_->RegisterHandle<tim::lite::UserHandle>(
-            buffer->data(), buffer->bytes());
-          input_handles.push_back(handle);
-          inputs_.push_back(buffer);
-        }
-      }
-
-      // Create output tensors
-      std::vector<std::shared_ptr<tim::lite::Handle>> output_handles;
-      for (size_t i = 0; i < op_data.subgraph_outputs.size(); i ++) {
-        int tensor_idx = op_data.subgraph_outputs[i];
-        // Strip empty tensor for lite delegate
-        if (-1 != tensor_idx) {
-          const auto tensor = &(context->tensors[tensor_idx]);
-          auto buffer = std::make_shared<LiteBuffer>(tensor->bytes);
-          auto handle = exec_->RegisterHandle<tim::lite::UserHandle>(
-            buffer->data(), buffer->bytes());
-          outputs_.push_back(buffer);
-          output_handles.push_back(handle);
-        }
-      }
-      exec_->BindInputs(input_handles).BindOutputs(output_handles);
-      compiled_ = true;
-    }
-  }
-  return compiled_;
-}
+Delegate::Delegate() {}
 
 }  // namespace delegate
 }  // namespace vx
