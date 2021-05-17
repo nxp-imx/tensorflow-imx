@@ -568,7 +568,7 @@ struct FullyConnectedMapper
 
     auto op =
         delegate->GetGraph()->CreateOperation<tim::vx::ops::FullyConnected>(
-            1, weight_tensor->GetShape()[1]);
+            0, weight_tensor->GetShape()[1]);
     (*op).BindInputs(inputs);
     (*op).BindOutputs(outputs);
 
@@ -731,7 +731,9 @@ struct Pool2dMapper : public Conv2dKind<TfLitePoolParams> {
         std::array<uint32_t, 2>(
             {builtin->filter_width, builtin->filter_height}),
         std::array<uint32_t, 2>(
-            {builtin->stride_width, builtin->stride_height}));
+            {builtin->stride_width, builtin->stride_height}),
+        tim::vx::RoundType::FLOOR,
+        tim::vx::DataLayout::CWHN);
 
     (*op).BindInputs(inputs);
     (*op).BindOutputs(outputs);
@@ -1062,8 +1064,7 @@ using MulMapper =
 
 template <tim::vx::ResizeType resizeType>
 struct ResizeMapper
-    : public OpMapperBase<TfLiteResizeNearestNeighborParams,
-                          TransposeOutputAction<0, 2, 0, 1, 3>> {
+    : public OpMapperBase<TfLiteResizeNearestNeighborParams> {
   virtual bool IsOpSupported(TfLiteContext* context,
                              TfLiteNode* node,
                              const TfLiteRegistration* registration) const {
@@ -1104,11 +1105,12 @@ struct ResizeMapper
                               (output_shape[0] % input_shape[2]));
     // turn off bilinear optimization by default.
     bool enable_bilinear = false;
-    bool can_resize_to_transposeconv =
-        is_scale_integer &&
-        ((enable_bilinear && resizeType == tim::vx::ResizeType::BILINEAR) ||
-         (resizeType == tim::vx::ResizeType::NEAREST_NEIGHBOR));
+    // bool can_resize_to_transposeconv =
+    //     is_scale_integer &&
+    //     ((enable_bilinear && resizeType == tim::vx::ResizeType::BILINEAR) ||
+    //      (resizeType == tim::vx::ResizeType::NEAREST_NEIGHBOR));
 
+    bool can_resize_to_transposeconv = false;
     if (can_resize_to_transposeconv) {
       return ResizeToTransposeConv(
           delegate, inputs, outputs, resizeType, channel, scale_w, scale_h);
@@ -1126,11 +1128,10 @@ struct ResizeMapper
         builtin->align_corners,
         builtin->half_pixel_centers,
         size[0],
-        size[1]);
+        size[1],
+        tim::vx::DataLayout::CWHN);
 
-    auto input = TransposeInputTensor(delegate, inputs[0], {1, 2, 0, 3});
-
-    (*op).BindInput(input);
+    (*op).BindInput(inputs[0]);
     (*op).BindOutput(outputs[0]);
 
     delegate->GetOps().push_back(std::move(op));
@@ -1159,6 +1160,24 @@ struct AddNMapper : public OpMapperBase<EmptyStructPlaceholder> {
 };
 
 struct SplitMapper : public OpMapperBase<TfLiteSplitParams> {
+  virtual bool IsOpSupported(TfLiteContext* context,
+                             TfLiteNode* node,
+                             const TfLiteRegistration* registration) const {
+    for (int i = 0; i < node->inputs->size; i++) {
+      int input_index = node->inputs->data[i];
+      if ((context->tensors[input_index].type == kTfLiteInt8 ||
+           context->tensors[input_index].type == kTfLiteUInt8) &&
+          context->tensors[input_index].quantization.type ==
+              kTfLiteNoQuantization) {
+        LOG(ERROR)
+            << "Int8 or uint8 input without quantization is not supported in "
+               "Split";
+        return false;
+      }
+    }
+
+    return true;
+  }
   bool HandleMapOp(vx::delegate::Delegate* delegate,
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
@@ -1442,7 +1461,7 @@ struct Batch2Space : public OpMapperBase<TfLiteBatchToSpaceNDParams> {
     block_size = std::vector<int>(block_size.rbegin(), block_size.rend());
     std::vector<int> new_crop =
         vx::delegate::utils::TransposeVec<int>(crop, {2, 3, 0, 1});
-    auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::BatchToSpace>(
+    auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::Batch2Space>(
         block_size, new_crop, tim::vx::DataLayout::CWHN);
 
     (*op).BindInputs(inputs);
@@ -1485,7 +1504,7 @@ struct Space2Batch : public OpMapperBase<TfLiteSpaceToBatchNDParams> {
     block_size = std::vector<int>(block_size.rbegin(), block_size.rend());
     std::vector<int> new_pad =
         vx::delegate::utils::TransposeVec<int>(pad, {2, 3, 0, 1});
-    auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::SpaceToBatch>(
+    auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::Space2Batch>(
         block_size, new_pad, tim::vx::DataLayout::CWHN);
     (*op).BindInputs(inputs);
     (*op).BindOutputs(outputs);

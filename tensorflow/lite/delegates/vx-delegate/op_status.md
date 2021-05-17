@@ -18,7 +18,7 @@ HashtableLookup|no
 L2Normalization|yes
 L2Pool2d|no
 LocalResponseNormalization|yes
-Logistic|no
+Logistic|yes
 LshProjection|no
 Lstm|no
 MaxPool2d|yes
@@ -44,7 +44,7 @@ Gather|yes
 BatchToSpaceNd|yes*
 SpaceToBatchNd|yes
 Transpose|yes*
-Mean|no
+Mean|yes
 Sub|yes*
 Div|yes*
 Squeeze|no
@@ -60,7 +60,7 @@ BidirectionalSequenceLstm|no
 Cast|no
 Prelu|yes
 Maximum|yes*
-ArgMax|no
+ArgMax|yes
 Minimum|yes
 Less|yes
 Neg|yes
@@ -83,11 +83,11 @@ Sqrt|yes
 Rsqrt|yes
 Shape|no
 Pow|yes*
-ArgMin|no
+ArgMin|yes
 FakeQuant|no
 ReduceProd|yes
 ReduceMax|yes
-Pack|no
+Pack|yes
 LogicalOr|yes
 OneHot|no
 LogicalAnd|yes
