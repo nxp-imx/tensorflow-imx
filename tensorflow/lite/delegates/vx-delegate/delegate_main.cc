@@ -65,6 +65,10 @@ TfLiteRegistration DelegateNodeRegistration() {
     return op_data->delegate->Invoke(*op_data, context, node);
   };
 
+  r.profiling_string = nullptr;
+  r.builtin_code = kTfLiteBuiltinDelegate;
+  r.version = 1;
+
   return r;
 }
 
