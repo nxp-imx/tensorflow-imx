@@ -327,6 +327,7 @@ if(_TFLITE_ENABLE_NNAPI)
   populate_tflite_source_vars(
     "nnapi" TFLITE_NNAPI_SRCS FILTER "(_disabled)\\.(cc|h)$"
   )
+  list(APPEND TFLITE_TARGET_PUBLIC_OPTIONS "-DNNAPI_VERBOSE_VALIDATION")
   if(TFLITE_BUILD_TESTS)
     list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS "${TFLITE_SOURCE_DIR}/tools/delegates/nnapi_delegate_provider.cc")
     list(APPEND TFLITE_UNIT_TEST_UTIL_SRCS "${TFLITE_SOURCE_DIR}/tools/delegates/default_execution_provider.cc")
