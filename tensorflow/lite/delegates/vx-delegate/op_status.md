@@ -9,11 +9,11 @@ AveragePool2d|yes
 Concatenation|yes*
 Conv2d       |yes*
 DepthwiseConv2d|yes*
-DepthToSpace|yes*
+DepthToSpace|yes
 Dequantize|yes
 EmbeddingLookup|no
 Floor|no
-FullyConnected|yes*
+FullyConnected|yes
 HashtableLookup|no
 L2Normalization|yes
 L2Pool2d|no
@@ -47,7 +47,7 @@ Transpose|yes*
 Mean|yes
 Sub|yes*
 Div|yes*
-Squeeze|no
+Squeeze|yes
 UnidirectionalSequenceLstm|no
 StridedSlice|yes
 BidirectionalSequenceRnn|no

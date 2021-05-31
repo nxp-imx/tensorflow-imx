@@ -123,55 +123,14 @@ std::shared_ptr<tim::vx::Tensor> ProcessFusedActivation(
   return processed_tensor;
 }
 
-// Insert a transpose node after the `original_tensor`
-std::shared_ptr<tim::vx::Tensor> TransposeInputTensor(
-    vx::delegate::Delegate* delegate,
-    const std::shared_ptr<tim::vx::Tensor>& original_tensor,
-    const std::vector<uint32_t>& perm) {
-  auto transposed_tensor_spec = original_tensor->GetSpec().AsTransientSpec();
-  auto transposed_tensor =
-      delegate->GetGraph()->CreateTensor(transposed_tensor_spec);
-
-  std::shared_ptr<tim::vx::Operation> op =
-      delegate->GetGraph()->CreateOperation<tim::vx::ops::Transpose>(perm);
-  (*op).BindInput(original_tensor);
-  (*op).BindOutput(transposed_tensor);
-
-  delegate->GetOps().push_back(op);
-  delegate->GetTensors().push_back(transposed_tensor);
-
-  return transposed_tensor;
-}
-
-// Insert a transpose node before the `original_tensor`
-std::shared_ptr<tim::vx::Tensor> TransposeOutputTensor(
-    vx::delegate::Delegate* delegate,
-    const std::shared_ptr<tim::vx::Tensor>& original_tensor,
-    const std::vector<uint32_t>& perm) {
-  auto transposed_tensor = delegate->GetGraph()->CreateTensor(
-      original_tensor->GetSpec().AsTransientSpec());
-
-  std::shared_ptr<tim::vx::Operation> op =
-      delegate->GetGraph()->CreateOperation<tim::vx::ops::Transpose>(perm);
-  (*op).BindInput(transposed_tensor);
-  (*op).BindOutput(original_tensor);
-
-  delegate->GetOps().push_back(op);
-  delegate->GetTensors().push_back(transposed_tensor);
-
-  return transposed_tensor;
-}
-
 std::shared_ptr<tim::vx::Tensor> ReverseInputTensor(
     vx::delegate::Delegate* delegate,
     const std::shared_ptr<tim::vx::Tensor>& original_tensor,
-    int32_t* axis,
-    uint32_t axis_num) {
+    std::vector<int32_t> axis) {
   auto reversed_tensor = delegate->GetGraph()->CreateTensor(
-      original_tensor->GetSpec().AsTransientSpec());
+      original_tensor->GetSpec());
   std::shared_ptr<tim::vx::Operation> op =
-      delegate->GetGraph()->CreateOperation<tim::vx::ops::Reverse>(axis,
-                                                                   axis_num);
+      delegate->GetGraph()->CreateOperation<tim::vx::ops::Reverse>(axis);
   (*op).BindInput(original_tensor);
   (*op).BindOutput(reversed_tensor);
 
@@ -259,11 +218,17 @@ bool ResizeToTransposeConv(
   std::array<uint32_t, 4> pad{pad_w, pad_w, pad_h, pad_h};
 
   auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::DeConv2d>(
-      channel, tim::vx::PadType::SAME, ksize, stride, output_padding, pad);
+      channel,
+      tim::vx::PadType::SAME,
+      ksize,
+      stride,
+      output_padding,
+      pad,
+      1,
+      tim::vx::DataLayout::CWHN);
 
   std::vector<std::shared_ptr<tim::vx::Tensor>> final_inputs;
-  auto input = TransposeInputTensor(delegate, inputs[0], {1, 2, 0, 3});
-  final_inputs.push_back(input);
+  final_inputs.push_back(inputs[0]);
   final_inputs.push_back(weight_tensor);
 
   (*op).BindInputs(final_inputs);
@@ -296,35 +261,6 @@ struct ActionBase : public IAction {
     return true;
   }
   ActionTargetType GetActionTargetType() const final { return type_; }
-};
-
-template <int Port, uint32_t... TransposeVec>
-struct TransposeInputAction : public ActionBase<ActionTargetType::INPUT, Port> {
-  std::vector<uint32_t> perm_{TransposeVec...};
-  bool process(vx::delegate::Delegate* delegate,
-               std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
-               std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
-               std::vector<std::shared_ptr<tim::vx::Tensor>>& states,
-               const void* params) const final {
-    inputs[this->port_] =
-        TransposeInputTensor(delegate, inputs[this->port_], perm_);
-    return true;
-  }
-};
-
-template <int Port, uint32_t... TransposeVec>
-struct TransposeOutputAction
-    : public ActionBase<ActionTargetType::OUTPUT, Port> {
-  std::vector<uint32_t> perm_{TransposeVec...};
-  bool process(vx::delegate::Delegate* delegate,
-               std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
-               std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
-               std::vector<std::shared_ptr<tim::vx::Tensor>>& states,
-               const void* params) const final {
-    outputs[this->port_] =
-        TransposeOutputTensor(delegate, outputs[this->port_], perm_);
-    return true;
-  }
 };
 
 template <int Port, typename T_Param>
@@ -641,14 +577,12 @@ struct Conv2dMapper : public Conv2dKind<TfLiteConvParams> {
 };
 
 struct TransposeConvMapper
-    : public OpMapperBase<TfLiteTransposeConvParams,
-                          TransposeOutputAction<0, 2, 0, 1, 3>> {
+    : public OpMapperBase<TfLiteTransposeConvParams> {
   bool HandleMapOp(vx::delegate::Delegate* delegate,
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& inputs,
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
                    const void* params) override {
     LOG(INFO) << "Create TransposeConv op";
-    auto transposed_tensor_spec = inputs[0]->GetSpec().AsTransientSpec();
     const auto builtin =
         reinterpret_cast<const TfLiteTransposeConvParams*>(params);
     auto padding = TflitePadTypeToVsiPadType(builtin->padding);
@@ -660,15 +594,8 @@ struct TransposeConvMapper
 
     uint32_t input_width = inputs[2]->GetShape()[1];
     uint32_t input_height = inputs[2]->GetShape()[2];
-    uint32_t ksize_width = 0;
-    uint32_t ksize_height = 0;
-    if(inputs[1]->IsConstTensor()){
-      ksize_width = inputs[1]->GetShape()[0];
-      ksize_height = inputs[1]->GetShape()[1];
-    }else{
-      ksize_width = inputs[1]->GetShape()[1];
-      ksize_height = inputs[1]->GetShape()[2];
-    }
+    uint32_t ksize_width = inputs[1]->GetShape()[1];;
+    uint32_t ksize_height = inputs[1]->GetShape()[2];;
     uint32_t weights = inputs[1]->GetShape()[3];
     int32_t pad_left_inter =
         static_cast<int32_t>(ksize_width + stride_width * (input_width - 1) -
@@ -687,18 +614,12 @@ struct TransposeConvMapper
 
     auto op =
         delegate->GetGraph()->CreateOperation<tim::vx::ops::DeConv2d>(
-            weights, padding, ksize, stride, output_padding, pad);
+            weights, padding, ksize, stride, output_padding, pad, 1,
+            tim::vx::DataLayout::CWHN ,tim::vx::DataLayout::IcWHOc);
 
     std::vector<std::shared_ptr<tim::vx::Tensor>> input_tensor;
-    auto input_data = TransposeInputTensor(delegate, inputs[2], {1, 2, 0, 3});
-    input_tensor.push_back(input_data);
-    if(inputs[1]->IsConstTensor()){
-      input_tensor.push_back(inputs[1]);
-    }else{
-      auto input_kernel = TransposeInputTensor(delegate, inputs[1], {1, 2, 0, 3});
-      input_tensor.push_back(input_kernel);
-    }
-
+    input_tensor.push_back(inputs[2]);
+    input_tensor.push_back(inputs[1]);
     if (inputs.size() == 4) {
       input_tensor.push_back(inputs[3]);
     }
@@ -1105,12 +1026,11 @@ struct ResizeMapper
                               (output_shape[0] % input_shape[2]));
     // turn off bilinear optimization by default.
     bool enable_bilinear = false;
-    // bool can_resize_to_transposeconv =
-    //     is_scale_integer &&
-    //     ((enable_bilinear && resizeType == tim::vx::ResizeType::BILINEAR) ||
-    //      (resizeType == tim::vx::ResizeType::NEAREST_NEIGHBOR));
+    bool can_resize_to_transposeconv =
+        is_scale_integer &&
+        ((enable_bilinear && resizeType == tim::vx::ResizeType::BILINEAR) ||
+         (resizeType == tim::vx::ResizeType::NEAREST_NEIGHBOR));
 
-    bool can_resize_to_transposeconv = false;
     if (can_resize_to_transposeconv) {
       return ResizeToTransposeConv(
           delegate, inputs, outputs, resizeType, channel, scale_w, scale_h);
@@ -1407,8 +1327,8 @@ struct GatherNd : public OpMapperBase<EmptyStructPlaceholder> {
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
                    const void* params) override {
     LOG(INFO) << "Create GatherNd op";
-    auto axis = std::make_shared<int32_t>(0);
-    inputs[1] = ReverseInputTensor(delegate, inputs[1], axis.get(), 1);
+    std::vector<int32_t> axis({0});
+    inputs[1] = ReverseInputTensor(delegate, inputs[1], axis);
     auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::GatherNd>();
 
     (*op).BindInputs(inputs);
@@ -1651,7 +1571,7 @@ struct Slice : public OpMapperBase<EmptyStructPlaceholder> {
     auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::Slice>(
         input_dims, begin, size);
 
-    (*op).BindInputs(inputs);
+    (*op).BindInput(inputs[0]);
     (*op).BindOutputs(outputs);
 
     delegate->GetOps().push_back(std::move(op));
@@ -1747,27 +1667,15 @@ struct PackMapper : public OpMapperBase<TfLitePackParams> {
                    std::vector<std::shared_ptr<tim::vx::Tensor>>& outputs,
                    const void* params) override {
     LOG(INFO) << "Creating Pack op";
-    const auto builtin =
-        reinterpret_cast<const TfLitePackParams*>(params);
-    auto axis = builtin->axis < 0
-                    ? inputs[0]->GetShape().size() * 2 + builtin->axis
-                    : inputs[0]->GetShape().size() - builtin->axis;
-    if (inputs[0]->GetShape().size() == 1) {
-      auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::Stack>(
-          1, inputs.size());
-      if (builtin->axis == 1) {
-        outputs[0] = TransposeOutputTensor(delegate, outputs[0], {1, 0});
-      }
-      (*op).BindInputs(inputs);
-      (*op).BindOutputs(outputs);
-      delegate->GetOps().push_back(std::move(op));
-    }else{
-      auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::Stack>(
+    const auto builtin = reinterpret_cast<const TfLitePackParams*>(params);
+    uint32_t axis = vx::delegate::utils::ConvertAxis(
+        builtin->axis, inputs[0]->GetShape().size() + 1);
+
+    auto op = delegate->GetGraph()->CreateOperation<tim::vx::ops::Stack>(
         axis, inputs.size());
-      (*op).BindInputs(inputs);
-      (*op).BindOutputs(outputs);
-      delegate->GetOps().push_back(std::move(op));
-    }
+    (*op).BindInputs(inputs);
+    (*op).BindOutputs(outputs);
+    delegate->GetOps().push_back(std::move(op));
 
     return true;
   }
@@ -1795,7 +1703,7 @@ struct ArgOpMapper : public OpMapperBase<EmptyStructPlaceholder> {
     auto op =
         delegate->GetGraph()->CreateOperation<T_OperationType>(transform_axis);
 
-    (*op).BindInputs(inputs);
+    (*op).BindInput(inputs[0]);
     (*op).BindOutputs(outputs);
 
     delegate->GetOps().push_back(std::move(op));
