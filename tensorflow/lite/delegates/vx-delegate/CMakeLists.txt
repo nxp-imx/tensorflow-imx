@@ -25,10 +25,33 @@ list(APPEND TFLITE_DELEGATES_VX_SRCS
   ${TF_SOURCE_DIR}/core/platform/default/env_time.cc
 )
 
+# just for CI
+if((NOT DEFINED EXTERNAL_VIV_SDK) AND (NOT DEFINED TIM_VX_INSTALL))
+  include(FetchContent)
+  FetchContent_Declare(
+  tim-vx
+  GIT_REPOSITORY https://github.com/VeriSilicon/TIM-VX
+  GIT_TAG main
+  )
+  FetchContent_MakeAvailable(tim-vx)
+
+  set(EXTERNAL_VIV_SDK ${tim-vx_SOURCE_DIR}/prebuilt-sdk/x86_64_linux)
+  execute_process(COMMAND cmake . WORKING_DIRECTORY ${tim-vx_SOURCE_DIR})
+  execute_process(COMMAND make install -j8 WORKING_DIRECTORY ${tim-vx_SOURCE_DIR})
+  set(TIM_VX_INSTALL ${tim-vx_SOURCE_DIR}/install)
+endif()
+
 if(NOT TIM_VX_INSTALL OR NOT EXISTS ${TIM_VX_INSTALL})
   message(FATAL_ERROR "Set TIM_VX_INSTALL to tim-vx install folder(by make install) instead of ${TIM_VX_INSTALL}")
 endif()
 
-message("=== Building with TIM_VX_LIBRIRIES from ${TIM_VX_INSTALL}")
+message("=== Building with TIM_VX_LIBRIRIES from ${TIM_VX_INSTALL} ===")
 include_directories(${TIM_VX_INSTALL}/include)
 list(APPEND TFLITE_DELEGATES_VX_DEPENDENCIES ${TIM_VX_INSTALL}/lib/libtim-vx.so)
+
+if( EXISTS ${EXTERNAL_VIV_SDK}/drivers)
+  list(APPEND TFLITE_DELEGATES_VX_DEPENDENCIES ${EXTERNAL_VIV_SDK}/drivers/libOpenVX.so)
+endif()
+if( EXISTS ${EXTERNAL_VIV_SDK}/lib)
+  list(APPEND TFLITE_DELEGATES_VX_DEPENDENCIES ${EXTERNAL_VIV_SDK}/lib/libOpenVX.so)
+endif()
