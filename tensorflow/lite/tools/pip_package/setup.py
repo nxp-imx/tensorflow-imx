@@ -81,7 +81,7 @@ def get_build_cpus():
 def make_args(target='', quiet=True):
   """Construct make command line."""
   args = ([
-      'make', 'SHELL=/bin/bash', 'BUILD_WITH_NNAPI=true', 'BUILD_WITH_VX_DELEGATE=true',  '-C', TENSORFLOW_DIR
+      'make', 'SHELL=/bin/bash', 'BUILD_WITH_NNAPI=true', 'BUILD_WITH_VX_DELEGATE=false',  '-C', TENSORFLOW_DIR
   ] + MAKE_CROSS_OPTIONS +
           ['-f', RELATIVE_MAKEFILE_PATH, '-j',
            str(get_build_cpus())])
