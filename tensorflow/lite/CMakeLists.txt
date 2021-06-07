@@ -483,6 +483,19 @@ if(${TFLITE_BUILD_SHARED_LIB})
   set(LIB_TYPE "SHARED")
 endif()
 
+list(APPEND TFLITE_PROFILING_SRCS
+  ${TF_SOURCE_DIR}/core/util/stats_calculator.cc
+  ${TFLITE_SOURCE_DIR}/profiling/memory_info.cc
+  ${TFLITE_SOURCE_DIR}/profiling/profile_summarizer.cc
+  ${TFLITE_SOURCE_DIR}/profiling/profile_summary_formatter.cc
+  ${TFLITE_SOURCE_DIR}/profiling/time.cc
+  ${TFLITE_SOURCE_DIR}/tools/delegates/delegate_provider.cc
+  ${TFLITE_SOURCE_DIR}/tools/delegates/default_execution_provider.cc
+  ${TFLITE_SOURCE_DIR}/tools/evaluation/utils.cc
+  ${TFLITE_SOURCE_DIR}/tools/tool_params.cc
+  ${TFLITE_SOURCE_DIR}/tools/command_line_flags.cc
+)
+
 # TFLite library
 add_library(tensorflow-lite ${LIB_TYPE}
   ${TFLITE_CORE_API_SRCS}
@@ -509,6 +522,7 @@ add_library(tensorflow-lite ${LIB_TYPE}
   ${TFLITE_SRCS}
   ${TFLITE_PROFILER_SRCS}
   ${TFLITE_SOURCE_DIR}/kernels/internal/utils/sparsity_format_converter.cc
+  ${TFLITE_PROFILING_SRCS}
   ${TFLITE_SOURCE_DIR}/schema/schema_utils.cc
 )
 
