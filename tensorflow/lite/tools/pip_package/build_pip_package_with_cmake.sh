@@ -29,6 +29,7 @@ if [ "${TENSORFLOW_TARGET}" = "rpi" ]; then
 fi
 PYTHON_INCLUDE=$(${PYTHON} -c "from sysconfig import get_paths as gp; print(gp()['include'])")
 PYBIND11_INCLUDE=$(${PYTHON} -c "import pybind11; print (pybind11.get_include())")
+NUMPY_INCLUDE=$(${PYTHON} -c "import numpy; print (numpy.get_include())")
 export CROSSTOOL_PYTHON_INCLUDE_PATH=${PYTHON_INCLUDE}
 
 # Fix container image for cross build.
@@ -105,14 +106,14 @@ case "${TENSORFLOW_TARGET}" in
       "${TENSORFLOW_LITE_DIR}"
     ;;
   native)
-    BUILD_FLAGS=${BUILD_FLAGS:-"-march=native -I${PYTHON_INCLUDE} -I${PYBIND11_INCLUDE}"}
+    BUILD_FLAGS=${BUILD_FLAGS:-"-march=native -I${PYTHON_INCLUDE} -I${PYBIND11_INCLUDE} -I${NUMPY_INCLUDE}"}
     cmake \
       -DCMAKE_C_FLAGS="${BUILD_FLAGS}" \
       -DCMAKE_CXX_FLAGS="${BUILD_FLAGS}" \
       "${TENSORFLOW_LITE_DIR}"
     ;;
   *)
-    BUILD_FLAGS=${BUILD_FLAGS:-"-I${PYTHON_INCLUDE} -I${PYBIND11_INCLUDE}"}
+    BUILD_FLAGS=${BUILD_FLAGS:-"-I${PYTHON_INCLUDE} -I${PYBIND11_INCLUDE} -I${NUMPY_INCLUDE}"}
     cmake \
       -DCMAKE_C_FLAGS="${BUILD_FLAGS}" \
       -DCMAKE_CXX_FLAGS="${BUILD_FLAGS}" \
