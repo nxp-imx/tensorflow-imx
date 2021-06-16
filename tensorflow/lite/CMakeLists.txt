@@ -71,6 +71,7 @@ cmake_dependent_option(TFLITE_ENABLE_NNAPI_VERBOSE_VALIDATION "Enable NNAPI verb
 option(TFLITE_ENABLE_MMAP "Enable MMAP (unsupported on Windows)" ON)
 option(TFLITE_ENABLE_GPU "Enable GPU" OFF)
 option(TFLITE_ENABLE_METAL "Enable Metal delegate (iOS only)" OFF)
+option(TFLITE_PYTHON_WRAPPER_BUILD_CMAKE2 "Configure Python wrapper build for pure CMake compilation" OFF)
 option(TFLITE_ENABLE_XNNPACK "Enable XNNPACK backend" ON)
 option(TFLITE_ENABLE_EXTERNAL_DELEGATE "Enable External Delegate backend" ON)
 
@@ -564,6 +565,43 @@ add_subdirectory(${TFLITE_SOURCE_DIR}/tools/benchmark)
 add_subdirectory(${TFLITE_SOURCE_DIR}/examples/label_image)
 
 # Python interpreter wrapper.
+if(TFLITE_PYTHON_WRAPPER_BUILD_CMAKE2)
+    unset(PYTHON_EXECUTABLE CACHE) # Force to detect the Python Interpter at CMake rerun to detect env change.
+    find_package(PythonInterp REQUIRED)
+    execute_process(
+      COMMAND
+        ${PYTHON_EXECUTABLE} -c "from sysconfig import get_paths as gp; print(gp()['include'])"
+      RESULT_VARIABLE _status
+      OUTPUT_VARIABLE _python_include
+      ERROR_QUIET
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+      COMMAND
+        ${PYTHON_EXECUTABLE} -c "import pybind11; print (pybind11.get_include())"
+      RESULT_VARIABLE _status
+      OUTPUT_VARIABLE _pybind11_include
+      ERROR_QUIET
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+      COMMAND
+        ${PYTHON_EXECUTABLE} -c "import numpy; print (numpy.get_include())"
+      RESULT_VARIABLE _status
+      OUTPUT_VARIABLE _numpy_include
+      ERROR_QUIET
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    message(STATUS "Python Interpreter: ${PYTHON_EXECUTABLE}")
+    message(STATUS "Python Include is: ${_python_include})")
+    message(STATUS "pybind11 Include is: ${_pybind11_include})")
+    message(STATUS "numpy Include is: ${_numpy_include})")
+    list(APPEND PYTHON_INCLUDE_DIRS
+      ${_python_include}
+      ${_pybind11_include}
+      ${_numpy_include}
+    )
+endif()
 add_library(_pywrap_tensorflow_interpreter_wrapper SHARED EXCLUDE_FROM_ALL
   ${TFLITE_SOURCE_DIR}/python/interpreter_wrapper/interpreter_wrapper.cc
   ${TFLITE_SOURCE_DIR}/python/interpreter_wrapper/interpreter_wrapper_pybind11.cc
@@ -578,6 +616,7 @@ set_target_properties(_pywrap_tensorflow_interpreter_wrapper PROPERTIES PREFIX "
 target_include_directories(_pywrap_tensorflow_interpreter_wrapper
   PUBLIC
     ${TFLITE_INCLUDE_DIRS}
+    ${PYTHON_INCLUDE_DIRS}
 )
 
 target_link_libraries(_pywrap_tensorflow_interpreter_wrapper
