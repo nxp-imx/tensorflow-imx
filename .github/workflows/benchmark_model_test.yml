@@ -1,0 +1,63 @@
+name: benchmark_model_test
+
+on:
+  push:
+    branches: [ vx-delegate.v2.4.1 ]
+  pull_request:
+    branches: [ vx-delegate.v2.4.1 ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+  VOSP: ${{secrets.VOSP}}
+  TEST_HUB: ${{secrets.TEST_HUB}}
+  TEST_BOARD: ${{secrets.TEST_BOARD}}
+  BUILD_WKSP: ${{secrets.BUILD_WKSP}}
+
+jobs:
+  build_benchmark_model:
+    # The CMake configure and build commands are platform agnostic and should work equally
+    # well on Windows or Mac.  You can convert this to a matrix build if you need
+    # cross-platform coverage.
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: runner@a
+
+#     steps:
+#       - uses: actions/checkout@v2
+    steps:
+      - name: build_tim_vx
+        run: |
+          cd ${{env.BUILD_WKSP}}/TIM-VX
+          git clean -dfx
+          git reset --hard HEAD
+          git fetch origin
+          git checkout origin/main
+          cd ${{env.BUILD_WKSP}}
+          cmake ${{env.BUILD_WKSP}}/TIM-VX -B ${{env.BUILD_WKSP}}/TIM-VX-Build -DCMAKE_TOOLCHAIN_FILE=${{env.VOSP}}/cmake-toolchains/0x9f.cmake -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DEXTERNAL_VIV_SDK=${{env.TEST_HUB}}/test_suits/vx_delegate/PID_0X9F/viv_drv_sdk
+          make clean -C ${{env.BUILD_WKSP}}/TIM-VX-Build
+          make install -C ${{env.BUILD_WKSP}}/TIM-VX-Build -j12
+          rm -rf ${{env.TEST_HUB}}/test_suits/vx_delegate/PID_0X9F/tim_vx_ci_install/*
+          cp -r ${{env.BUILD_WKSP}}/TIM-VX-Build/install/* ${{env.TEST_HUB}}/test_suits/vx_delegate/PID_0X9F/tim_vx_ci_install/
+          rm ${{env.TEST_HUB}}/test_suits/vx_delegate/PID_0X9F/tim_vx_install 
+          ln -s ${{env.TEST_HUB}}/test_suits/vx_delegate/PID_0X9F/tim_vx_ci_install ${{env.TEST_HUB}}/test_suits/vx_delegate/PID_0X9F/tim_vx_install
+          
+      - name: build_vx_delegate
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+        run: |
+          cd ${{env.BUILD_WKSP}}/tensorflow-ci
+          git clean -dfx
+          git reset --hard HEAD
+          git fetch origin
+          git checkout origin/vx-delegate.v2.4.1
+          cd ${{env.BUILD_WKSP}}
+          cmake tensorflow-ci/tensorflow/lite -DCMAKE_TOOLCHAIN_FILE=${{env.VOSP}}/cmake-toolchains/0x9f.cmake -B ${{env.BUILD_WKSP}}/tf-build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DTFLITE_ENABLE_VX=ON -DTFLITE_ENABLE_XNNPACK=OFF -DTIM_VX_INSTALL=${{env.TEST_HUB}}/test_suits/vx_delegate/PID_0X9F/tim_vx_install -DEXTERNAL_VIV_SDK=${{env.TEST_HUB}}/test_suits/vx_delegate/PID_0X9F/viv_drv_sdk
+          make -C ${{env.BUILD_WKSP}}/tf-build clean
+          make -C ${{env.BUILD_WKSP}}/tf-build benchmark_model -j12
+          cp ${{env.BUILD_WKSP}}/tf-build/benchmark_model ${{env.TEST_HUB}}/test_suits/vx_delegate/PID_0X9F/benchmark_model.ci
+          rm -rf ${{env.TEST_HUB}}/test_suits/vx_delegate/PID_0X9F/benchmark_model 
+          ln -s ${{env.TEST_HUB}}/test_suits/vx_delegate/PID_0X9F/benchmark_model.ci ${{env.TEST_HUB}}/test_suits/vx_delegate/PID_0X9F/benchmark_model
+      - name: Test
+        run: |
+          cd ${{env.VOSP}}
+          ./vx_delegate.0x9f.sh ${{env.TEST_BOARD}}
