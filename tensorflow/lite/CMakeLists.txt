@@ -330,7 +330,7 @@ if(TFLITE_ENABLE_RUY)
 endif()
 
 if(TFLITE_ENABLE_VX)
-  include(${CMAKE_SOURCE_DIR}/delegates/vx-delegate/CMakeLists.txt)
+  include(${TFLITE_SOURCE_DIR}/delegates/vx-delegate/CMakeLists.txt)
   list(APPEND TFLITE_TARGET_PUBLIC_OPTIONS ${TFLITE_DELEGATES_VX_PUBLIC_OPTIONS})
   list(APPEND TFLITE_TARGET_DEPENDENCIES ${TFLITE_DELEGATES_VX_DEPENDENCIES})
 endif()
