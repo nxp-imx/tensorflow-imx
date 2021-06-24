@@ -21,8 +21,7 @@ list(APPEND TFLITE_DELEGATES_VX_SRCS
   ${TFLITE_SOURCE_DIR}/delegates/vx-delegate/delegate_main.cc
   ${TFLITE_SOURCE_DIR}/delegates/vx-delegate/op_map.cc
   ${TFLITE_SOURCE_DIR}/delegates/vx-delegate/utils.cc
-  ${TF_SOURCE_DIR}/core/platform/default/logging.cc
-  ${TF_SOURCE_DIR}/core/platform/default/env_time.cc
+  #${TF_SOURCE_DIR}/core/platform/default/env_time.cc
 )
 
 # just for CI

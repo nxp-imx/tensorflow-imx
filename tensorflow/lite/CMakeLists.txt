@@ -447,17 +447,6 @@ add_library(_pywrap_tensorflow_interpreter_wrapper SHARED EXCLUDE_FROM_ALL
 # To remove "lib" prefix.
 set_target_properties(_pywrap_tensorflow_interpreter_wrapper PROPERTIES PREFIX "")
 
-if(TFLITE_ENABLE_VX)
-  list(APPEND TFLITE_BENCHMARK_SRCS
-    ${TFLITE_SOURCE_DIR}/tools/delegates/vx_delegate_provider.cc
-  )
-endif()
-
-add_executable(benchmark_model
-  EXCLUDE_FROM_ALL
-  ${TFLITE_BENCHMARK_SRCS}
-)
-
 target_link_libraries(_pywrap_tensorflow_interpreter_wrapper
   tensorflow-lite
   ${CMAKE_DL_LIBS}

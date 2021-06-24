@@ -18,9 +18,10 @@ limitations under the License.
 
 #include <cstdint>
 #include <vector>
-
+#include <limits>
+#include <cmath>
 #include "delegate_main.h"
-#include "tensorflow/core/platform/logging.h"
+#include "tensorflow/lite/tools/logging.h"
 
 namespace vx {
 namespace delegate {
@@ -30,7 +31,7 @@ namespace utils {
 inline int32_t TransposeChannelDim(const std::vector<uint32_t>& perm,
                                    int32_t channel_dim) {
   if (channel_dim < 0) {
-    LOG(ERROR) << "invalid channel_dim";
+    TFLITE_LOG(ERROR) << "invalid channel_dim";
     return -1;
   }
   for (uint32_t i = 0; i < perm.size(); i++) {
@@ -38,7 +39,7 @@ inline int32_t TransposeChannelDim(const std::vector<uint32_t>& perm,
       return i;
     }
   }
-  LOG(ERROR) << "Can't find channle_dim";
+  TFLITE_LOG(ERROR) << "Can't find channle_dim";
   return -1;
 }
 

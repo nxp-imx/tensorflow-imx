@@ -40,6 +40,7 @@ load("//third_party/psimd:workspace.bzl", psimd = "repo")
 load("//third_party/ruy:workspace.bzl", ruy = "repo")
 load("//third_party/sobol_data:workspace.bzl", sobol_data = "repo")
 load("//third_party/vulkan_headers:workspace.bzl", vulkan_headers = "repo")
+load("//third_party/tim_vx:workspace.bzl", tim_vx = "repo")
 
 # Import external repository rules.
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
@@ -74,6 +75,7 @@ def _initialize_third_party():
     ruy()
     sobol_data()
     vulkan_headers()
+    tim_vx()
 
 # Toolchains & platforms required by Tensorflow to build.
 def _tf_toolchains():

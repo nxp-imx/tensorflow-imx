@@ -16,7 +16,7 @@ cc_library(
     deps = [
         "@org_tensorflow//tensorflow/lite:framework",
         "@org_tensorflow//tensorflow/lite/kernels/internal:reference_base",
-        "@org_tensorflow//tensorflow/core/platform:logging",
+        "@org_tensorflow//tensorflow/lite/tools:logging",
         "@tim_vx//prebuilt-sdk:VIV_SDK_LIB",
         "@tim_vx//:tim-vx_interface",
     ],
