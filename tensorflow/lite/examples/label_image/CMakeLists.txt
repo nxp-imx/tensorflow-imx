@@ -56,7 +56,6 @@ if(TFLITE_ENABLE_GPU)
 endif()  # TFLITE_ENABLE_GPU
 
 add_executable(label_image
-  EXCLUDE_FROM_ALL
   ${TFLITE_LABEL_IMAGE_SRCS}
 )
 target_compile_options(label_image
