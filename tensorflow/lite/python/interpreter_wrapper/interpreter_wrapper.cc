@@ -16,6 +16,7 @@ limitations under the License.
 
 #include <stdarg.h>
 
+#include <iostream>
 #include <functional>
 #include <memory>
 #include <sstream>
@@ -26,6 +27,7 @@ limitations under the License.
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/core/api/error_reporter.h"
 #include "tensorflow/lite/core/api/op_resolver.h"
+#include "tensorflow/lite/delegates/nnapi/nnapi_delegate.h"
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/internal/compatibility.h"
 #include "tensorflow/lite/kernels/register.h"
@@ -71,6 +73,9 @@ namespace {
 
 using python_utils::PyDecrefDeleter;
 
+using TfLiteDelegatePtr = tflite::Interpreter::TfLiteDelegatePtr;
+using TfLiteDelegatePtrMap = std::map<std::string, TfLiteDelegatePtr>;
+
 std::unique_ptr<Interpreter> CreateInterpreter(
     const InterpreterWrapper::Model* model,
     const tflite::MutableOpResolver& resolver, bool preserve_all_tensors) {
@@ -85,6 +90,27 @@ std::unique_ptr<Interpreter> CreateInterpreter(
   if (preserve_all_tensors) builder.PreserveAllTensorsExperimental();
   if (builder(&interpreter) != kTfLiteOk) {
     return nullptr;
+  }
+  TfLiteDelegatePtrMap delegates;
+  auto delegate = Interpreter::TfLiteDelegatePtr(
+      NnApiDelegate(),
+      // NnApiDelegate() returns a singleton, so provide a no-op deleter.
+      [](TfLiteDelegate*) {});
+  if (!delegate) {
+    std::cout << "NNAPI acceleration is unsupported on this platform." << std::endl;
+  } else {
+    delegates.emplace("NNAPI", Interpreter::TfLiteDelegatePtr(
+        NnApiDelegate(),
+        // NnApiDelegate() returns a singleton, so provide a no-op deleter.
+        [](TfLiteDelegate*) {}));
+  }
+  for (const auto& delegate : delegates) {
+    if (interpreter->ModifyGraphWithDelegate(delegate.second.get()) !=
+        kTfLiteOk) {
+      std::cerr << "Failed to apply " << delegate.first << " delegate." << std::endl;
+    } else {
+      std::cout << "Applied " << delegate.first << " delegate." << std::endl;
+    }
   }
   return interpreter;
 }
