@@ -529,6 +529,14 @@ build:elinux_aarch64 --config=elinux
 build:elinux_aarch64 --cpu=aarch64
 build:elinux_armhf --config=elinux
 build:elinux_armhf --cpu=armhf
+
+# TFLite A311D cross compilation
+build:A311D --crosstool_top=@local_config_embedded_arm//:toolchain
+build:A311D --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
+build:A311D --cpu=aarch64
+build:A311D --define target_device=aarch64_A311D
+build --cxxopt -DTFLITE_WITH_VX
+
 # END TF REMOTE BUILD EXECUTION OPTIONS
 
 # Config-specific options should come above this line.
