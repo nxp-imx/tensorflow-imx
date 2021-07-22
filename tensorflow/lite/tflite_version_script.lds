@@ -5,6 +5,7 @@ VERS_1.0 {
     *TFL_*;
     *NnApi*;
     *tensorflow*;
+    *vx*;
   local:
     *;
 };
