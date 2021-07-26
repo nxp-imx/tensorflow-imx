@@ -36,7 +36,6 @@ endif()
 # dependencies by TFLite.
 set(XNNPACK_BUILD_TESTS OFF CACHE BOOL "Disable XNNPACK test.")
 set(XNNPACK_BUILD_BENCHMARKS OFF CACHE BOOL "Disable XNNPACK benchmarks.")
-set(XNNPACK_ENABLE_ASSEMBLY OFF CACHE BOOL "" FORCE)
 
 # The following line adds project of PTHREADPOOL, FP16 and XNNPACK which are
 # needed to compile XNNPACK delegate of TFLite.
