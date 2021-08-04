@@ -17,9 +17,9 @@
 # XNNPACK compilation break. This switch needs to be removed for XNNPACK
 # In order to isolate the changes only for XNNPACK and its depencencies, this subfolder is
 # introduced.
-string(REGEX REPLACE "-mcpu=[-a-zA-Z0-9_]*" "" _asm_flags ${CMAKE_ASM_FLAGS})
-string(REGEX REPLACE "-mcpu=[-a-zA-Z0-9_]*" "" _c_flags ${CMAKE_C_FLAGS})
-string(REGEX REPLACE "-mcpu=[-a-zA-Z0-9_]*" "" _cxx_flags ${CMAKE_CXX_FLAGS})
+string(REGEX REPLACE "-mcpu=[-a-zA-Z0-9_.^$*+?]*" "" _asm_flags ${CMAKE_ASM_FLAGS})
+string(REGEX REPLACE "-mcpu=[-a-zA-Z0-9_.^$*+?]*" "" _c_flags ${CMAKE_C_FLAGS})
+string(REGEX REPLACE "-mcpu=[-a-zA-Z0-9_.^$*+?]*" "" _cxx_flags ${CMAKE_CXX_FLAGS})
 
 set(CMAKE_ASM_FLAGS ${_asm_flags})
 set(CMAKE_C_FLAGS ${_c_flags})
