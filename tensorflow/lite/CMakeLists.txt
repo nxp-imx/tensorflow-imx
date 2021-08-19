@@ -653,6 +653,9 @@ if(TFLITE_BUILD_EVALTOOLS)
     if(TFLITE_ENABLE_XNNPACK)
         list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_SOURCE_DIR}/tools/delegates/xnnpack_delegate_provider.cc)
     endif()
+    if(TFLITE_ENABLE_VX)
+        list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_SOURCE_DIR}/tools/delegates/vx_delegate_provider.cc)
+    endif()
 
 
     add_executable(coco_object_detection_run_eval
