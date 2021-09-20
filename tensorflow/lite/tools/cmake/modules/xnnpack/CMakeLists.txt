@@ -17,9 +17,18 @@
 # XNNPACK compilation break. This switch needs to be removed for XNNPACK
 # In order to isolate the changes only for XNNPACK and its depencencies, this subfolder is
 # introduced.
-string(REGEX REPLACE "-mcpu=[-a-zA-Z0-9_.^$*+?]*" "" _asm_flags ${CMAKE_ASM_FLAGS})
-string(REGEX REPLACE "-mcpu=[-a-zA-Z0-9_.^$*+?]*" "" _c_flags ${CMAKE_C_FLAGS})
-string(REGEX REPLACE "-mcpu=[-a-zA-Z0-9_.^$*+?]*" "" _cxx_flags ${CMAKE_CXX_FLAGS})
+
+# During the native tflite compilation, compiler flags may not defined at all/may be defined
+# as an empty string, leading to REGEX REPLACE error.
+if(DEFINED CMAKE_ASM_FLAGS AND NOT CMAKE_ASM_FLAGS STREQUAL "")
+  string(REGEX REPLACE "-mcpu=[-a-zA-Z0-9_.^$*+?]*" "" _asm_flags ${CMAKE_ASM_FLAGS})
+endif()
+if(DEFINED CMAKE_C_FLAGS AND NOT CMAKE_C_FLAGS STREQUAL "")
+  string(REGEX REPLACE "-mcpu=[-a-zA-Z0-9_.^$*+?]*" "" _c_flags ${CMAKE_C_FLAGS})
+endif()
+if(DEFINED CMAKE_CXX_FLAGS AND NOT CMAKE_CXX_FLAGS STREQUAL "")
+  string(REGEX REPLACE "-mcpu=[-a-zA-Z0-9_.^$*+?]*" "" _cxx_flags ${CMAKE_CXX_FLAGS})
+endif()
 
 set(CMAKE_ASM_FLAGS ${_asm_flags})
 set(CMAKE_C_FLAGS ${_c_flags})
