@@ -78,6 +78,7 @@ option(TFLITE_PYTHON_WRAPPER_BUILD_CMAKE2 "Configure Python wrapper build for pu
 option(TFLITE_ENABLE_XNNPACK "Enable XNNPACK backend" ON)
 
 option(TFLITE_KERNEL_TEST "Enable tflite kernel unit test" OFF)
+option(TFLITE_BUILD_EVALTOOLS "Build TensorFlow Lite evaluation tools" OFF)
 
 set(CMAKE_CXX_STANDARD 14)  # Some components require C++14.
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -528,3 +529,71 @@ target_compile_options(_pywrap_tensorflow_interpreter_wrapper
   PUBLIC ${TFLITE_TARGET_PUBLIC_OPTIONS}
   PRIVATE ${TFLITE_TARGET_PRIVATE_OPTIONS}
 )
+if(TFLITE_BUILD_EVALTOOLS)
+    find_package(nsync REQUIRED)
+    populate_tflite_source_vars("tools/evaluation/stages" TFLITE_EVALUATION_STAGES_SRCS RECURSE)
+    populate_tflite_source_vars("tools/evaluation/proto" TFLITE_EVALUATION_PROTO_SRCS)
+    
+    list(APPEND TFLITE_EVALUATION_BINARY_SRCS
+        ${TF_SOURCE_DIR}/core/platform/default/logging.cc
+        ${TF_SOURCE_DIR}/core/platform/default/env_time.cc
+        ${TF_SOURCE_DIR}/core/platform/default/mutex.cc
+        ${TF_SOURCE_DIR}/core/lib/jpeg/jpeg_mem.cc
+        ${TF_SOURCE_DIR}/core/lib/jpeg/jpeg_handle.cc
+        ${TFLITE_SOURCE_DIR}/profiling/time.cc
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/utils.cc
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/evaluation_delegate_provider.cc
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/tasks/task_executor_main.cc
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/tasks/task_executor.cc
+        ${TFLITE_SOURCE_DIR}/tools/delegates/default_execution_provider.cc
+        ${TFLITE_SOURCE_DIR}/tools/command_line_flags.cc
+        ${TFLITE_SOURCE_DIR}/tools/tool_params.cc
+    )
+    list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_CMD_LINE_TOOLS_SRCS})
+    list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_EVALUATION_STAGES_SRCS})
+    list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_EVALUATION_PROTO_SRCS})
+    if(_TFLITE_ENABLE_NNAPI)
+        list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_SOURCE_DIR}/tools/delegates/nnapi_delegate_provider.cc)
+    endif()
+    if(TFLITE_ENABLE_XNNPACK)
+        list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_SOURCE_DIR}/tools/delegates/xnnpack_delegate_provider.cc)
+    endif()
+
+
+    add_executable(coco_object_detection_run_eval
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/tasks/coco_object_detection/run_eval.cc
+        ${TFLITE_EVALUATION_BINARY_SRCS}
+    )
+
+    add_executable(imagenet_image_classification_run_eval
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/tasks/imagenet_image_classification/run_eval.cc
+        ${TFLITE_EVALUATION_BINARY_SRCS}
+    )
+
+    add_executable(inference_diff_run_eval
+        ${TFLITE_SOURCE_DIR}/tools/evaluation/tasks/inference_diff/run_eval.cc
+        ${TFLITE_EVALUATION_BINARY_SRCS}
+    )
+    list(APPEND EVALTOOLS
+        coco_object_detection_run_eval
+        imagenet_image_classification_run_eval
+        inference_diff_run_eval
+    )
+
+    foreach(evaltool ${EVALTOOLS})
+        target_link_libraries(${evaltool}
+            tensorflow-lite
+            ${TFLITE_BENCHMARK_LIBS}
+            absl::base
+            absl::strings
+            absl::flat_hash_map
+            "-lprotobuf"
+            nsync_cpp
+            "-ljpeg"
+            ${CMAKE_DL_LIBS}
+        )
+        target_compile_options(${evaltool}
+            PRIVATE
+            ${TFLITE_BENCHMARK_CC_OPTIONS})
+    endforeach()
+endif()
