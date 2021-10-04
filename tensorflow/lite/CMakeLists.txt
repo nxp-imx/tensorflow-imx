@@ -546,6 +546,7 @@ if(TFLITE_BUILD_EVALTOOLS)
         ${TFLITE_SOURCE_DIR}/tools/evaluation/tasks/task_executor_main.cc
         ${TFLITE_SOURCE_DIR}/tools/evaluation/tasks/task_executor.cc
         ${TFLITE_SOURCE_DIR}/tools/delegates/default_execution_provider.cc
+        ${TFLITE_SOURCE_DIR}/tools/delegates/delegate_provider.cc
         ${TFLITE_SOURCE_DIR}/tools/command_line_flags.cc
         ${TFLITE_SOURCE_DIR}/tools/tool_params.cc
     )
@@ -579,16 +580,26 @@ if(TFLITE_BUILD_EVALTOOLS)
         imagenet_image_classification_run_eval
         inference_diff_run_eval
     )
+    unset(TFLITE_PROTOBUF_LIB CACHE)
+    find_library(TFLITE_PROTOBUF_LIB
+        "libprotobuf.so.20.0.2")
+    if(NOT TFLITE_PROTOBUF_LIB)
+        message(FATAL_ERROR "Protobuf Library not found!")
+    endif()
+    message("Protobuf library: ${TFLITE_PROTOBUF_LIB}")
 
     foreach(evaltool ${EVALTOOLS})
+        target_include_directories(${evaltool}
+            PUBLIC
+                "${CMAKE_SYSROOT}/usr/include/tensorflow-protobuf")
         target_link_libraries(${evaltool}
             tensorflow-lite
             ${TFLITE_BENCHMARK_LIBS}
             absl::base
             absl::strings
             absl::flat_hash_map
-            "-lprotobuf"
             nsync_cpp
+            ${TFLITE_PROTOBUF_LIB}
             "-ljpeg"
             ${CMAKE_DL_LIBS}
         )
