@@ -483,6 +483,13 @@ typedef struct {
 } TfLiteWhileParams;
 
 typedef struct {
+  size_t length;
+  size_t input_count;
+  size_t output_cout;
+  char* binary;
+} TfLiteVsiNpuParams;
+
+typedef struct {
   bool exclusive;
   bool reverse;
 } TfLiteCumsumParams;
