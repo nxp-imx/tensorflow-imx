@@ -155,7 +155,7 @@ set(TEST_WITH_EXTERNAL_MAIN_LIST
   internal/depthwiseconv_float_test.cc
   internal/depthwiseconv_per_channel_quantized_16x8_test.cc
   internal/depthwiseconv_per_channel_quantized_test.cc
-  internal/depthwiseconv_quantized_test.cc
+  # internal/depthwiseconv_quantized_test.cc
   internal/log_quantized_test.cc
   internal/logsoftmax_quantized_test.cc
   internal/maxpool_quantized_test.cc
@@ -269,7 +269,7 @@ set(TEST_WITH_EXTERNAL_MAIN_LIST
   svdf_test.cc
   # We don't always have the delegate environment(e.g nnapi)
   # So, skip "test_delegate_providers_test.cc".
-  #test_delegate_providers_test.cc
+  # test_delegate_providers_test.cc
   tile_test.cc
   topk_v2_test.cc
   transpose_conv_test.cc
