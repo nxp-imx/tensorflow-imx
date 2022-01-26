@@ -17,13 +17,15 @@ if(TARGET xnnpack OR xnnpack_POPULATED)
   return()
 endif()
 
-include(FetchContent)
+include(utils)
+get_dependency_tag("xnnpack" "${TF_SOURCE_DIR}/workspace2.bzl" XNNPACK_TAG)
+
+include(OverridableFetchContent)
 
 OverridableFetchContent_Declare(
   xnnpack
   GIT_REPOSITORY https://github.com/google/XNNPACK
-  # Sync with tensorflow/workspace2.bzl
-  GIT_TAG 113092317754c7dea47bfb3cb49c4f59c3c1fa10
+  GIT_TAG ${XNNPACK_TAG}
   GIT_PROGRESS TRUE
   PREFIX "${CMAKE_BINARY_DIR}"
   SOURCE_DIR "${CMAKE_BINARY_DIR}/xnnpack"

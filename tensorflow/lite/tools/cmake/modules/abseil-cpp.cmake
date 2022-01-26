@@ -18,13 +18,15 @@ if(TARGET absl_base OR abseil-cpp_POPULATED)
   return()
 endif()
 
+include(utils)
+get_dependency_tag("absl" "${TF_SOURCE_DIR}/../third_party/absl/workspace.bzl" ABSL_TAG)
+
 include(OverridableFetchContent)
 
 OverridableFetchContent_Declare(
   abseil-cpp
   GIT_REPOSITORY https://github.com/abseil/abseil-cpp
-  # Sync with tensorflow/third_party/absl/workspace.bzl
-  GIT_TAG 997aaf3a28308eba1b9156aa35ab7bca9688e9f6
+  GIT_TAG ${ABSL_TAG}
   GIT_SHALLOW TRUE
   GIT_PROGRESS TRUE
   PREFIX "${CMAKE_BINARY_DIR}"
