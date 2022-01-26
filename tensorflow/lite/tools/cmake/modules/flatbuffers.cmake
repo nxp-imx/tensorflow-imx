@@ -17,13 +17,22 @@ if(TARGET flatbuffers OR flatbuffers_POPULATED)
   return()
 endif()
 
-include(FetchContent)
+# For flatbuffers to be built as part of host tools build (see tensorflow/lite/tools/cmake/native_tools)
+if(NOT TF_SOURCE_DIR)
+  get_filename_component(TF_SOURCE_DIR
+    "${CMAKE_CURRENT_LIST_DIR}/../../../../../tensorflow"
+    ABSOLUTE
+  )
+endif()
+
+include(utils)
+get_dependency_archive("flatbuffers" "${TF_SOURCE_DIR}/../third_party/flatbuffers/workspace.bzl" FLATBUFFERS_URL FLATBUFFERS_CHECKSUM)
+include(OverridableFetchContent)
 
 OverridableFetchContent_Declare(
   flatbuffers
-  GIT_REPOSITORY https://github.com/google/flatbuffers
-  # Sync with tensorflow/third_party/flatbuffers/workspace.bzl
-  GIT_TAG v1.12.0
+  URL ${FLATBUFFERS_URL}
+  URL_HASH SHA256=${FLATBUFFERS_CHECKSUM}
   GIT_SHALLOW TRUE
   GIT_PROGRESS TRUE
   SOURCE_DIR "${CMAKE_BINARY_DIR}/flatbuffers"
@@ -38,6 +47,9 @@ option(FLATBUFFERS_BUILD_TESTS OFF)
 # Required for Windows, since it has macros called min & max which
 # clashes with std::min
 add_definitions(-DNOMINMAX=1)
+message(STATUS "flatbuffers_source_dir ${flatbuffers_SOURCE_DIR}")
+message(STATUS "flatbuffers_binary_dir ${flatbuffers_BINARY_DIR}")
+
 add_subdirectory(
   "${flatbuffers_SOURCE_DIR}"
   "${flatbuffers_BINARY_DIR}"
