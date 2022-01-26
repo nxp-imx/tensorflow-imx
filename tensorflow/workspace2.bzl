@@ -139,6 +139,9 @@ def _tf_repositories():
     # and update the sha256 with the result.
 
     # LINT.IfChange
+    # Attention: TensorFlow Lite CMake build uses this variable, update only the hash content. 
+    XNNPACK_COMMIT = "659147817805d17c7be2d60bd7bbca7e780f9c82"
+
     tf_http_archive(
         name = "XNNPACK",
         sha256 = "0a7ad183dcb4db36e82c4c24376a28281c30e986bd2d71311e624405229a7618",
@@ -584,12 +587,15 @@ def _tf_repositories():
     )
 
     # LINT.IfChange
+    # Attention: TensorFlow Lite CMake build uses these variables, update only the URL and the checksum value.
+    FFT2D_URL = "https://github.com/petewarden/OouraFFT/archive/v1.0.tar.gz"
+    FFT2D_SHA256 = "5f4dabc2ae21e1f537425d58a49cdca1c49ea11db0d6271e2a4b27e9697548eb"
     tf_http_archive(
         name = "fft2d",
         build_file = "//third_party/fft2d:fft2d.BUILD",
-        sha256 = "5f4dabc2ae21e1f537425d58a49cdca1c49ea11db0d6271e2a4b27e9697548eb",
+        sha256 = FFT2D_SHA256,
         strip_prefix = "OouraFFT-1.0",
-        urls = tf_mirror_urls("https://github.com/petewarden/OouraFFT/archive/v1.0.tar.gz"),
+        urls = tf_mirror_urls(FFT2D_URL),
     )
     # LINT.ThenChange(//tensorflow/lite/tools/cmake/modules/fft2d.cmake)
 
@@ -716,12 +722,15 @@ def _tf_repositories():
     )
 
     # LINT.IfChange
+    # Attention: TensorFlow Lite CMake parser processes these lines
+    NEON2SSE_URL = "https://github.com/intel/ARM_NEON_2_x86_SSE/archive/a15b489e1222b2087007546b4912e21293ea86ff.tar.gz"
+    NEON2SSE_SHA256 = "019fbc7ec25860070a1d90e12686fc160cfb33e22aa063c80f52b363f1361e9d"
     tf_http_archive(
         name = "arm_neon_2_x86_sse",
         build_file = "//third_party:arm_neon_2_x86_sse.BUILD",
-        sha256 = "019fbc7ec25860070a1d90e12686fc160cfb33e22aa063c80f52b363f1361e9d",
+        sha256 = NEON2SSE_SHA256,
         strip_prefix = "ARM_NEON_2_x86_SSE-a15b489e1222b2087007546b4912e21293ea86ff",
-        urls = tf_mirror_urls("https://github.com/intel/ARM_NEON_2_x86_SSE/archive/a15b489e1222b2087007546b4912e21293ea86ff.tar.gz"),
+        urls = tf_mirror_urls(NEON2SSE_URL),
     )
     # LINT.ThenChange(//tensorflow/lite/tools/cmake/modules/neon2sse.cmake)
 
