@@ -17,13 +17,15 @@ if(TARGET opencl_headers OR opencl_headers_POPULATED)
   return()
 endif()
 
-include(FetchContent)
+include(utils)
+get_dependency_tag("opencl_headers" "${TF_SOURCE_DIR}/../third_party/opencl_headers/workspace.bzl" OPENCL_HEADERS_TAG)
+
+include(OverridableFetchContent)
 
 OverridableFetchContent_Declare(
   opencl_headers
   GIT_REPOSITORY https://github.com/KhronosGroup/OpenCL-Headers
-  # Sync with tensorflow/third_party/opencl_headers/workspace.bzl
-  GIT_TAG dcd5bede6859d26833cd85f0d6bbcee7382dc9b3
+  GIT_TAG ${OPENCL_HEADERS_TAG}
   GIT_PROGRESS TRUE
   PREFIX "${CMAKE_BINARY_DIR}"
   SOURCE_DIR "${CMAKE_BINARY_DIR}/opencl_headers"

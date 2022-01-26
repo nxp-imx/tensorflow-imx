@@ -17,13 +17,15 @@ if(TARGET vulkan_headers OR vulkan_headers_POPULATED)
   return()
 endif()
 
-include(FetchContent)
+include(utils)
+get_dependency_tag("vulkan_headers" "${TF_SOURCE_DIR}/../third_party/vulkan_headers/workspace.bzl" VULKAN_HEADERS_TAG)
+
+include(OverridableFetchContent)
 
 OverridableFetchContent_Declare(
   vulkan_headers
   GIT_REPOSITORY https://github.com/KhronosGroup/Vulkan-Headers
-  # Sync with tensorflow/third_party/vulkan_headers/workspace.bzl
-  GIT_TAG 32c07c0c5334aea069e518206d75e002ccd85389
+  GIT_TAG ${VULKAN_HEADERS_TAG}
   GIT_PROGRESS TRUE
   PREFIX "${CMAKE_BINARY_DIR}"
   SOURCE_DIR "${CMAKE_BINARY_DIR}/vulkan_headers"

@@ -17,13 +17,15 @@ if(TARGET ruy OR ruy_POPULATED)
   return()
 endif()
 
+include(utils)
+get_dependency_tag("ruy" "${TF_SOURCE_DIR}/../third_party/ruy/workspace.bzl" RUY_TAG)
+
 include(OverridableFetchContent)
 
 OverridableFetchContent_Declare(
   ruy
   GIT_REPOSITORY https://github.com/google/ruy
-  # Sync with tensorflow/third_party/ruy/workspace.bzl
-  GIT_TAG 841ea4172ba904fe3536789497f9565f2ef64129
+  GIT_TAG ${RUY_TAG}
   GIT_PROGRESS TRUE
   SOURCE_DIR "${CMAKE_BINARY_DIR}/ruy"
 )
