@@ -5,11 +5,9 @@ load("//third_party:repo.bzl", "tf_http_archive", "tf_mirror_urls")
 def repo():
     """Imports Eigen."""
 
-    # Attention: tools parse and update these lines.
-    # LINT.IfChange
+    # Attention: TensorFlow Lite CMake build uses this variable, update only the hash content.
     EIGEN_COMMIT = "0e187141679fdb91da33249d18cb79a011c0e2ea"
     EIGEN_SHA256 = "52a7ef3ffe2b581973615b000657f456e2eab8e899fb863f456711feb790cb8c"
-    # LINT.ThenChange(//tensorflow/lite/tools/cmake/modules/eigen.cmake)
 
     tf_http_archive(
         name = "eigen_archive",
