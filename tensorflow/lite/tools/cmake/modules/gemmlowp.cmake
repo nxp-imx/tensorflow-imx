@@ -17,13 +17,15 @@ if(TARGET gemmlowp OR gemmlowp_POPULATED)
   return()
 endif()
 
+include(utils)
+get_dependency_tag("gemmlowp" "${TF_SOURCE_DIR}/../third_party/gemmlowp/workspace.bzl" GEMMLOWP_TAG)
+
 include(OverridableFetchContent)
 
 OverridableFetchContent_Declare(
   gemmlowp
   GIT_REPOSITORY https://github.com/google/gemmlowp
-  # Sync with tensorflow/third_party/gemmlowp/workspace.bzl
-  GIT_TAG 16e8662c34917be0065110bfcd9cc27d30f52fdf
+  GIT_TAG ${GEMMLOWP_TAG}
   # It's not currently (cmake 3.17) possible to shallow clone with a GIT TAG
   # as cmake attempts to git checkout the commit hash after the clone
   # which doesn't work as it's a shallow clone hence a different commit hash.

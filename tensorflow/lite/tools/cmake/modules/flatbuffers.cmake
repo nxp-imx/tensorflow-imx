@@ -17,15 +17,28 @@ if(TARGET flatbuffers OR flatbuffers_POPULATED)
   return()
 endif()
 
+# For flatbuffers to be built as part of host tools build (see tensorflow/lite/tools/cmake/native_tools)
+if(NOT TF_SOURCE_DIR)
+  get_filename_component(TF_SOURCE_DIR
+    "${CMAKE_CURRENT_LIST_DIR}/../../../../../tensorflow"
+    ABSOLUTE
+  )
+endif()
+
+include(utils)
+get_dependency_archive("flatbuffers" "${TF_SOURCE_DIR}/../third_party/flatbuffers/workspace.bzl" FLATBUFFERS_URL FLATBUFFERS_CHECKSUM)
+get_dependency_tag("flatbuffers" "${TF_SOURCE_DIR}/../third_party/flatbuffers/workspace.bzl" FLATBUFFERS_TAG)
 include(OverridableFetchContent)
 
 OverridableFetchContent_Declare(
   flatbuffers
-  GIT_REPOSITORY https://github.com/google/flatbuffers
-  # Sync with tensorflow/third_party/flatbuffers/workspace.bzl
-  GIT_TAG v23.5.26
-  GIT_SHALLOW TRUE
+  GIT_TAG ${FLATBUFFERS_TAG}
+  URL ${FLATBUFFERS_URL}
+  URL_HASH SHA256=${FLATBUFFERS_CHECKSUM}
+  GIT_SHALLOW FALSE
   GIT_PROGRESS TRUE
+  LICENSE_FILE "LICENSE"
+  LICENSE_URL ${FLATBUFFERS_URL}
   SOURCE_DIR "${CMAKE_BINARY_DIR}/flatbuffers"
 )
 
