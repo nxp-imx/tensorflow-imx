@@ -61,15 +61,12 @@ build_flatbuffers(
 )
 
 set(DELEGATE_PROVIDERS_SUPP
-  ${TFLITE_SOURCE_DIR}/delegates/external/external_delegate.cc
   ${TFLITE_SOURCE_DIR}/nnapi/sl/SupportLibrary.cc
   ${TFLITE_SOURCE_DIR}/tools/delegates/delegate_provider.cc
-  ${TFLITE_SOURCE_DIR}/tools/evaluation/utils.cc
 )
 
 set(DELEGATE_PROVIDERS
   ${DELEGATE_PROVIDERS_SUPP}
-  ${TFLITE_SOURCE_DIR}/tools/delegates/default_execution_provider.cc
   # List of delegates referenced as options in the tensorflow/lite/CMakeLists.txt
   ${TFLITE_SOURCE_DIR}/tools/delegates/gpu_delegate_provider.cc
   ${TFLITE_SOURCE_DIR}/tools/delegates/nnapi_delegate_provider.cc
@@ -83,19 +80,13 @@ endif()
 set(TEST_FRAMEWORK_SRC
   ${TFLITE_SOURCE_DIR}/delegates/nnapi/acceleration_test_list.cc
   ${TFLITE_SOURCE_DIR}/delegates/nnapi/acceleration_test_util.cc
-  ${TFLITE_SOURCE_DIR}/profiling/memory_info.cc
   ${TFLITE_SOURCE_DIR}/schema/schema_conversion_utils.cc
-  ${TFLITE_SOURCE_DIR}/tools/command_line_flags.cc
   ${DELEGATE_PROVIDERS}
   ${TFLITE_SOURCE_DIR}/tools/optimize/model_utils.cc
   ${TFLITE_SOURCE_DIR}/tools/optimize/operator_property.cc
   ${TFLITE_SOURCE_DIR}/tools/optimize/quantization_utils.cc
-  ${TFLITE_SOURCE_DIR}/tools/tool_params.cc
   ${TFLITE_SOURCE_DIR}/tools/versioning/op_version.cc
   ${TFLITE_SOURCE_DIR}/tools/versioning/op_signature.cc
-  ${TF_SOURCE_DIR}/core/platform/default/env_time.cc
-  ${TF_SOURCE_DIR}/core/platform/default/logging.cc
-  ${TF_SOURCE_DIR}/core/platform/default/mutex.cc
   internal/test_util.cc
   acceleration_test_util.cc
   acceleration_test_util_internal.cc
@@ -169,7 +160,6 @@ set(TEST_WITH_EXTERNAL_MAIN_LIST
   internal/depthwiseconv_float_test.cc
   internal/depthwiseconv_per_channel_quantized_16x8_test.cc
   internal/depthwiseconv_per_channel_quantized_test.cc
-  # internal/depthwiseconv_quantized_test.cc
   internal/log_quantized_test.cc
   internal/logsoftmax_quantized_test.cc
   internal/maxpool_quantized_test.cc
