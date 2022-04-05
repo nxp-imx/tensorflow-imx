@@ -89,6 +89,9 @@ endif()
 if(TFLITE_ENABLE_XNNPACK)
     list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_SOURCE_DIR}/tools/delegates/xnnpack_delegate_provider.cc)
 endif()
+if(TFLITE_ENABLE_EXTERNAL_DELEGATE)
+    list(APPEND TFLITE_EVALUATION_BINARY_SRCS ${TFLITE_SOURCE_DIR}/tools/delegates/external_delegate_provider.cc)
+endif()
 
 add_executable(coco_object_detection_run_eval
     ${TFLITE_SOURCE_DIR}/tools/evaluation/tasks/coco_object_detection/run_eval.cc
