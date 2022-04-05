@@ -76,6 +76,7 @@ endif()
 set(TEST_FRAMEWORK_SRC
   ${TFLITE_SOURCE_DIR}/delegates/nnapi/acceleration_test_list.cc
   ${TFLITE_SOURCE_DIR}/delegates/nnapi/acceleration_test_util.cc
+  ${TFLITE_SOURCE_DIR}/nnapi/nnapi_implementation.cc
   ${TFLITE_SOURCE_DIR}/profiling/memory_info.cc
   ${TFLITE_SOURCE_DIR}/schema/schema_conversion_utils.cc
   ${TFLITE_SOURCE_DIR}/tools/command_line_flags.cc
@@ -125,9 +126,9 @@ target_link_libraries(tensorflow-lite-test-external-main
   # We need the nnapi related symbols later.
   # Please check:
   # https://github.com/tensorflow/tensorflow/blob/master/tensorflow/lite/tools/delegates/BUILD#L96
-  -Wl,--whole-archive
+  # -Wl,--whole-archive
   tensorflow-lite-test-base
-  -Wl,--no-whole-archive
+  # -Wl,--no-whole-archive
   gtest
 )
 
@@ -162,7 +163,7 @@ set(TEST_WITH_EXTERNAL_MAIN_LIST
   internal/depthwiseconv_float_test.cc
   internal/depthwiseconv_per_channel_quantized_16x8_test.cc
   internal/depthwiseconv_per_channel_quantized_test.cc
-  internal/depthwiseconv_quantized_test.cc
+  # internal/depthwiseconv_quantized_test.cc
   internal/log_quantized_test.cc
   internal/logsoftmax_quantized_test.cc
   internal/maxpool_quantized_test.cc
