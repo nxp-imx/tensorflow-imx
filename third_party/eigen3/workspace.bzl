@@ -12,7 +12,7 @@ def repo():
     tf_http_archive(
         name = "eigen_archive",
         build_file = "//third_party/eigen3:eigen_archive.BUILD",
-        sha256 = "4553df1eb1287c53d11a661bec282d37fd028864a3a324cf9b085c9d99b6cf55",
+        sha256 = EIGEN_SHA256,
         strip_prefix = "eigen-{commit}".format(commit = EIGEN_COMMIT),
         urls = tf_mirror_urls("https://gitlab.com/libeigen/eigen/-/archive/{commit}/eigen-{commit}.tar.gz".format(commit = EIGEN_COMMIT)),
     )
