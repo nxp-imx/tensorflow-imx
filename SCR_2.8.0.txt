@@ -1,0 +1,226 @@
+NXP Software Content Register
+
+Release - TensorFlow Lite 2.8.0
+June 2022
+
+Outgoing License: Apache 2.0
+License in File: LICENSE
+
+Release branch: lf-5.15.5_2.0.0
+
+--------------------------------------------
+
+Package:                   tensorflow-imx.git
+Version:                   2.8.0
+Outgoing License:          Apache 2.0
+License File:              LICENSE
+Description and comments:  TensorFlow Lite inference framework for mobile devices.
+Release Location:          https://source.codeaurora.org/external/imx/tensorflow-imx.git -b lf-5.15.5_2.0.0
+Origin:                    TensorFlow - https://github.com/tensorflow/tensorflow
+                           
+--------------------------------------------
+
+Addtionally following packages are used at build time:
+
+--------------------------------------------
+
+Package:                   googletest.git
+Version:                   1.10.0
+Outgoing License:          BSD-3-Clause license 
+License File:              LICENSE
+Description and comments:  Google Test Framework
+Release Location:          public
+Origin:                    Google - https://github.com/google/googletest
+                           
+--------------------------------------------
+
+Package:                   abseil-cpp.git
+Version:                   Revision 997aaf3a28308eba1b9156aa35ab7bca9688e9f6
+Outgoing License:          Apache 2.0
+License File:              LICENSE
+Description and comments:  Abseil - C++ Common Libraries
+Release Location:          public
+Origin:                    https://github.com/abseil/abseil-cpp
+                           
+--------------------------------------------
+
+Package:                   CLOG
+Version:                   Revision d5e37adf1406cf899d7d9ec1d317c47506ccb970
+Outgoing License:          BSD-2-Clause license
+License File:              LICENSE
+Description and comments:  C-style (a-la printf) logging library
+Release Location:          public
+Origin:                    https://github.com/pytorch/cpuinfo
+                           
+--------------------------------------------
+
+Package:                   cpuinfo.git
+Version:                   Revision 5916273f79a21551890fd3d56fc5375a78d1598d
+Outgoing License:          BSD-2-Clause license
+License File:              LICENSE
+Description and comments:  CPU INFOrmation library
+Release Location:          public
+Origin:                    https://github.com/pytorch/cpuinfo
+                           
+--------------------------------------------
+
+Package:                   EGL-Registry.git
+Version:                   Revision 649981109e263b737e7735933c90626c29a306f2
+Outgoing License:          --
+License File:              --
+Description and comments:  EGL API and Extension Registry, including specifications, reference pages and reference cards, and the enumerant registry.
+Release Location:          public
+Origin:                    https://github.com/KhronosGroup/EGL-Registry
+                           
+--------------------------------------------
+
+Package:                   eigen.git
+Version:                   Revision 085c2fc5d53f391afcccce21c45e15f61c827ab1
+Outgoing License:          Apache 2.0
+License File:              COPYING.APACHE
+Description and comments:  C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms.
+Release Location:          public
+Origin:                    https://gitlab.com/libeigen/eigen
+                           
+--------------------------------------------
+
+Package:                   farmhash.git
+Version:                   Revision 0d859a811870d10f53a594927d0d0b97573ad06d
+Outgoing License:          MIT
+License File:              COPYING
+Description and comments:  FarmHash, a family of hash functions.
+Release Location:          public
+Origin:                    Google, https://github.com/google/farmhash
+                           
+--------------------------------------------
+
+Package:                   fft2d
+Version:                   1.0
+Outgoing License:          "You may use, copy, modify this code for any purpose and without fee. You may distribute this ORIGINAL package."
+License File:              readme2d
+Description and comments:  General Purpose FFT (Fast Fourier/Cosine/Sine Transform) Package
+Release Location:          public
+Origin:                    https://www.kurims.kyoto-u.ac.jp/~ooura/fft.html
+                           
+--------------------------------------------
+
+Package:                   flatbuffers.git
+Version:                   1.12.0
+Outgoing License:          Apache 2.0
+License File:              LICENSE.txt
+Description and comments:  FlatBuffers is a cross platform serialization library architected for maximum memory efficiency.
+Release Location:          public
+Origin:                    https://github.com/google/flatbuffers
+                           
+--------------------------------------------
+
+Package:                   fp16_headers
+Version:                   Revision 0a92994d729ff76a58f692d3028ca1b64b145d91
+Outgoing License:          MIT
+License File:              LICENSE
+Description and comments:  Header-only library for conversion to/from half-precision floating point formats
+Release Location:          public
+Origin:                    https://github.com/Maratyszcza/FP16
+                           
+--------------------------------------------
+
+Package:                   gemmlowp.git
+Version:                   Revision fda83bdc38b118cc6b56753bd540caa49e570745
+Outgoing License:          Apache 2.0
+License File:              LICENSE
+Description and comments:  General matrix multiplication ("GEMM") library.
+Release Location:          public
+Origin:                    https://github.com/google/gemmlowp
+                           
+--------------------------------------------
+
+Package:                   neon2sse
+Version:                   Revision 1200fe90bb174a6224a525ee60148671a786a71f
+Outgoing License:          BSD License
+License File:              LICENSE
+Description and comments:  NEON_2_SSE.h file is intended to simplify ARM->IA32 porting.
+Release Location:          public
+Origin:                    Intel - https://github.com/intel/ARM_NEON_2_x86_SSE
+                           
+--------------------------------------------
+
+Package:                   OpenCL-Headers.git
+Version:                   Revision 0d5f18c6e7196863bc1557a693f1509adfcee056
+Outgoing License:          Apache 2.0
+License File:              LICENSE
+Description and comments:  C language headers for the OpenCL API.
+Release Location:          public
+Origin:                    KhronosGroup -  https://github.com/KhronosGroup/OpenCL-Headers
+                           
+--------------------------------------------
+
+Package:                   OpenGL-Registry.git
+Version:                   Revision 0cb0880d91581d34f96899c86fc1bf35627b4b81
+Outgoing License:          N/A
+License File:              --
+Description and comments:  API and Extension registries for the OpenGL family APIs - OpenGL, OpenGL ES, and OpenGL SC.
+Release Location:          public
+Origin:                    KhronosGroup - https://github.com/KhronosGroup/OpenGL-Registry.git
+                           
+--------------------------------------------
+
+Package:                   ruy.git
+Version:                   Revision e6c1b8dc8a8b00ee74e7268aac8b18d7260ab1ce
+Outgoing License:          Apache 2.0
+License File:              LICENSE
+Description and comments:  Matrix multiplication library
+Release Location:          public
+Origin:                    https://github.com/google/ruy
+                           
+--------------------------------------------
+
+Package:                   Vulkan-Headers.git
+Version:                   Revision ec2db85225ab410bc6829251bef6c578aaed5868
+Outgoing License:          Apache 2.0
+License File:              LICENSE.txt
+Description and comments:  Vulkan header files and API registry
+Release Location:          public
+Origin:                    https://github.com/KhronosGroup/Vulkan-Headers
+                           
+--------------------------------------------
+
+Package:                   XNNPACK.git
+Version:                   Revision 113092317754c7dea47bfb3cb49c4f59c3c1fa10
+Outgoing License:          BSD License
+License File:              LICENSE
+Description and comments:  Highly optimized library of floating-point neural network inference operators for ARM, WebAssembly, and x86 platforms. 
+Release Location:          public
+Origin:                    https://github.com/google/XNNPACK
+                           
+--------------------------------------------
+
+Package:                   FXdiv
+Version:                   N/A 
+Outgoing License:          MIT
+License File:              LICENSE
+Description and comments:  Header-only library for division via fixed-point multiplication by inverse.
+Release Location:          public
+Origin:                    https://github.com/Maratyszcza/FXdiv
+                           
+--------------------------------------------
+
+Package:                   psimd
+Version:                   N/A 
+Outgoing License:          MIT
+License File:              LICENSE
+Description and comments:  Header-only library for division via fixed-point multiplication by inverse.
+Release Location:          public
+Origin:                    https://github.com/Maratyszcza/psimd
+                           
+--------------------------------------------
+
+Package:                   pthreadpool
+Version:                   N/A
+Outgoing License:          BSD License
+License File:              LICENSE
+Description and comments:  pthreadpool is a portable and efficient thread pool implementation. It provides
+                           similar functionality to #pragma omp parallel for, but with additional features. 
+Release Location:          public
+Origin:                    https://github.com/Maratyszcza/pthreadpool
+                           
+--------------------------------------------
