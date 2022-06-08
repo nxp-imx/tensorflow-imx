@@ -441,11 +441,15 @@ if(TFLITE_ENABLE_GPU)
      )
      target_link_libraries(${lib_name})
    endforeach()
-endif()
+  endif()
   list(APPEND TFLITE_TARGET_PUBLIC_OPTIONS "-DCL_DELEGATE_NO_GL" "-DEGL_NO_X11")
   list(APPEND TFLITE_TARGET_DEPENDENCIES
     absl::any
     absl::flat_hash_map
+  )
+else()
+  list(APPEND TFLITE_DELEGATES_SRCS
+    ${TFLITE_SOURCE_DIR}/tools/versioning/op_signature.cc
   )
 endif()
 if(_TFLITE_ENABLE_NNAPI)
