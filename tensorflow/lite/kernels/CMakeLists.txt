@@ -17,6 +17,7 @@ find_package(googletest REQUIRED)
 find_package(google_benchmark REQUIRED)
 find_package(nsync REQUIRED)
 find_package(re2 REQUIRED)
+find_package(benchmark REQUIRED)
 
 # Generate the mutable schema_generated.h header for tests.
 set(SCHEMA_FILE ${TFLITE_SOURCE_DIR}/schema/schema.fbs)
@@ -108,11 +109,19 @@ if(NOT _TFLITE_ENABLE_NNAPI)
   )
 endif()
 
+if(NOT TFLITE_ENABLE_GPU)
+  list(APPEND TEST_FRAMEWORK_SRC
+    ${TFLITE_SOURCE_DIR}/tools/versioning/op_signature.cc
+    ${TFLITE_SOURCE_DIR}/experimental/acceleration/configuration/gpu_plugin.cc
+  )
+endif()
+
 set(TEST_FRAMEWORK_OPTIONS "")
 if(TFLITE_ENABLE_XNNPACK)
   list(APPEND TEST_FRAMEWORK_SRC
     ${TFLITE_SOURCE_DIR}/tools/delegates/xnnpack_delegate_provider.cc
-    ${TFLITE_SOURCE_DIR}/core/experimental/acceleration/configuration/c/xnnpack_plugin.cc)
+#    ${TFLITE_SOURCE_DIR}/core/experimental/acceleration/configuration/c/xnnpack_plugin.cc
+  )
 else()
   list(APPEND TEST_FRAMEWORK_OPTIONS "-DTFLITE_WITHOUT_XNNPACK")
 endif()
@@ -123,6 +132,7 @@ target_link_libraries(tensorflow-lite-test-base
   gmock
   nsync_cpp
   re2
+  benchmark::benchmark
   tensorflow-lite
   benchmark
 )
