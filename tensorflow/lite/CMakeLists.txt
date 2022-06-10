@@ -37,7 +37,11 @@ endif()
 cmake_policy(SET CMP0028 NEW)
 # Enable MACOSX_RPATH (@rpath) for built dynamic libraries.
 cmake_policy(SET CMP0042 NEW)
-project(tensorflow-lite C CXX)
+# Set VERSION as documented by the project() command.
+cmake_policy(SET CMP0048 NEW)
+project(tensorflow-lite
+  VERSION 2.9.1
+  LANGUAGES C CXX)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(TENSORFLOW_SOURCE_DIR "" CACHE PATH
   "Directory that contains the TensorFlow project"
@@ -78,6 +82,7 @@ if(TFLITE_KERNEL_TEST AND ${CMAKE_CROSSCOMPILING})
                         Please specify it using -DTFLITE_HOST_TOOLS_DIR=<flatc_dir_path> launch argument.")
   endif()
 endif()
+option(TFLITE_BUILD_SHARED_LIB "Build shared library instead of static" OFF)
 
 set(CMAKE_CXX_STANDARD 14)  # Some components require C++14.
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -464,8 +469,12 @@ include_directories(
     ${TFLITE_INCLUDE_DIRS}
 )
 
+if(${TFLITE_BUILD_SHARED_LIB})
+  set(LIB_TYPE "SHARED")
+endif()
+
 # TFLite library
-add_library(tensorflow-lite
+add_library(tensorflow-lite ${LIB_TYPE}
   ${TFLITE_CORE_API_SRCS}
   ${TFLITE_CORE_SRCS}
   ${TFLITE_C_SRCS}
@@ -492,6 +501,23 @@ add_library(tensorflow-lite
   ${TFLITE_SOURCE_DIR}/kernels/internal/utils/sparsity_format_converter.cc
   ${TFLITE_SOURCE_DIR}/schema/schema_utils.cc
 )
+
+if (TFLITE_BUILD_SHARED_LIB)
+  #TODO: Add branch for windows (based on bazel - export all symbols)
+  if (APPLE)
+    target_link_options(tensorflow-lite PRIVATE "-Wl,-exported_symbols_list,${TENSORFLOW_SOURCE_DIR}/tensorflow/lite/tflite_exported_symbols.lds")
+  else ()
+    target_link_options(tensorflow-lite PRIVATE "-Wl,-z,defs")
+    target_link_options(tensorflow-lite PRIVATE "-Wl,--version-script,${TENSORFLOW_SOURCE_DIR}/tensorflow/lite/tflite_version_script.lds")
+  endif()
+endif()
+
+set_target_properties(tensorflow-lite
+  PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION  ${PROJECT_VERSION}
+)
+
 target_include_directories(tensorflow-lite
   PUBLIC
     ${TFLITE_INCLUDE_DIRS}
