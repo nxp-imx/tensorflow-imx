@@ -37,7 +37,11 @@ endif()
 cmake_policy(SET CMP0028 NEW)
 # Enable MACOSX_RPATH (@rpath) for built dynamic libraries.
 cmake_policy(SET CMP0042 NEW)
-project(tensorflow-lite C CXX)
+# Set VERSION as documented by the project() command.
+cmake_policy(SET CMP0048 NEW)
+project(tensorflow-lite
+  VERSION 2.11.1
+  LANGUAGES C CXX)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(TENSORFLOW_SOURCE_DIR "" CACHE PATH
   "Directory that contains the TensorFlow project"
@@ -89,6 +93,7 @@ if(${CMAKE_CROSSCOMPILING})
     report_error("protoc")
   endif()
 endif()
+option(TFLITE_BUILD_SHARED_LIB "Build shared library instead of static" OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -490,8 +495,22 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "iOS")
   )
 endif()
 
+# Common include directories
+set(TFLITE_INCLUDE_DIRS
+  "${TENSORFLOW_SOURCE_DIR}"
+  "${TFLITE_FLATBUFFERS_SCHEMA_DIR}"
+)
+include_directories(
+  BEFORE
+    ${TFLITE_INCLUDE_DIRS}
+)
+
+if(${TFLITE_BUILD_SHARED_LIB})
+  set(LIB_TYPE "SHARED")
+endif()
+
 # TFLite library
-set(_ALL_TFLITE_SRCS
+add_library(tensorflow-lite ${LIB_TYPE}
   ${TFLITE_CORE_API_SRCS}
   ${TFLITE_CORE_SRCS}
   ${TFLITE_C_SRCS}
@@ -521,14 +540,27 @@ set(_ALL_TFLITE_SRCS
   ${TFLITE_SOURCE_DIR}/schema/schema_utils.cc
   ${TFLITE_SOURCE_DIR}/schema/schema_generated.h
 )
-add_library(tensorflow-lite
-  ${_ALL_TFLITE_SRCS}
+
+if (TFLITE_BUILD_SHARED_LIB)
+  #TODO: Add branch for windows (based on bazel - export all symbols)
+  if (APPLE)
+    target_link_options(tensorflow-lite PRIVATE "-Wl,-exported_symbols_list,${TENSORFLOW_SOURCE_DIR}/tensorflow/lite/tflite_exported_symbols.lds")
+  else ()
+    target_link_options(tensorflow-lite PRIVATE "-Wl,-z,defs")
+    target_link_options(tensorflow-lite PRIVATE "-Wl,--version-script,${TENSORFLOW_SOURCE_DIR}/tensorflow/lite/tflite_version_script.lds")
+  endif()
+endif()
+
+set_target_properties(tensorflow-lite
+  PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION  ${PROJECT_VERSION}
 )
-set(_ALL_TFLITE_HDRS ${_ALL_TFLITE_SRCS})
-list(FILTER _ALL_TFLITE_HDRS INCLUDE REGEX ".*\\.h$")
+
 target_include_directories(tensorflow-lite
   PUBLIC $<BUILD_INTERFACE:${TENSORFLOW_SOURCE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+
 target_link_libraries(tensorflow-lite
   PUBLIC
     Eigen3::Eigen
