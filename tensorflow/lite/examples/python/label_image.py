@@ -85,7 +85,7 @@ if __name__ == '__main__':
         tflite.load_delegate(args.ext_delegate, ext_delegate_options)
     ]
 
-  interpreter = tf.lite.Interpreter(
+  interpreter = tflite.Interpreter(
       model_path=args.model_file,
       experimental_delegates=ext_delegate,
       num_threads=args.num_threads)
