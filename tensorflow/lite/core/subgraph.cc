@@ -1199,6 +1199,12 @@ TfLiteStatus Subgraph::Invoke() {
           // dimensions. See `GetOutputShape()` function in
           // `tensorflow/lite/kernels/reshape.cc`
           continue;
+#ifdef TFLITE_WITH_ETHOSU
+        } else if (strcmp(GetTFLiteOpName(registration), "ethos-u") == 0
+                   && (i == 2 || i == 3)) {
+          // The scratch tensors for ethos-u don't need data
+          continue;
+#endif
         } else {
           // In all other cases, we need to return an error as otherwise we will
           // trigger a null pointer dereference (likely).
