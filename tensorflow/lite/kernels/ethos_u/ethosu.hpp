@@ -128,13 +128,14 @@ public:
 
 class Device {
 public:
-    Device(const char *device = "/dev/ethosu0");
+    static Device *GetSingleton(const char *device = "/dev/ethosu0");
     virtual ~Device();
 
     int ioctl(unsigned long cmd, void *data = nullptr) const;
     Capabilities capabilities() const;
 
 private:
+    Device(const char *device);
     int fd;
 };
 
