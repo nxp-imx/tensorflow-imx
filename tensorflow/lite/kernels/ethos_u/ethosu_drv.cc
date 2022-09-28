@@ -148,10 +148,16 @@ Device::Device(const char *device) {
     fd = eopen(device, O_RDWR | O_NONBLOCK);
     //workaround for kernel call trace when startup
     usleep(10 * 1000);
+    this->ioctl(ETHOSU_IOCTL_VERSION_REQ);
 }
 
 Device::~Device() {
     eclose(fd);
+}
+
+Device* Device::GetSingleton(const char *device){
+    static Device dev(device);
+    return &dev;
 }
 
 int Device::ioctl(unsigned long cmd, void *data) const {
@@ -189,6 +195,7 @@ Buffer::Buffer(const Device &device, const size_t capacity) : fd(-1), dataPtr(nu
         } catch (...) { std::throw_with_nested(e); }
     }
     dataPtr = reinterpret_cast<char *>(d);
+    this->resize(dataCapacity);
 }
 
 Buffer::~Buffer() {

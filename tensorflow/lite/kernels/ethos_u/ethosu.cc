@@ -38,14 +38,57 @@ namespace ops {
 namespace custom {
 namespace ethosu {
 
+//TfLite External Context shared with all the ethosu OP
+struct TfLiteEthosuContext : public TfLiteExternalContext {
+  shared_ptr<Buffer> arena_buffer;  //Output buffer for input/ouput/scratch tensor
+  shared_ptr<Buffer> flash_buffer;  //Input buffer for weight tensor
+  int num_references = 0;
+};
+
+TfLiteEthosuContext* GetEthosuContext(TfLiteContext* context) {
+  return reinterpret_cast<TfLiteEthosuContext*>(
+      context->GetExternalContext(context, kTfLiteEthosuContext));
+}
+
+TfLiteStatus Refresh(TfLiteContext* context) {
+  return kTfLiteOk;
+}
+
+void IncrementUsageCounter(TfLiteContext* context) {
+  auto* ptr = GetEthosuContext(context);
+  if (ptr == nullptr) {
+    ptr = new TfLiteEthosuContext;
+    ptr->type = kTfLiteEthosuContext;
+    ptr->Refresh = Refresh;
+    ptr->num_references = 0;
+    ptr->arena_buffer = nullptr;
+    ptr->flash_buffer = nullptr;
+    context->SetExternalContext(context, kTfLiteEthosuContext, ptr);
+  }
+  ptr->num_references++;
+}
+
+void DecrementUsageCounter(TfLiteContext* context) {
+  auto* ptr = GetEthosuContext(context);
+  if (ptr == nullptr) {
+    TF_LITE_FATAL(
+        "Call to DecrementUsageCounter() not preceded by "
+        "IncrementUsageCounter()");
+  }
+  if (--ptr->num_references == 0) {
+    ptr->arena_buffer = nullptr;
+    ptr->flash_buffer = nullptr;
+    delete ptr;
+    context->SetExternalContext(context, kTfLiteEthosuContext, nullptr);
+  }
+}
+
 #define BUFFER_ALIGNMENT 16
 #define ALIGN_SIZE(size) ((size + BUFFER_ALIGNMENT - 1) & (~(BUFFER_ALIGNMENT - 1)))
 
 struct OpData {
   Device* device;
   shared_ptr<Buffer> net_buffer;  //Buffer for cms tensor
-  shared_ptr<Buffer> arena_buffer;  //Output buffer for input/ouput/scratch tensor
-  shared_ptr<Buffer> flash_buffer;  //Input buffer for weight tensor
   shared_ptr<Buffer> tensor_layout_buffer;   //Input buffer for data layout of in/out/scratch
   shared_ptr<Network> network;
 
@@ -74,12 +117,12 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
       device_name = ETHOSU_DEFAULT_DEVICE_NAME;
 
   try {
-      data->device = new Device(device_name);
-      data->device->ioctl(ETHOSU_IOCTL_VERSION_REQ);
+      data->device = Device::GetSingleton(device_name);
   } catch (std::exception &e) {
       delete data;
       data = nullptr;
   }
+  IncrementUsageCounter(context);
 
   return data;
 }
@@ -90,11 +133,10 @@ void Free(TfLiteContext* context, void* buffer) {
 
   try {
       data->net_buffer = nullptr;
-      data->arena_buffer = nullptr;
-      data->flash_buffer = nullptr;
       data->tensor_layout_buffer = nullptr;
+      data->device = nullptr;
 
-      delete data->device;
+      DecrementUsageCounter(context);
       delete data;
   } catch (std::exception &e) {
       TF_LITE_KERNEL_LOG(context, "Failed to release ethos_u buffers.\n");
@@ -107,6 +149,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   TF_LITE_ENSURE(context, node->inputs->size > 0);
   TFLITE_DCHECK(node->user_data != nullptr);
   TF_LITE_ENSURE(context, node->custom_initial_data_size > 0);
+  auto ethosu_context = GetEthosuContext(context);
 
   OpData* data = static_cast<OpData*>(node->user_data);
 
@@ -182,14 +225,15 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
       data->net_buffer->resize(data->cms_data_size);
       memcpy(data->net_buffer->data(), cms_tensor->data.raw, data->cms_data_size);
 
-      if (data->flash_data_size != 0) {
-          data->flash_buffer = make_shared<Buffer>(*data->device, data->flash_data_size);
-          data->flash_buffer->resize(data->flash_data_size);
-          memcpy(data->flash_buffer->data(), flash_tensor->data.raw, data->flash_data_size);
+      if (data->flash_data_size != 0 && ethosu_context->flash_buffer == nullptr) {
+          ethosu_context->flash_buffer = make_shared<Buffer>(*data->device, data->flash_data_size);
+          memcpy(ethosu_context->flash_buffer->data(), flash_tensor->data.raw, data->flash_data_size);
       }
 
-      data->arena_buffer = make_shared<Buffer>(*data->device, data->arena_data_size);
-      data->arena_buffer->resize(data->arena_data_size);
+      if (ethosu_context->arena_buffer == nullptr
+           || data->arena_data_size > ethosu_context->arena_buffer->capacity()) {
+          ethosu_context->arena_buffer = make_shared<Buffer>(*data->device, data->arena_data_size);
+      }
       data->network = make_shared<Network>(*data->device, data->net_buffer);
   } catch (std::exception &e) {
       TF_LITE_KERNEL_LOG(context, "Failed to alloc ethos_u buffer.\n");
@@ -202,9 +246,10 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   TFLITE_DCHECK(node->user_data != nullptr);
   TFLITE_DCHECK(context != nullptr);
+  auto ethosu_context = GetEthosuContext(context);
 
   OpData* data = static_cast<OpData*>(node->user_data);
-  char* arena_data = data->arena_buffer->data();
+  char* arena_data = ethosu_context->arena_buffer->data();
 
   // Get addresses to input data, copy input data
   for (int i = INPUT_TENSOR_INDEX; i < node->inputs->size; ++i) {
@@ -215,10 +260,10 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
     memcpy(arena_data + addr_offset, tensor->data.raw, tensor->bytes);
   }
 
-  vector<shared_ptr<Buffer>> ifm {data->arena_buffer, data->tensor_layout_buffer};
+  vector<shared_ptr<Buffer>> ifm {ethosu_context->arena_buffer, data->tensor_layout_buffer};
   vector<shared_ptr<Buffer>> ofm {};
   if (data->flash_data_size != 0) {
-      ifm.push_back(data->flash_buffer);
+      ifm.push_back(ethosu_context->flash_buffer);
   }
 
   try {
