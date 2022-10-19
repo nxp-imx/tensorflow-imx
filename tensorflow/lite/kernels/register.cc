@@ -28,6 +28,9 @@ TfLiteRegistration* Register_NUMERIC_VERIFY();
 TfLiteRegistration* Register_AUDIO_SPECTROGRAM();
 TfLiteRegistration* Register_MFCC();
 TfLiteRegistration* Register_DETECTION_POSTPROCESS();
+#ifdef TFLITE_WITH_ETHOSU
+TfLiteRegistration* Register_ETHOSU();
+#endif
 
 }  // namespace custom
 
@@ -358,6 +361,9 @@ BuiltinOpResolver::BuiltinOpResolver() {
             tflite::ops::custom::Register_AUDIO_SPECTROGRAM());
   AddCustom("TFLite_Detection_PostProcess",
             tflite::ops::custom::Register_DETECTION_POSTPROCESS());
+#ifdef TFLITE_WITH_ETHOSU
+  AddCustom("ethos-u", tflite::ops::custom::Register_ETHOSU());
+#endif
   // By definition, all of the ops added above are not user-defined ops,
   // since they are supported by BuiltinOpResolver.
   may_directly_contain_user_defined_ops_ = false;

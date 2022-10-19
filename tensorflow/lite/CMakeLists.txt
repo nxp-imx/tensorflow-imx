@@ -74,6 +74,7 @@ option(TFLITE_ENABLE_METAL "Enable Metal delegate (iOS only)" OFF)
 option(TFLITE_PYTHON_WRAPPER_BUILD_CMAKE2 "Configure Python wrapper build for pure CMake compilation" OFF)
 option(TFLITE_ENABLE_XNNPACK "Enable XNNPACK backend" ON)
 option(TFLITE_ENABLE_EXTERNAL_DELEGATE "Enable External Delegate backend" ON)
+option(TFLITE_ENABLE_ETHOSU "Enable ethos_u custom op" OFF)
 
 option(TFLITE_KERNEL_TEST "Enable tflite kernel unit test" OFF)
 option(TFLITE_EVAL_TOOLS "Enable tflite eval tools compilation" OFF)
@@ -456,6 +457,10 @@ populate_tflite_source_vars("kernels"
   TFLITE_KERNEL_SRCS
   FILTER "(.*_test_util_internal|test_.*|.*_ops_wrapper)\\.(cc|h)"
 )
+if(TFLITE_ENABLE_ETHOSU)
+  populate_tflite_source_vars("kernels/ethos_u" TFLITE_KERNEL_SRCS)
+  list(APPEND TFLITE_TARGET_PUBLIC_OPTIONS "-DTFLITE_WITH_ETHOSU")
+endif()
 populate_tflite_source_vars("kernels/internal" TFLITE_KERNEL_INTERNAL_SRCS)
 populate_tflite_source_vars("kernels/internal/optimized"
   TFLITE_KERNEL_INTERNAL_OPT_SRCS
