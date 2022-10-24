@@ -27,7 +27,7 @@ limitations under the License.
 #include "tensorflow/lite/kernels/kernel_util.h"
 
 #include <tensorflow/lite/kernels/ethos_u/ethosu.hpp>
-#include <ethosu.h>
+#include <linux/ethosu.h>
 
 using namespace std;
 using namespace EthosU;

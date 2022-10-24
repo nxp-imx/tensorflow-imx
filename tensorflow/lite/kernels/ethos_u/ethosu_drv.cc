@@ -17,7 +17,7 @@
  */
 
 #include <tensorflow/lite/kernels/ethos_u/ethosu.hpp>
-#include <ethosu.h>
+#include <linux/ethosu.h>
 
 #include <algorithm>
 #include <queue>
