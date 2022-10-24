@@ -17,7 +17,7 @@
  */
 
 #include <tensorflow/lite/kernels/ethos_u/ethosu.hpp>
-#include <ethosu.h>
+#include <linux/ethosu.h>
 
 #include <algorithm>
 #include <queue>
@@ -245,6 +245,7 @@ int Buffer::getFd() const {
 Network::Network(const Device &device, shared_ptr<Buffer> &buffer) : fd(-1), buffer(buffer) {
     // Create buffer handle
     ethosu_uapi_network_create uapi;
+    uapi.type = ETHOSU_UAPI_NETWORK_BUFFER;
     uapi.fd = buffer->getFd();
     fd      = device.ioctl(ETHOSU_IOCTL_NETWORK_CREATE, static_cast<void *>(&uapi));
 }

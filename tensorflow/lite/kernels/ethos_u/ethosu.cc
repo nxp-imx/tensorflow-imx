@@ -27,7 +27,7 @@ limitations under the License.
 #include "tensorflow/lite/kernels/kernel_util.h"
 
 #include <tensorflow/lite/kernels/ethos_u/ethosu.hpp>
-#include <ethosu.h>
+#include <linux/ethosu.h>
 
 using namespace std;
 using namespace EthosU;
@@ -97,6 +97,8 @@ struct OpData {
   size_t flash_data_size;
   size_t arena_data_size;
   size_t output_data_size;
+  bool enable_cycle_counter;
+  vector<uint32_t> pmu_counter_config;
 };
 
 #define ETHOSU_DEFAULT_DEVICE_NAME (char*)"/dev/ethosu0"
@@ -115,6 +117,44 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   device_name = getenv("ETHOSU_DEVICE_NAME");
   if (device_name == NULL)
       device_name = ETHOSU_DEFAULT_DEVICE_NAME;
+
+  char *pmu_config;
+  pmu_config = getenv("ETHOSU_PMU_CONFIG");
+  if (pmu_config != NULL) {
+       char *token = strtok(pmu_config, " ");
+       int32_t event = (int32_t)atoi(token);
+       if (event == 0) {
+           TF_LITE_KERNEL_LOG(context, "Invalid Ethos-u PMU event! Ignore '%s'.\n", token);
+       } else {
+           data->pmu_counter_config.push_back(event);
+       }
+
+       while(token = strtok(NULL, " ")) {
+          event = (int32_t)atoi(token);
+          if (event == 0) {
+              TF_LITE_KERNEL_LOG(context, "Invalid Ethos-u PMU event! Ignore '%s'.\n", token);
+           } else if (data->pmu_counter_config.size() == ETHOSU_PMU_EVENT_MAX) {
+              TF_LITE_KERNEL_LOG(context, "PMU out of bounds! Ignore '%s'.\n", token);
+           } else {
+              data->pmu_counter_config.push_back(event);
+           }
+       }
+  }
+
+  char *cycle_counter;
+  cycle_counter = getenv("ETHOSU_ENABLE_CYCLE_COUNTER");
+  if (cycle_counter != NULL) {
+      if(strcmp(cycle_counter, "1") == 0) {
+          data->enable_cycle_counter = true;
+      } else if(strcmp(cycle_counter, "0") == 0) {
+          data->enable_cycle_counter = false;
+      } else {
+          data->enable_cycle_counter = false;
+          TF_LITE_KERNEL_LOG(context, "ETHOSU_ENABLE_CYCLE_COUNTER should be 0 or 1.\n");
+      }
+  } else {
+      data->enable_cycle_counter = false;
+  }
 
   try {
       data->device = Device::GetSingleton(device_name);
@@ -267,11 +307,24 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   }
 
   try {
-      Inference inference(data->network, ifm.begin(), ifm.end(), ofm.begin(), ofm.end());
+      Inference inference(data->network, ifm.begin(), ifm.end(), ofm.begin(),
+                     ofm.end(), data->pmu_counter_config, data->enable_cycle_counter);
       /* make sure the wait completes ok */
       if (inference.wait(DEFAULT_TIMEOUT) <= 0) {
           TF_LITE_KERNEL_LOG(context, "Ethos_u inference failed\n");
           return kTfLiteError;
+      }
+      /* Read out PMU counters if configured */
+      if (data->pmu_counter_config.size() > 0) {
+          const std::vector<uint32_t> pmus = inference.getPmuCounters();
+          cout << "Ethos_u PMUs : [";
+          for (auto p : pmus) {
+              cout << " " << p;
+          }
+          cout << " ]" << endl;
+      }
+      if (data->enable_cycle_counter) {
+          cout << "Ethos-u cycle counter: " << inference.getCycleCounter() << endl;
       }
   } catch (std::exception &e) {
       TF_LITE_KERNEL_LOG(context, "Failed to run ethos_u op inference.\n");
@@ -287,6 +340,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
     int32_t addr_offset = data->address_offsets[node->outputs->data[i]];
     memcpy(tensor->data.raw, arena_data + addr_offset, tensor->bytes);
   }
+
   return kTfLiteOk;
 }
 
