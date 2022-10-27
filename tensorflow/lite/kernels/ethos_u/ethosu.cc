@@ -121,17 +121,11 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   char *pmu_config;
   pmu_config = getenv("ETHOSU_PMU_CONFIG");
   if (pmu_config != NULL) {
-       char *token = strtok(pmu_config, " ");
-       int32_t event = (int32_t)atoi(token);
-       if (event == 0) {
-           TF_LITE_KERNEL_LOG(context, "Invalid Ethos-u PMU event! Ignore '%s'.\n", token);
-       } else {
-           data->pmu_counter_config.push_back(event);
-       }
-
-       while(token = strtok(NULL, " ")) {
-          event = (int32_t)atoi(token);
-          if (event == 0) {
+       istringstream iss(pmu_config);
+       string token;
+       while (getline(iss, token, ' ')) {
+           int32_t event = (int32_t)atoi(token.c_str());
+           if (event == 0) {
               TF_LITE_KERNEL_LOG(context, "Invalid Ethos-u PMU event! Ignore '%s'.\n", token);
            } else if (data->pmu_counter_config.size() == ETHOSU_PMU_EVENT_MAX) {
               TF_LITE_KERNEL_LOG(context, "PMU out of bounds! Ignore '%s'.\n", token);
