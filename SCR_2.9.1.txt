@@ -15,7 +15,7 @@ Version:                   2.9.1
 Outgoing License:          Apache 2.0
 License File:              LICENSE
 Description and comments:  TensorFlow Lite inference framework for mobile devices.
-Release Location:          https://source.codeaurora.org/external/imx/tensorflow-imx.git -b lf-5.15.71_2.2.0
+Release Location:          https://github.com/nxp-imx/tensorflow-imx -b lf-5.15.71_2.2.0
 Origin:                    TensorFlow - https://github.com/tensorflow/tensorflow
                            
 --------------------------------------------
@@ -76,8 +76,8 @@ Origin:                    https://github.com/KhronosGroup/EGL-Registry
 
 Package:                   eigen.git
 Version:                   Revision 008ff3483a8c5604639e1c4d204eae30ad737af6
-Outgoing License:          Apache 2.0
-License File:              COPYING.APACHE
+Outgoing License:          MPL-2.0
+License File:              COPYING.MPL2
 Description and comments:  C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms.
 Release Location:          public
 Origin:                    https://gitlab.com/libeigen/eigen
