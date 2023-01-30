@@ -565,7 +565,7 @@ def _tf_repositories():
 
     # Attention: TensorFlow Lite CMake build uses these variables, update only the URL and the checksum value.
     FFT2D_URL = "https://github.com/petewarden/OouraFFT/archive/v1.0.tar.gz"
-    FFT2D_SHA256 = "5f4dabc2ae21e1f537425d58a49cdca1c49ea11db0d6271e2a4b27e9697548eb"
+    FFT2D_SHA256 = "091a077903abce7804f6e3f961d81a10c65d6008ce1bba887058a392010c9027"
 
     tf_http_archive(
         name = "fft2d",
