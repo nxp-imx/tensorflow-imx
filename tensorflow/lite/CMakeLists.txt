@@ -169,8 +169,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang$")
   list(APPEND TF_TARGET_PRIVATE_OPTIONS "-Wno-deprecated-declarations")
 endif()
 # Additional compiler flags used when compiling TF Lite.
-set(TFLITE_TARGET_PUBLIC_OPTIONS "")
-set(TFLITE_TARGET_PRIVATE_OPTIONS "-DEIGEN_NEON_GEBP_NR=4")
+set(TFLITE_TARGET_PUBLIC_OPTIONS "-flax-vector-conversions")
+set(TFLITE_TARGET_PRIVATE_OPTIONS "-flax-vector-conversions" "-DEIGEN_NEON_GEBP_NR=4")
 set(TFLITE_TARGET_PRIVATE_DEFINITIONS "")
 # Additional library dependencies based upon enabled features.
 set(TFLITE_TARGET_DEPENDENCIES "")
