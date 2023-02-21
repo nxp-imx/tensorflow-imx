@@ -1,0 +1,147 @@
+From 6030b0925a7fca93b4fc2c6a919530f7839978b1 Mon Sep 17 00:00:00 2001
+From: Joshua Puerta <joshua.puerta@nxp.com>
+Date: Tue, 28 Feb 2023 13:54:38 +0100
+Subject: [PATCH] Partial changes for fixing runtime setup issue.
+
+Related: https://github.com/google/XNNPACK/commit/b9b1bb093e8854663ae16f8205fac87ba4d44ba4#diff-50977a57b5cd77600b845d12867637b22f364a61b16a6d80791037caf018429f
+---
+ src/runtime.c             | 27 +++++++++++----------------
+ src/subgraph/even-split.c | 26 ++++++++++++--------------
+ 2 files changed, 23 insertions(+), 30 deletions(-)
+
+diff --git a/src/runtime.c b/src/runtime.c
+index 33ac016be..008252a6b 100644
+--- a/src/runtime.c
++++ b/src/runtime.c
+@@ -402,23 +402,18 @@ enum xnn_status xnn_setup_runtime(
+ 
+   for (size_t i = 0; i < runtime->num_ops; i++) {
+     const struct xnn_operator_data* opdata = &runtime->opdata[i];
+-    if (opdata->operator_objects[0] == NULL) {
+-      // Operator was removed during optimization
+-      continue;
+-    }
+-
+-    // Ensure that weights cache is finalized.
+-    struct xnn_weights_cache* weights_cache = opdata->operator_objects[0]->weights_cache;
+-    if (weights_cache != NULL && !xnn_weights_cache_is_finalized(weights_cache)) {
+-      xnn_log_error("weights cache needs to be finalized before setup/infer");
+-      return xnn_status_invalid_state;
+-    }
++    for (size_t j = 0; j < XNN_MAX_OPERATOR_OBJECTS; j++) {
++      if (opdata->operator_objects[j] == NULL) {
++        // Operator was removed during optimization
++        continue;
++      }
+ 
+-    assert(opdata->setup != NULL);
+-    const enum xnn_status status = opdata->setup(opdata, runtime->blobs, runtime->num_blobs, runtime->threadpool);
+-    if (status != xnn_status_success) {
+-      xnn_log_error("failed to setup runtime: error in operator #%zu", i);
+-      return status;
++      assert(opdata->setup != NULL);
++      const enum xnn_status status = opdata->setup(opdata, runtime->blobs, runtime->num_blobs, runtime->threadpool);
++      if (status != xnn_status_success) {
++        xnn_log_error("failed to setup runtime: error in operator #%zu", i);
++        return status;
++      }
+     }
+   }
+ 
+diff --git a/src/subgraph/even-split.c b/src/subgraph/even-split.c
+index 6c360d9fd..e21ef9212 100644
+--- a/src/subgraph/even-split.c
++++ b/src/subgraph/even-split.c
+@@ -250,7 +250,6 @@ static enum xnn_status setup_even_split_operator_helper(
+   const uint32_t num_blobs,
+   const struct xnn_operator_data* opdata,
+   size_t index,
+-  const size_t channels,
+   const void* input_data,
+   pthreadpool_t threadpool)
+ {
+@@ -261,12 +260,14 @@ static enum xnn_status setup_even_split_operator_helper(
+     return xnn_status_success;
+   }
+ 
++  const size_t channels = opdata->operator_objects[index]->channels;
++
+   assert(output_id < num_blobs);
+   const struct xnn_blob* output_blob = blobs + output_id;
+   void* output_data = output_blob->data;
+   assert(output_data != NULL);
+ 
+-  switch (opdata->operator_objects[0]->type) {
++  switch (opdata->operator_objects[index]->type) {
+     #ifndef XNN_NO_F16_OPERATORS
+       case xnn_operator_type_copy_nc_x16: {
+         return xnn_setup_copy_nc_x16(
+@@ -305,14 +306,13 @@ static enum xnn_status setup_even_split2_operator(
+   const void* input_data = input_blob->data;
+   assert(input_data != NULL);
+ 
+-  const size_t channels = opdata->operator_objects[0]->channels;
+   enum xnn_status status = xnn_status_success;
+ 
+-  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 0, channels, input_data, threadpool);
++  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 0, input_data, threadpool);
+   if (status != xnn_status_success) {
+     return status;
+   }
+-  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 1, channels, input_data, threadpool);
++  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 1, input_data, threadpool);
+   if (status != xnn_status_success) {
+     return status;
+   }
+@@ -335,18 +335,17 @@ static enum xnn_status setup_even_split3_operator(
+   const void* input_data = input_blob->data;
+   assert(input_data != NULL);
+ 
+-  const size_t channels = opdata->operator_objects[0]->channels;
+   enum xnn_status status = xnn_status_success;
+ 
+-  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 0, channels, input_data, threadpool);
++  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 0, input_data, threadpool);
+   if (status != xnn_status_success) {
+     return status;
+   }
+-  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 1, channels, input_data, threadpool);
++  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 1, input_data, threadpool);
+   if (status != xnn_status_success) {
+     return status;
+   }
+-  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 2, channels, input_data, threadpool);
++  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 2, input_data, threadpool);
+   if (status != xnn_status_success) {
+     return status;
+   }
+@@ -369,22 +368,21 @@ static enum xnn_status setup_even_split4_operator(
+   const void* input_data = input_blob->data;
+   assert(input_data != NULL);
+ 
+-  const size_t channels = opdata->operator_objects[0]->channels;
+   enum xnn_status status = xnn_status_success;
+ 
+-  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 0, channels, input_data, threadpool);
++  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 0, input_data, threadpool);
+   if (status != xnn_status_success) {
+     return status;
+   }
+-  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 1, channels, input_data, threadpool);
++  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 1, input_data, threadpool);
+   if (status != xnn_status_success) {
+     return status;
+   }
+-  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 2, channels, input_data, threadpool);
++  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 2, input_data, threadpool);
+   if (status != xnn_status_success) {
+     return status;
+   }
+-  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 3, channels, input_data, threadpool);
++  status = setup_even_split_operator_helper(blobs, num_blobs, opdata, 3, input_data, threadpool);
+   if (status != xnn_status_success) {
+     return status;
+   }
+-- 
+2.25.1
+
