@@ -29,6 +29,7 @@ OverridableFetchContent_Declare(
   GIT_PROGRESS TRUE
   PREFIX "${CMAKE_BINARY_DIR}"
   SOURCE_DIR "${CMAKE_BINARY_DIR}/xnnpack"
+  PATCH_COMMAND patch -p1 --forward < ${CMAKE_CURRENT_LIST_DIR}/xnnpack/patches/0001-Partial-changes-for-fixing-runtime-setup-issue.patch || true
 )
 OverridableFetchContent_GetProperties(xnnpack)
 if(NOT xnnpack_POPULATED)
