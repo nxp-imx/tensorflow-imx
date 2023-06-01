@@ -92,9 +92,9 @@ set(TEST_FRAMEWORK_SRC
   ${TFLITE_SOURCE_DIR}/tools/tool_params.cc
   ${TFLITE_SOURCE_DIR}/tools/versioning/op_version.cc
   ${TFLITE_SOURCE_DIR}/tools/versioning/op_signature.cc
-  ${TF_SOURCE_DIR}/core/platform/default/env_time.cc
-  ${TF_SOURCE_DIR}/core/platform/default/logging.cc
-  ${TF_SOURCE_DIR}/core/platform/default/mutex.cc
+  ${TF_SOURCE_DIR}/tsl/platform/default/env_time.cc
+  ${TF_SOURCE_DIR}/tsl/platform/default/logging.cc
+  ${TF_SOURCE_DIR}/tsl/platform/default/mutex.cc
   internal/test_util.cc
   acceleration_test_util.cc
   acceleration_test_util_internal.cc
