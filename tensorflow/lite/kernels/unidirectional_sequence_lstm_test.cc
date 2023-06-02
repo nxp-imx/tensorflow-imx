@@ -18,7 +18,7 @@ limitations under the License.
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "benchmark/benchmark.h"  // from @com_google_benchmark
+//#include "benchmark/benchmark.h"  // from @com_google_benchmark
 #include "flatbuffers/flatbuffers.h"  // from @flatbuffers
 #include "tensorflow/lite/kernels/test_util.h"
 #include "tensorflow/lite/kernels/unidirectional_sequence_lstm_test_util.h"

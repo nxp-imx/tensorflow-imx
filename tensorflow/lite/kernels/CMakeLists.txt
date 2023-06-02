@@ -95,6 +95,8 @@ set(TEST_FRAMEWORK_SRC
   ${TF_SOURCE_DIR}/tsl/platform/default/env_time.cc
   ${TF_SOURCE_DIR}/tsl/platform/default/logging.cc
   ${TF_SOURCE_DIR}/tsl/platform/default/mutex.cc
+  ${TF_SOURCE_DIR}/tsl/profiler/utils/time_utils.cc
+  ${TF_SOURCE_DIR}/core/profiler/lib/scoped_memory_debug_annotation.cc
   internal/test_util.cc
   acceleration_test_util.cc
   acceleration_test_util_internal.cc
