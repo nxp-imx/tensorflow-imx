@@ -20,7 +20,7 @@ Origin:                    TensorFlow - https://github.com/tensorflow/tensorflow
                            
 --------------------------------------------
 
-Addtionally following packages are used at build time:
+Build Dependencies:
 
 --------------------------------------------
 
