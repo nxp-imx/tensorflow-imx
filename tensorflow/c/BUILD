@@ -102,7 +102,7 @@ tf_cuda_library(
         "//tensorflow/c:__subpackages__",
     ],
     deps = selects.with_or({
-        "//tensorflow:android": [
+        ("//tensorflow:android", "//tensorflow:elinux"): [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         ("//tensorflow:chromiumos", "//tensorflow:fuchsia"): [
@@ -227,6 +227,9 @@ tf_cuda_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             ":env",
             ":logging",
@@ -289,6 +292,9 @@ tf_cuda_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/core:lib",
         ],
@@ -337,6 +343,9 @@ cc_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core:lib",
@@ -395,6 +404,9 @@ cc_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite", 
+        ],
         "//conditions:default": [
             "//tensorflow/core:lib",
             "//tensorflow/core:protos_all_cc",
@@ -410,6 +422,9 @@ cc_library(
     deps = select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core:framework",
@@ -433,6 +448,9 @@ cc_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core:framework",
@@ -458,6 +476,9 @@ tf_cuda_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core:framework",
@@ -574,6 +595,9 @@ tf_cuda_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/core:lib",
         ],
@@ -617,6 +641,9 @@ tf_cuda_library(
     deps = select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",  
         ],
         "//conditions:default": [
             "//tensorflow/core:framework",
@@ -669,6 +696,11 @@ tf_cuda_library(
             ":c_api_internal",
             "//tensorflow/c/experimental/stream_executor:stream_executor_hdrs",
             "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
+        "//tensorflow:elinux": [
+            ":c_api_internal",
+            "//tensorflow/c/experimental/stream_executor:stream_executor_hdrs",
+            "//tensorflow/core:portable_tensorflow_lib_lite",  
         ],
         "//conditions:default": [
             ":c_api_internal",
@@ -733,6 +765,9 @@ tf_cuda_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",  
         ],
         "//conditions:default": [
             "//tensorflow/core:framework",

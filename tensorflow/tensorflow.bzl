@@ -54,6 +54,15 @@ load(
 )
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
+load(
+    "//tensorflow/tsl/platform/default:build_config.bzl",
+    "tf_additional_lib_deps",
+)
+load(
+    "//tensorflow/tsl/platform/default:build_config_root.bzl",
+    "tf_additional_plugin_deps",
+    "tf_additional_profiler_deps"
+)
 
 def register_extension_info(**kwargs):
     pass
@@ -204,6 +213,32 @@ def if_android(a):
     return select({
         clean_dep("//tensorflow:android"): a,
         "//conditions:default": [],
+    })
+
+def if_elinux(a, otherwise = []):
+    return select({
+        clean_dep("//tensorflow:elinux"): a,
+        "//conditions:default": otherwise,
+    })
+
+def if_not_elinux(a, otherwise = []):
+    return select({
+        clean_dep("//tensorflow:elinux"): otherwise,
+        "//conditions:default": a,
+    })
+
+def if_android_or_elinux(a):
+    return select({
+        clean_dep("//tensorflow:android"): a,
+        clean_dep("//tensorflow:elinux"): a,
+        "//conditions:default": [],
+    })
+
+def if_not_android_or_elinux(a):
+    return select({
+        clean_dep("//tensorflow:android"): [],
+        clean_dep("//tensorflow:elinux"): [],
+        "//conditions:default": a,
     })
 
 def if_android_or_ios(a):
@@ -805,7 +840,7 @@ def tf_cc_shared_library_opensource(
         version = soversion,
     )
     for name_os, name_os_major, name_os_full in names:
-        soname = name_os_major.split("/")[-1]  # Uses major version for soname.
+        soname = name_os_full.split("/")[-1]
         user_link_flags = linkopts + _rpath_user_link_flags(name_os_full) + select({
             clean_dep("//tensorflow:ios"): [
                 "-Wl,-install_name,@rpath/" + soname,
@@ -1161,13 +1196,13 @@ def tf_gen_op_wrappers_cc(
         name = name,
         srcs = subsrcs,
         hdrs = subhdrs,
-        deps = deps + if_not_android([
+        deps = deps + if_not_android_or_elinux([
             clean_dep("//tensorflow/core:core_cpu"),
             clean_dep("//tensorflow/core:framework"),
             clean_dep("//tensorflow/core:lib"),
             clean_dep("//tensorflow/core:ops"),
             clean_dep("//tensorflow/core:protos_all_cc"),
-        ]) + if_android([
+        ]) + if_android_or_elinux([
             clean_dep("//tensorflow/core:portable_tensorflow_lib"),
         ]),
         copts = tf_copts(),
@@ -1179,13 +1214,13 @@ def tf_gen_op_wrappers_cc(
         name = name + "_internal",
         srcs = internalsrcs,
         hdrs = internalhdrs,
-        deps = deps + deps_internal + if_not_android([
+        deps = deps + deps_internal + if_not_android_or_elinux([
             clean_dep("//tensorflow/core:core_cpu"),
             clean_dep("//tensorflow/core:framework"),
             clean_dep("//tensorflow/core:lib"),
             clean_dep("//tensorflow/core:ops"),
             clean_dep("//tensorflow/core:protos_all_cc"),
-        ]) + if_android([
+        ]) + if_android_or_elinux([
             clean_dep("//tensorflow/core:portable_tensorflow_lib"),
         ]),
         copts = tf_copts(),
@@ -2849,7 +2884,7 @@ def cc_library_with_android_deps(
         common_deps = [],
         copts = tf_copts(),
         **kwargs):
-    deps = if_not_android(deps) + if_android(android_deps) + common_deps
+    deps = if_not_android_or_elinux(deps) + if_android_or_elinux(android_deps) + common_deps
     cc_library(deps = deps, copts = copts, **kwargs)
 
 def tensorflow_opensource_extra_deps():
@@ -3446,5 +3481,6 @@ def replace_with_portable_tf_lib_when_required(non_portable_tf_deps, use_lib_wit
     return select({
         "//tensorflow:android": [portable_tf_lib],
         "//tensorflow:ios": [portable_tf_lib],
+        "//tensorflow:elinux": [portable_tf_lib],
         "//conditions:default": non_portable_tf_deps,
     })

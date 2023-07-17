@@ -109,6 +109,9 @@ cc_library(
         "//tensorflow:ios": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite", 
+        ],
         "//conditions:default": [
             "//tensorflow/core:framework",
             "//tensorflow/core:lib",

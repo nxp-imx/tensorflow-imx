@@ -36,6 +36,9 @@ cc_library(
         "//tensorflow:ios": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite", 
+        ],
         "//conditions:default": [
             "//tensorflow/core:core_cpu",
             "//tensorflow/core:feature_util",
@@ -70,6 +73,9 @@ tf_cc_test(
         ],
         "//tensorflow:ios": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite", 
         ],
         "//conditions:default": [
             "//tensorflow/core:protos_all_cc",

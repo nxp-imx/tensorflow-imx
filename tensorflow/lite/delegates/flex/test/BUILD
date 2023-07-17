@@ -116,3 +116,77 @@ build_test(
         ":TestTensorFlowLiteSelectTfOps_framework",
     ],
 )
+
+# Embedded Linux: Reduced size test file
+exports_files(["simple_flex_model_int8.tflite"])
+
+# Embedded Linux: Reduced size Build rules
+load("@org_tensorflow//tensorflow:tensorflow.bzl", "tf_cc_binary")
+load("@org_tensorflow//tensorflow/lite/delegates/flex:build_def.bzl", "tflite_flex_shared_library")
+load("@org_tensorflow//tensorflow/lite:build_def.bzl", "tflite_copts", "tflite_copts_warnings", "tflite_linkopts")
+
+tflite_flex_shared_library(
+  name = "tensorflowlite_flex_reduced",
+  models = [
+    "simple_flex_model_int8.tflite",
+  ],
+  visibility = ["//visibility:public"]
+)
+
+cc_import(
+    name = "libtensorflowlite_flex_reduced",
+    shared_library = ":tensorflowlite_flex_reduced",
+)
+
+tf_cc_binary(
+    name = "benchmark_model_plus_flex_dynamic_reduced",
+    srcs = [
+        "//tensorflow/lite/tools/benchmark:benchmark_plus_flex_main.cc",
+    ],
+    copts = tflite_copts() + tflite_copts_warnings(),
+    linkopts = tflite_linkopts() + select({
+        "//tensorflow:android": [
+            "-pie",  # Android 5.0 and later supports only PIE
+            "-lm",  # some builtin ops, e.g., tanh, need -lm
+        ],
+        "//conditions:default": [],
+    }),
+    deps = [
+        "//tensorflow/lite/tools/benchmark:benchmark_tflite_model_lib",
+        "//tensorflow/lite/testing:init_tensorflow",
+        "//tensorflow/lite/tools:logging",
+        ":libtensorflowlite_flex_reduced",
+    ],
+)
+
+# Embedded Linux: Full size Build rules
+tflite_flex_shared_library(
+  name = "tensorflowlite_flex_full",
+  visibility = ["//visibility:public"]
+)
+
+cc_import(
+    name = "libtensorflowlite_flex_full",
+    shared_library = ":tensorflowlite_flex_full",
+)
+
+tf_cc_binary(
+    name = "benchmark_model_plus_flex_dynamic_full",
+    srcs = [
+        "//tensorflow/lite/tools/benchmark:benchmark_plus_flex_main.cc",
+    ],
+    copts = tflite_copts() + tflite_copts_warnings(),
+    linkopts = tflite_linkopts() + select({
+        "//tensorflow:android": [
+            "-pie",  # Android 5.0 and later supports only PIE
+            "-lm",  # some builtin ops, e.g., tanh, need -lm
+        ],
+        "//conditions:default": [],
+    }),
+    deps = [
+        "//tensorflow/lite/tools/benchmark:benchmark_tflite_model_lib",
+        "//tensorflow/lite/testing:init_tensorflow",
+        "//tensorflow/lite/tools:logging",
+        ":libtensorflowlite_flex_full",
+    ],
+)
