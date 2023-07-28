@@ -64,9 +64,9 @@ find_package(nsync REQUIRED)
 populate_tflite_source_vars("tools/evaluation/stages" TFLITE_EVALUATION_STAGES_SRCS RECURSE)
 
 list(APPEND TFLITE_EVALUATION_BINARY_SRCS
-    ${TF_SOURCE_DIR}/core/platform/default/logging.cc
-    ${TF_SOURCE_DIR}/core/platform/default/env_time.cc
-    ${TF_SOURCE_DIR}/core/platform/default/mutex.cc
+    ${TF_SOURCE_DIR}/tsl/platform/default/logging.cc
+    ${TF_SOURCE_DIR}/tsl/platform/default/env_time.cc
+    ${TF_SOURCE_DIR}/tsl/platform/default/mutex.cc
     ${TF_SOURCE_DIR}/core/lib/jpeg/jpeg_mem.cc
     ${TF_SOURCE_DIR}/core/lib/jpeg/jpeg_handle.cc
     ${TFLITE_SOURCE_DIR}/profiling/time.cc
