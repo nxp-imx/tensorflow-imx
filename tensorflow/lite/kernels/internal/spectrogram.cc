@@ -15,6 +15,7 @@ limitations under the License.
 
 #include "tensorflow/lite/kernels/internal/spectrogram.h"
 
+#include <cstdint>
 #include <assert.h>
 #include <math.h>
 
