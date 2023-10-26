@@ -44,6 +44,9 @@ cc_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite", 
+        ],
         "//conditions:default": [
             "//tensorflow/core:framework",
             "//tensorflow/core:protos_all_cc",
@@ -68,6 +71,9 @@ cc_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite", 
         ],
         "//conditions:default": [
             "//tensorflow/core/framework:types_proto_cc",
@@ -106,6 +112,9 @@ tf_cuda_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite", 
+        ],
         "//conditions:default": [
             "//tensorflow/c:tf_tensor",
             "//tensorflow/c:tf_tensor_internal",
@@ -126,6 +135,9 @@ tf_cc_test(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core:test",
@@ -148,6 +160,9 @@ tf_cc_test(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite", 
         ],
         "//conditions:default": [
             "//tensorflow/core:test",
@@ -173,6 +188,9 @@ tf_cc_test(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux": [
+            "//tensorflow/core:portable_tensorflow_lib_lite", 
         ],
         "//conditions:default": [
             "//tensorflow/core:test",

@@ -12,6 +12,7 @@ load(
     "if_mobile",
     "if_not_mobile",
     "tf_cc_test",
+    "if_android_or_elinux",
 )
 load(
     "//tensorflow/core/platform:build_config_root.bzl",
@@ -111,7 +112,7 @@ cc_library(
         "//tensorflow/core:lib",
         "//tensorflow/core:ops",
         "//tensorflow/core:protos_all_cc",
-    ]) + if_android([
+    ]) + if_android_or_elinux([
         "//tensorflow/core:portable_tensorflow_lib",
     ]),
 )
@@ -382,7 +383,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@jsoncpp_git//:jsoncpp",
-    ] + if_not_mobile(["//tensorflow/core:lib"]) + if_android(["//tensorflow/core:portable_tensorflow_lib_lite"]),
+    ] + if_not_mobile(["//tensorflow/core:lib"]) + if_android_or_elinux(["//tensorflow/core:portable_tensorflow_lib_lite"]),
     alwayslink = True,
 )
 
@@ -392,7 +393,7 @@ cc_library(
     visibility = ["//tensorflow/python/saved_model:__subpackages__"],
     deps = if_static([
         ":metrics_impl",
-    ]) + if_not_mobile(["//tensorflow/core:lib"]) + if_android(["//tensorflow/core:portable_tensorflow_lib_lite"]) + [
+    ]) + if_not_mobile(["//tensorflow/core:lib"]) + if_android_or_elinux(["//tensorflow/core:portable_tensorflow_lib_lite"]) + [
         "//tensorflow/core/protobuf:for_core_protos_cc",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
@@ -422,7 +423,7 @@ cc_library(
         "//tensorflow/core/platform:errors",
         "//tensorflow/core/platform:status",
         "//tensorflow/core/protobuf:for_core_protos_cc",
-    ] + if_not_mobile(["//tensorflow/core:lib"]) + if_android(["//tensorflow/core:portable_tensorflow_lib_lite"]),
+    ] + if_not_mobile(["//tensorflow/core:lib"]) + if_android_or_elinux(["//tensorflow/core:portable_tensorflow_lib_lite"]),
 )
 
 cc_library(
@@ -480,7 +481,7 @@ cc_library(
         "@com_google_protobuf//:protobuf_headers",
     ] + if_not_mobile([
         "//tensorflow/core:lib",
-    ]) + if_android([
+    ]) + if_android_or_elinux([
         "//tensorflow/core:portable_tensorflow_lib_lite",
     ]) + if_google([
         ":fingerprinting_utils",
@@ -503,7 +504,7 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/status:statusor",
         "//tensorflow/core:protos_all_cc",
-    ]) + if_not_mobile(["//tensorflow/core:lib"]) + if_android(["//tensorflow/core:portable_tensorflow_lib_lite"]),
+    ]) + if_not_mobile(["//tensorflow/core:lib"]) + if_android_or_elinux(["//tensorflow/core:portable_tensorflow_lib_lite"]),
 )
 
 # copybara:uncomment_begin(google-only)

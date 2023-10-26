@@ -195,11 +195,16 @@ tf_python_pybind_extension(
     ],
 )
 
-tf_python_pybind_extension(
+# Embedded linux reduced size: Reverted to old pybind rule to avoid
+#   libtensorflow_framework dependencies. That's why we include the whole 
+#   cpu_feature_guard again rather than only headers.
+#   Note: this was the cause for double collective AllToAll registrations
+pybind_extension(
     name = "_pywrap_cpu_feature_guard",
     srcs = ["cpu_feature_guard_wrapper.cc"],
     deps = [
-        "//tensorflow/core/platform:cpu_feature_guard_hdr",  # Only depend on header to avoid ODR issues.
+        # "//tensorflow/core/platform:cpu_feature_guard_hdr",  # Only depend on header to avoid ODR issues.
+        "//tensorflow/core/platform:cpu_feature_guard",
         "//third_party/python_runtime:headers",
         "@pybind11",
     ],

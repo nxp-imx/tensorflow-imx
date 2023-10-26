@@ -349,6 +349,21 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
+config_setting(
+    name = "elinux_aarch64",
+    values = {"cpu": "aarch64"},
+    visibility = ["//visibility:public"],
+)
+
+# Specifies via a config setting if this is embedded linux
+selects.config_setting_group(
+    name = "elinux",
+    match_any = [
+        ":elinux_aarch64"
+    ],
+    visibility = ["//visibility:public"],
+)
+
 selects.config_setting_group(
     name = "arm_any",
     match_any = [
@@ -358,6 +373,7 @@ selects.config_setting_group(
         ":arm64-v8a",
         ":linux_aarch64",
         ":linux_armhf",
+        ":elinux_aarch64"
     ],
     visibility = ["//visibility:public"],
 )

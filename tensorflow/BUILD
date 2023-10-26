@@ -129,7 +129,7 @@ PACKAGE_STATIC_DEPS = [
 
 package(
     # copybara:uncomment default_applicable_licenses = [":license"],
-    default_visibility = [":internal"],
+    default_visibility = ["//visibility:public"],
 )
 
 # copybara:uncomment_begin
@@ -601,6 +601,21 @@ config_setting(
 )
 
 config_setting(
+    name = "elinux_aarch64",
+    values = {"cpu": "aarch64"},
+    visibility = ["//visibility:public"],
+)
+
+# Specifies via a config setting if this is embedded linux
+selects.config_setting_group(
+    name = "elinux",
+    match_any = [
+        ":elinux_aarch64"
+    ],
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
     name = "debug",
     values = {
         "compilation_mode": "dbg",
@@ -649,6 +664,7 @@ selects.config_setting_group(
         ":arm64-v8a",
         ":linux_aarch64",
         ":linux_armhf",
+        ":elinux_aarch64"
     ],
 )
 
@@ -891,6 +907,7 @@ selects.config_setting_group(
         ":fuchsia",
         ":emscripten",
         ":ios",
+        ":elinux"
     ],
     visibility = ["//visibility:public"],
 )
@@ -1224,6 +1241,7 @@ cc_import(
         "//tensorflow:macos": ":libtensorflow_framework.dylib",
         "//conditions:default": ":libtensorflow_framework.so.%s" % VERSION_MAJOR,
     }),
+    visibility = ["//visibility:public"],
 )
 
 # -------------------------------------------

@@ -1,7 +1,7 @@
 load("//tensorflow/tsl/platform:rules_cc.bzl", "cc_library")
 load("//tensorflow/tsl/platform:build_config_root.bzl", "if_static")
 load("//tensorflow/tsl:tsl.default.bzl", "filegroup")
-load("//tensorflow/tsl:tsl.bzl", "if_not_android", "set_external_visibility")
+load("//tensorflow/tsl:tsl.bzl", "if_not_android", "if_not_android_or_elinux", "set_external_visibility")
 load("//tensorflow/tsl/platform:build_config.bzl", "tsl_cc_test")
 load(
     "//tensorflow/tsl/profiler/builds:build_config.bzl",
@@ -167,7 +167,7 @@ cc_library(
         "//tensorflow/tsl/platform:types",
         "//tensorflow/tsl/profiler/protobuf:profiler_options_proto_cc",
         "//tensorflow/tsl/profiler/protobuf:xplane_proto_cc",
-    ] + if_not_android([
+    ] + if_not_android_or_elinux([
         ":profiler_interface",
         ":profiler_lock",
     ]) + if_static([
@@ -195,7 +195,7 @@ cc_library(
         "//tensorflow/tsl/profiler/protobuf:profiler_options_proto_cc",
         "//tensorflow/tsl/profiler/protobuf:xplane_proto_cc",
         "@com_google_absl//absl/memory",
-    ] + if_not_android([
+    ] + if_not_android_or_elinux([
         ":profiler_collection",
         ":profiler_factory",
         ":profiler_interface",
@@ -251,7 +251,7 @@ cc_library(
         "//tensorflow/tsl/platform:macros",
         "//tensorflow/tsl/platform:types",
         "@com_google_absl//absl/strings",
-    ] + if_not_android([
+    ] + if_not_android_or_elinux([
         "//tensorflow/tsl/profiler/backends/cpu:traceme_recorder",
         "//tensorflow/tsl/profiler/utils:time_utils",
     ]),
@@ -266,7 +266,7 @@ cc_library(
         "//tensorflow/tsl/platform:macros",
         "//tensorflow/tsl/platform:types",
         "@com_google_absl//absl/strings",
-    ] + if_not_android([
+    ] + if_not_android_or_elinux([
         "//tensorflow/tsl/profiler/backends/cpu:annotation_stack",
     ]),
 )
@@ -279,7 +279,7 @@ cc_library(
         "//tensorflow/tsl/platform:macros",
         "//tensorflow/tsl/platform:types",
         "@com_google_absl//absl/strings",
-    ] + if_not_android([
+    ] + if_not_android_or_elinux([
         ":nvtx_utils",
         "//tensorflow/tsl/profiler/backends/cpu:annotation_stack",
     ]),
@@ -294,7 +294,7 @@ cc_library(
     ]),
     deps = [
         "@com_google_absl//absl/strings",
-    ] + if_not_android([
+    ] + if_not_android_or_elinux([
         ":nvtx_utils",
         "//tensorflow/tsl/profiler/backends/cpu:annotation_stack",
     ]),
