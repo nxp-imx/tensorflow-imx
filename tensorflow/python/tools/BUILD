@@ -273,7 +273,7 @@ py_library(
     srcs_version = "PY3",
     visibility = ["//visibility:public"],
     deps = [
-        "//tensorflow/python",  # TODO(b/34059704): remove when fixed
+        # "//tensorflow/python",  # TODO(b/34059704): remove when fixed
         "//tensorflow/python:platform",
         "//tensorflow/python/util:_pywrap_kernel_registry",
     ],

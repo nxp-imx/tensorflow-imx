@@ -3,10 +3,11 @@
 #  ":platform" - Low-level and platform-specific Python code.
 
 load("//tensorflow:strict.default.bzl", "py_strict_library")
-load("//tensorflow:tensorflow.bzl", "VERSION", "cc_header_only_library", "clean_dep", "if_google", "if_mlir", "if_oss", "if_windows", "if_xla_available", "py_test", "tf_enable_mlir_bridge", "tf_python_pybind_static_deps", "tsl_async_value_deps")
+load("//tensorflow:tensorflow.bzl", "VERSION", "cc_header_only_library", "clean_dep", "if_google", "if_mlir", "if_oss", "if_windows", "if_xla_available", "py_test", "tf_enable_mlir_bridge", "tf_python_pybind_static_deps", "tsl_async_value_deps", "if_elinux", "if_not_elinux")
 load("//tensorflow:tensorflow.default.bzl", "cuda_py_test", "get_compatible_with_portable", "pywrap_tensorflow_macro", "tf_external_workspace_visible", "tf_monitoring_python_deps", "tf_py_test", "tf_pybind_cc_library_wrapper", "tf_python_pybind_extension")
 load(
     "//tensorflow/core/platform:build_config.bzl",
+    "tf_additional_lib_deps",
     "tf_additional_binary_deps",
     "tf_proto_library",
 )
@@ -3301,34 +3302,11 @@ py_library(
     ],
 )
 
+# Embedded linux reduced size: inspired in commit 007f31c8, revert specific parts so it doesn't depend on libtensorflow_framework.so 
+#   Note: Major changes on macro, proceed with caution. Check v2.12.1 release to properly roll back.
 pywrap_tensorflow_macro(
     name = "pywrap_tensorflow_internal",
     srcs = ["pywrap_tensorflow_internal.cc"],
-    dynamic_deps = select({
-        "//tensorflow:macos": [
-            "//tensorflow:libtensorflow_cc.%s.dylib" % VERSION,
-            "//tensorflow:libtensorflow_framework.%s.dylib" % VERSION,
-        ],
-        "//conditions:default": [
-            "//tensorflow:libtensorflow_cc.so.%s" % VERSION,
-            "//tensorflow:libtensorflow_framework.so.%s" % VERSION,
-        ],
-        "//tensorflow:windows": [],
-    }),
-    exports_filter = [
-        "@pybind11//:pybind11",
-        "@local_config_python//:python_headers",
-    ] + if_windows([
-        "//:__subpackages__",
-        "@nsync//:__subpackages__",
-        "@com_google_absl//:__subpackages__",
-        "@com_google_protobuf//:__subpackages__",
-        "@double_conversion//:__subpackages__",
-        "@eigen_archive//:__subpackages__",
-    ]),
-    roots = [
-        ":py_exception_registry",
-    ],
     static_deps = [
         "@arm_neon_2_x86_sse//:__subpackages__",
         "@bazel_tools//:__subpackages__",
@@ -3392,16 +3370,18 @@ pywrap_tensorflow_macro(
         "@upb//:__subpackages__",
         "@XNNPACK//:__subpackages__",
         "@zlib//:__subpackages__",
-    ] + tsl_async_value_deps(),
+    ],
     win_def_file = ":pywrap_tensorflow_filtered_def_file",
     deps = [
-        ":safe_ptr",
+        ":bfloat16_lib",
         "//tensorflow/python/grappler:cost_analyzer_lib",
         "//tensorflow/python/grappler:model_analyzer_lib",
         "//tensorflow/python/util:cpp_nest",
         "//tensorflow/python/util:cpp_python_util",
         "//tensorflow/python/util:function_parameter_canonicalizer",
         "//tensorflow/python/util:kernel_registry",
+        ":safe_ptr",
+        ":py_exception_registry",
         "//tensorflow/python/lib/core:py_func_lib",
         "//tensorflow/python/lib/core:pybind11_absl",
         "//tensorflow/python/lib/core:pybind11_lib",
@@ -3429,7 +3409,6 @@ pywrap_tensorflow_macro(
         "//tensorflow/c/experimental/gradients/tape",
         "//tensorflow/cc/saved_model:fingerprinting_impl",
         "//tensorflow/compiler/mlir/tensorflow/c:mlir_c_api_registration",
-        "//tensorflow/compiler/mlir/quantization/tensorflow/python:quantize_model_cc",
         "//tensorflow/core/data/service:dispatcher_client",
         "//tensorflow/core/data/service:grpc_util",
         "//tensorflow/core/data/service:server_lib",
@@ -3455,7 +3434,6 @@ pywrap_tensorflow_macro(
         "//tensorflow/core/profiler/internal:print_model_analysis",
         "//tensorflow/core/profiler/backends/cpu:python_tracer",
         "//tensorflow/dtensor/cc:dtensor_device_cc",
-        "//tensorflow/dtensor/cc:tensor_layout",
         "//tensorflow/distribute/experimental/rpc/kernels:rpc_ops",
         "//tensorflow/lite/delegates/flex:delegate",
         "//tensorflow/lite/kernels/shim:tf_kernel_shim",
@@ -3463,45 +3441,26 @@ pywrap_tensorflow_macro(
         "//tensorflow/lite/toco/python:toco_python_api",
         "//tensorflow/python/client:tf_session_helper",
         "//tensorflow/python/eager:pywrap_tfe_lib",
+        "//tensorflow/core/util/tensor_bundle",
         "//tensorflow/compiler/mlir/python:mlir",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/container:inlined_vector",
-        "@com_google_absl//absl/types:span",
-        "@com_google_absl//absl/types:optional",
-        "//tensorflow/c/experimental/filesystem:filesystem_interface",
-        "//tensorflow/c/experimental/stream_executor",
-        "//tensorflow/c:env",
-        "//tensorflow/c:kernels",
-        "//tensorflow/c:kernels_experimental",
-        "//tensorflow/c:logging",
-        "//tensorflow/c:ops",
-        "//tensorflow/cc/saved_model:loader_lite_impl",
-        "//tensorflow/cc/saved_model:metrics_impl",
-        "//tensorflow/compiler/tf2tensorrt:op_converter_registry_impl",
-        "//tensorflow/core/common_runtime:core_cpu_impl",
-        "//tensorflow/core:framework_internal_impl",
-        "//tensorflow/core/common_runtime/gpu:gpu_runtime_impl",
-        "//tensorflow/core/common_runtime/pluggable_device:pluggable_device_runtime_impl",
-        "//tensorflow/core/grappler/optimizers:custom_graph_optimizer_registry_impl",
-        "//tensorflow/core:lib_internal_impl",
-        "//tensorflow/core/profiler:profiler_impl",
+        "//tensorflow/compiler/mlir/quantization/tensorflow/python:quantize_model_cc",
         "//tensorflow/core/util:determinism",
-        "//tensorflow/compiler/xla/stream_executor:stream_executor_impl",
-    ] + if_static([
+    ] + (tf_additional_lib_deps() +
+         tf_monitoring_python_deps() +
+         tf_additional_plugin_deps() +
+         tf_additional_profiler_deps()) + if_xla_available([
+        "//tensorflow/compiler/aot:tfcompile_lib",
+    ]) + if_static(extra_deps = [
         "//tensorflow/core/platform:tensor_float_32_utils",
         "//tensorflow/core/platform:enable_tf2_utils",
-    ]) + if_google([
-        "//base",
-        "//tensorflow/core/util/tensor_bundle",
-    ]) + if_oss(if_static(
-        [clean_dep("@nsync//:nsync_headers")],
-    )) + if_oss([
+    ]) + if_windows([
+        "//tensorflow/c:kernels_experimental",
+    ]) + if_oss([
         "//tensorflow/core/distributed_runtime/rpc:grpc_server_lib",
         "//tensorflow/core/distributed_runtime/rpc:grpc_session",
-    ]) + if_xla_available([
-        "//tensorflow/compiler/aot:tfcompile_lib",
-    ]) + tf_monitoring_python_deps() + tf_additional_plugin_deps() + tf_additional_profiler_deps() + tf_additional_binary_deps(),
+    ])
 )
+
 
 # ** Targets for Windows build (start) **
 # We need the following targets to expose symbols from _pywrap_tensorflow.dll

@@ -52,8 +52,9 @@ def if_static(extra_deps, otherwise = [], macos = []):
 
 def if_static_and_not_mobile(extra_deps, otherwise = []):
     return select({
-        str(Label("//tensorflow/tsl:framework_shared_object")): otherwise,
-        str(Label("//tensorflow/tsl:android")): otherwise,
-        str(Label("//tensorflow/tsl:ios")): otherwise,
+        str(Label("//tensorflow:framework_shared_object")): otherwise,
+        str(Label("//tensorflow:android")): otherwise,
+        str(Label("//tensorflow:elinux")): otherwise,
+        str(Label("//tensorflow:ios")): otherwise,
         "//conditions:default": extra_deps,
     })

@@ -117,3 +117,110 @@ build_test(
         ":TestTensorFlowLiteSelectTfOps_framework",
     ],
 )
+
+# Embedded Linux: Flex delegate testing using benchmark_model
+exports_files(["simple_flex_model_int8.tflite"])
+
+load("@org_tensorflow//tensorflow:tensorflow.bzl", "tf_cc_binary")
+load("@org_tensorflow//tensorflow/lite/delegates/flex:build_def.bzl", "tflite_flex_shared_library", "tflite_flex_cc_library")
+load("@org_tensorflow//tensorflow/lite:build_def.bzl", "tflite_copts", "tflite_copts_warnings", "tflite_linkopts")
+
+# Embedded Linux: Reduced size, static
+tflite_flex_cc_library(
+    name = "delegate_reduced",
+    models = [
+        "simple_flex_model_int8.tflite",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+tf_cc_binary(
+    name = "benchmark_model_plus_flex_reduced",
+    srcs = [
+        "//tensorflow/lite/tools/benchmark:benchmark_plus_flex_main.cc",
+    ],
+    copts = tflite_copts() + tflite_copts_warnings(),
+    linkopts = tflite_linkopts(),
+    deps = [
+        ":delegate_reduced",
+        "//tensorflow/lite/tools/benchmark:benchmark_tflite_model_lib",
+        "//tensorflow/lite/testing:init_tensorflow",
+        "//tensorflow/lite/tools:logging",
+    ],
+)
+
+# Embedded Linux: Reduced size, dynamically linked 
+tflite_flex_shared_library(
+  name = "tensorflowlite_flex_reduced",
+  models = [
+    "simple_flex_model_int8.tflite",
+  ],
+  visibility = ["//visibility:public"]
+)
+
+cc_import(
+    name = "libtensorflowlite_flex_reduced",
+    shared_library = ":tensorflowlite_flex_reduced",
+)
+
+tf_cc_binary(
+    name = "benchmark_model_plus_flex_dynamic_reduced",
+    srcs = [
+        "//tensorflow/lite/tools/benchmark:benchmark_plus_flex_main.cc",
+    ],
+    copts = tflite_copts() + tflite_copts_warnings(),
+    linkopts = tflite_linkopts(),
+    deps = [
+        ":libtensorflowlite_flex_reduced",
+        "//tensorflow/lite/tools/benchmark:benchmark_tflite_model_lib",
+        "//tensorflow/lite/testing:init_tensorflow",
+        "//tensorflow/lite/tools:logging",
+    ],
+)
+
+# Embedded Linux: Full size, static
+tflite_flex_cc_library(
+    name = "delegate_full",
+    visibility = ["//visibility:public"],
+)
+
+tf_cc_binary(
+    name = "benchmark_model_plus_flex_full",
+    srcs = [
+        "//tensorflow/lite/tools/benchmark:benchmark_plus_flex_main.cc",
+    ],
+    copts = tflite_copts() + tflite_copts_warnings(),
+    linkopts = tflite_linkopts(),
+    deps = [
+        ":delegate_full",
+        "//tensorflow/lite/tools/benchmark:benchmark_tflite_model_lib",
+        "//tensorflow/lite/testing:init_tensorflow",
+        "//tensorflow/lite/tools:logging",
+    ],
+)
+
+# Embedded Linux: Full size, dynamically linked 
+tflite_flex_shared_library(
+  name = "tensorflowlite_flex_full",
+  visibility = ["//visibility:public"]
+)
+
+cc_import(
+    name = "libtensorflowlite_flex_full",
+    shared_library = ":tensorflowlite_flex_full",
+)
+
+tf_cc_binary(
+    name = "benchmark_model_plus_flex_dynamic_full",
+    srcs = [
+        "//tensorflow/lite/tools/benchmark:benchmark_plus_flex_main.cc",
+    ],
+    copts = tflite_copts() + tflite_copts_warnings(),
+    linkopts = tflite_linkopts(),
+    deps = [
+        ":libtensorflowlite_flex_full",
+        "//tensorflow/lite/tools/benchmark:benchmark_tflite_model_lib",
+        "//tensorflow/lite/testing:init_tensorflow",
+        "//tensorflow/lite/tools:logging",
+    ],
+)

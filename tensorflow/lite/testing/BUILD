@@ -474,11 +474,17 @@ cc_library(
         "//tensorflow/lite/testing:__subpackages__",
         "//tensorflow/lite/tools/benchmark:__subpackages__",
     ],
+    # Embedded linux reduced size: If init_tensorflow required to build an 
+    # external app, change visibility to public. e.g:
+    # visibility = ["//visibility:public"],
     deps = select({
         "//conditions:default": [
             "//tensorflow/core:lib",
         ],
         "//tensorflow:android": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
+        "//tensorflow:elinux": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//tensorflow:ios": [

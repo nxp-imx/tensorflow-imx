@@ -1016,6 +1016,7 @@ cc_library(
     defines = ["SUPPORT_SELECTIVE_REGISTRATION"] + select({
                   "//tensorflow:chromiumos": ["IS_MOBILE_PLATFORM"],
                   "//tensorflow:fuchsia": ["IS_MOBILE_PLATFORM"],
+                  "//tensorflow:elinux": ["IS_MOBILE_PLATFORM"],
                   "//conditions:default": [],
               }) +
               tf_defines_nortti_if_lite_protos(),

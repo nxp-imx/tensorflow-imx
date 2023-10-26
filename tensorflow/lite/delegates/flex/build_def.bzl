@@ -13,6 +13,10 @@ load(
     "tf_features_nomodules_if_mobile",
     "tf_opts_nortti_if_lite_protos",
     "tf_portable_full_lite_protos",
+
+    "if_not_mobile",
+    "tf_cc_test",
+    "if_elinux",
 )
 load(
     "//tensorflow/lite:build_def.bzl",
@@ -179,6 +183,9 @@ def tflite_flex_cc_library(
                 portable_tensorflow_lib,
             ],
             clean_dep("//tensorflow:ios"): [
+                portable_tensorflow_lib,
+            ],
+            clean_dep("//tensorflow:elinux"): [
                 portable_tensorflow_lib,
             ],
             clean_dep("//tensorflow:chromiumos"): [

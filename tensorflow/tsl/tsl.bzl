@@ -161,6 +161,32 @@ def if_not_android(a):
         "//conditions:default": a,
     })
 
+def if_elinux(a, otherwise = []):
+    return select({
+        clean_dep("//tensorflow/tsl:elinux"): a,
+        "//conditions:default": otherwise,
+    })
+
+def if_not_elinux(a, otherwise = []):
+    return select({
+        clean_dep("//tensorflow/tsl:elinux"): otherwise,
+        "//conditions:default": a,
+    })
+
+def if_android_or_elinux(a):
+    return select({
+        clean_dep("//tensorflow/tsl:android"): a,
+        clean_dep("//tensorflow/tsl:elinux"): a,
+        "//conditions:default": [],
+    })
+
+def if_not_android_or_elinux(a):
+    return select({
+        clean_dep("//tensorflow:android"): [],
+        clean_dep("//tensorflow:elinux"): [],
+        "//conditions:default": a,
+    })
+
 def if_linux_x86_64(a):
     return select({
         clean_dep("//tensorflow/tsl:linux_x86_64"): a,
