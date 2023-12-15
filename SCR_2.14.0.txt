@@ -1,0 +1,237 @@
+NXP Software Content Register
+
+Release - TensorFlow Lite 2.14.0
+December 2023
+
+Outgoing License: Apache 2.0
+License in File: LICENSE
+
+Release branch: lf-6.6.3_1.0.0
+
+--------------------------------------------
+
+Package:                   tensorflow-imx.git
+Version:                   2.14.0
+Outgoing License:          Apache 2.0
+License File:              LICENSE
+Description and comments:  TensorFlow Lite inference framework for mobile devices.
+Release Location:          https://github.com/nxp-imx/tensorflow-imx -b lf-6.6.3_1.0.0
+Origin:                    TensorFlow - https://github.com/tensorflow/tensorflow
+                           
+--------------------------------------------
+
+Build Dependencies:
+
+--------------------------------------------
+
+Package:                   googletest.git
+Version:                   1.12.1
+Outgoing License:          BSD-3-Clause license 
+License File:              LICENSE
+Description and comments:  Google Test Framework
+Release Location:          public
+Origin:                    Google - https://github.com/google/googletest
+                           
+--------------------------------------------
+
+Package:                   abseil-cpp.git
+Version:                   Revision b971ac5250ea8de900eae9f95e06548d14cd95fe
+Outgoing License:          Apache 2.0
+License File:              LICENSE
+Description and comments:  Abseil - C++ Common Libraries
+Release Location:          public
+Origin:                    https://github.com/abseil/abseil-cpp
+                           
+--------------------------------------------
+
+Package:                   CLOG
+Version:                   Revision 87d8234510367db49a65535021af5e1838a65ac2
+Outgoing License:          BSD-2-Clause license
+License File:              LICENSE
+Description and comments:  C-style (a-la printf) logging library
+Release Location:          public
+Origin:                    https://github.com/pytorch/cpuinfo
+                           
+--------------------------------------------
+
+Package:                   cpuinfo.git
+Version:                   Revision 87d8234510367db49a65535021af5e1838a65ac2
+Outgoing License:          BSD-2-Clause license
+License File:              LICENSE
+Description and comments:  CPU INFOrmation library
+Release Location:          public
+Origin:                    https://github.com/pytorch/cpuinfo
+                           
+--------------------------------------------
+
+Package:                   EGL-Registry.git
+Version:                   Revision 649981109e263b737e7735933c90626c29a306f2
+Outgoing License:          N/A
+License File:              --
+Description and comments:  EGL API and Extension Registry, including specifications, reference pages and reference cards, and the enumerant registry.
+Release Location:          public
+Origin:                    https://github.com/KhronosGroup/EGL-Registry
+                           
+--------------------------------------------
+
+Package:                   eigen.git
+Version:                   Revision 0b51f763cbbd0ed08168f88972724329f0375498
+Outgoing License:          MPL-2.0
+License File:              COPYING.MPL2
+Description and comments:  C++ template library for linear algebra: matrices, vectors, numerical solvers, and related algorithms.
+Release Location:          public
+Origin:                    https://gitlab.com/libeigen/eigen
+                           
+--------------------------------------------
+
+Package:                   farmhash.git
+Version:                   Revision 0d859a811870d10f53a594927d0d0b97573ad06d
+Outgoing License:          MIT
+License File:              COPYING
+Description and comments:  FarmHash, a family of hash functions.
+Release Location:          public
+Origin:                    Google, https://github.com/google/farmhash
+                           
+--------------------------------------------
+
+Package:                   fft2d
+Version:                   1.0
+Outgoing License:          "You may use, copy, modify this code for any purpose and without fee. You may distribute this ORIGINAL package."
+License File:              readme2d
+Description and comments:  General Purpose FFT (Fast Fourier/Cosine/Sine Transform) Package
+Release Location:          public
+Origin:                    https://www.kurims.kyoto-u.ac.jp/~ooura/fft.html
+                           
+--------------------------------------------
+
+Package:                   flatbuffers.git
+Version:                   23.5.26
+Outgoing License:          Apache 2.0
+License File:              LICENSE.txt
+Description and comments:  FlatBuffers is a cross platform serialization library architected for maximum memory efficiency.
+Release Location:          public
+Origin:                    https://github.com/google/flatbuffers
+                           
+--------------------------------------------
+
+Package:                   fp16_headers
+Version:                   Revision 0a92994d729ff76a58f692d3028ca1b64b145d91
+Outgoing License:          MIT
+License File:              LICENSE
+Description and comments:  Header-only library for conversion to/from half-precision floating point formats
+Release Location:          public
+Origin:                    https://github.com/Maratyszcza/FP16
+                           
+--------------------------------------------
+
+Package:                   gemmlowp.git
+Version:                   Revision e844ffd17118c1e17d94e1ba4354c075a4577b88
+Outgoing License:          Apache 2.0
+License File:              LICENSE
+Description and comments:  General matrix multiplication ("GEMM") library.
+Release Location:          public
+Origin:                    https://github.com/google/gemmlowp
+                           
+--------------------------------------------
+
+Package:                   neon2sse
+Version:                   Revision a15b489e1222b2087007546b4912e21293ea86ff
+Outgoing License:          BSD License
+License File:              LICENSE
+Description and comments:  NEON_2_SSE.h file is intended to simplify ARM->IA32 porting.
+Release Location:          public
+Origin:                    Intel - https://github.com/intel/ARM_NEON_2_x86_SSE
+                           
+--------------------------------------------
+
+Package:                   OpenCL-Headers.git
+Version:                   Revision dcd5bede6859d26833cd85f0d6bbcee7382dc9b3
+Outgoing License:          Apache 2.0
+License File:              LICENSE
+Description and comments:  C language headers for the OpenCL API.
+Release Location:          public
+Origin:                    KhronosGroup -  https://github.com/KhronosGroup/OpenCL-Headers
+                           
+--------------------------------------------
+
+Package:                   OpenGL-Registry.git
+Version:                   Revision 0cb0880d91581d34f96899c86fc1bf35627b4b81
+Outgoing License:          N/A
+License File:              --
+Description and comments:  API and Extension registries for the OpenGL family APIs - OpenGL, OpenGL ES, and OpenGL SC.
+Release Location:          public
+Origin:                    KhronosGroup - https://github.com/KhronosGroup/OpenGL-Registry.git
+                           
+--------------------------------------------
+
+Package:                   ruy.git
+Version:                   Revision 3286a34cc8de6149ac6844107dfdffac91531e72
+Outgoing License:          Apache 2.0
+License File:              LICENSE
+Description and comments:  Matrix multiplication library
+Release Location:          public
+Origin:                    https://github.com/google/ruy
+                           
+--------------------------------------------
+
+Package:                   Vulkan-Headers.git
+Version:                   Revision 32c07c0c5334aea069e518206d75e002ccd85389
+Outgoing License:          Apache 2.0
+License File:              LICENSE.txt
+Description and comments:  Vulkan header files and API registry
+Release Location:          public
+Origin:                    https://github.com/KhronosGroup/Vulkan-Headers
+                           
+--------------------------------------------
+
+Package:                   XNNPACK.git
+Version:                   Revision b9d4073a6913891ce9cbd8965c8d506075d2a45a
+Outgoing License:          BSD License
+License File:              LICENSE
+Description and comments:  Highly optimized library of floating-point neural network inference operators for ARM, WebAssembly, and x86 platforms. 
+Release Location:          public
+Origin:                    https://github.com/google/XNNPACK
+                           
+--------------------------------------------
+
+Package:                   FXdiv
+Version:                   Revision 63058eff77e11aa15bf531df5dd34395ec3017c8 
+Outgoing License:          MIT
+License File:              LICENSE
+Description and comments:  Header-only library for division via fixed-point multiplication by inverse.
+Release Location:          public
+Origin:                    https://github.com/Maratyszcza/FXdiv
+                           
+--------------------------------------------
+
+Package:                   psimd
+Version:                   Revision: 072586a71b55b7f8c584153d223e95687148a900
+Outgoing License:          MIT
+License File:              LICENSE
+Description and comments:  Header-only library for division via fixed-point multiplication by inverse.
+Release Location:          public
+Origin:                    https://github.com/Maratyszcza/psimd
+                           
+--------------------------------------------
+
+Package:                   pthreadpool
+Version:                   Revision b8374f80e42010941bda6c85b0e3f1a1bd77a1e0
+Outgoing License:          BSD License
+License File:              LICENSE
+Description and comments:  pthreadpool is a portable and efficient thread pool implementation. It provides
+                           similar functionality to #pragma omp parallel for, but with additional features. 
+Release Location:          public
+Origin:                    https://github.com/Maratyszcza/pthreadpool
+                           
+--------------------------------------------
+
+Package:                   protobuf
+Version:                   3.21.9
+Outgoing License:          BSD-3-Clause
+License File:              LICENSE
+Description and comments:  Protocol Buffers (a.k.a. protobuf) are Google's language-neutral, platform-neutral,
+                           extensible mechanism for serializing structured data.
+Release Location:          public
+Origin:                    https://github.com/protocolbuffers/protobuf
+                           
+--------------------------------------------
