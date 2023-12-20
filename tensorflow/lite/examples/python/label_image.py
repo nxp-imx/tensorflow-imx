@@ -96,6 +96,7 @@ if __name__ == '__main__':
 
   # check the type of the input tensor
   floating_model = input_details[0]['dtype'] == np.float32
+  int8_model = input_details[0]['dtype'] == np.int8
 
   # NxHxWxC, H:1, W:2
   height = input_details[0]['shape'][1]
@@ -104,6 +105,10 @@ if __name__ == '__main__':
 
   # add N dim
   input_data = np.expand_dims(img, axis=0)
+
+  if int8_model:
+    input_data = input_data - 128
+    input_data = input_data.astype(np.int8)
 
   if floating_model:
     input_data = (np.float32(input_data) - args.input_mean) / args.input_std
@@ -122,6 +127,11 @@ if __name__ == '__main__':
   print("Inference time:", '%.1f' % (delta * 1000), "ms\n")
 
   output_data = interpreter.get_tensor(output_details[0]['index'])
+
+  if int8_model:
+    output_data = output_data + 128
+    output_data = output_data.astype(np.uint8)
+
   results = np.squeeze(output_data)
 
   top_k = results.argsort()[-5:][::-1]
