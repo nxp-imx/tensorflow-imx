@@ -5,7 +5,7 @@
 load("//tensorflow/core/platform:rules_cc.bzl", "cc_library")
 load(
     "//tensorflow:tensorflow.bzl",
-    "cc_library_with_android_deps",
+    "cc_library_with_portable_deps",
     "tf_cc_test",
     "tf_copts",
     "transitive_hdrs",
@@ -176,11 +176,11 @@ cc_library(
     ],
 )
 
-cc_library_with_android_deps(
+cc_library_with_portable_deps(
     name = "ops",
     srcs = ["framework/ops.cc"],
     hdrs = ["framework/ops.h"],
-    android_deps = ["//tensorflow/core:portable_tensorflow_lib"],
+    portable_deps = ["//tensorflow/core:portable_tensorflow_lib"],
     deps = [
         "//tensorflow/core:core_cpu",
         "//tensorflow/core:framework",
@@ -194,14 +194,14 @@ cc_library_with_android_deps(
     ],
 )
 
-cc_library_with_android_deps(
+cc_library_with_portable_deps(
     name = "scope",
     srcs = [
         "framework/scope.cc",
         "framework/scope_internal.h",
     ],
     hdrs = ["framework/scope.h"],
-    android_deps = ["//tensorflow/core:portable_tensorflow_lib"],
+    portable_deps = ["//tensorflow/core:portable_tensorflow_lib"],
     common_deps = [
         ":ops",
     ],
@@ -214,7 +214,7 @@ cc_library_with_android_deps(
     ],
 )
 
-cc_library_with_android_deps(
+cc_library_with_portable_deps(
     name = "scope_internal",
     hdrs = ["framework/scope_internal.h"],
     common_deps = [
@@ -237,11 +237,11 @@ tf_cc_test(
     ],
 )
 
-cc_library_with_android_deps(
+cc_library_with_portable_deps(
     name = "client_session",
     srcs = ["client/client_session.cc"],
     hdrs = ["client/client_session.h"],
-    android_deps = ["//tensorflow/core:portable_tensorflow_lib"],
+    portable_deps = ["//tensorflow/core:portable_tensorflow_lib"],
     common_deps = [
         ":ops",
         ":scope",
@@ -272,11 +272,11 @@ tf_cc_test(
     ],
 )
 
-cc_library_with_android_deps(
+cc_library_with_portable_deps(
     name = "const_op",
     srcs = ["ops/const_op.cc"],
     hdrs = ["ops/const_op.h"],
-    android_deps = [
+    portable_deps = [
         "//tensorflow/core:portable_tensorflow_lib",
     ],
     common_deps = [
@@ -301,11 +301,11 @@ tf_cc_test(
     ],
 )
 
-cc_library_with_android_deps(
+cc_library_with_portable_deps(
     name = "while_loop",
     srcs = ["ops/while_loop.cc"],
     hdrs = ["ops/while_loop.h"],
-    android_deps = [
+    portable_deps = [
         "//tensorflow/core:portable_tensorflow_lib",
     ],
     common_deps = [

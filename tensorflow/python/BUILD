@@ -643,36 +643,12 @@ py_strict_library(
     ],
 )
 
+# Selective build for eLinux: 
+#   Modified to avoid duplicated registration issues. Workaround
+#   while finding a better solution to avoid breaking other targets.
 pywrap_tensorflow_macro(
     name = "pywrap_tensorflow_internal",
     srcs = ["pywrap_tensorflow_internal.cc"],
-    dynamic_deps = select({
-        "//tensorflow:macos": [
-            "//tensorflow:libtensorflow_cc.%s.dylib" % VERSION,
-            "//tensorflow:libtensorflow_framework.%s.dylib" % VERSION,
-        ],
-        "//conditions:default": [
-            "//tensorflow:libtensorflow_cc.so.%s" % VERSION,
-            "//tensorflow:libtensorflow_framework.so.%s" % VERSION,
-        ],
-        "//tensorflow:windows": [],
-    }),
-    exports_filter = [
-        "@pybind11",
-        "@local_config_python//:python_headers",
-    ] + if_windows([
-        "//:__subpackages__",
-        "@nsync//:__subpackages__",
-        "@com_google_absl//:__subpackages__",
-        "@com_google_protobuf//:__subpackages__",
-        "@double_conversion//:__subpackages__",
-        "@eigen_archive//:__subpackages__",
-        "@local_tsl//tsl:__subpackages__",
-        "@local_xla//xla:__subpackages__",
-    ]),
-    roots = [
-        "//tensorflow/python/lib/core:py_exception_registry",
-    ],
     static_deps = [
         "@arm_neon_2_x86_sse//:__subpackages__",
         "@bazel_tools//:__subpackages__",

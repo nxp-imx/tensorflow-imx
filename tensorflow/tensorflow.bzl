@@ -234,6 +234,32 @@ def if_android_or_ios(a):
         "//conditions:default": [],
     })
 
+def if_elinux(a, otherwise = []):
+    return select({
+        clean_dep("//tensorflow:elinux_arm"): a,
+        "//conditions:default": otherwise,
+    })
+
+def if_not_elinux(a, otherwise = []):
+    return select({
+        clean_dep("//tensorflow:elinux_arm"): otherwise,
+        "//conditions:default": a,
+    })
+
+def if_android_or_elinux(a):
+    return select({
+        clean_dep("//tensorflow:android"): a,
+        clean_dep("//tensorflow:elinux_arm"): a,
+        "//conditions:default": [],
+    })
+
+def if_not_android_or_elinux(a):
+    return select({
+        clean_dep("//tensorflow:android"): [],
+        clean_dep("//tensorflow:elinux_arm"): [],
+        "//conditions:default": a,
+    })
+
 def if_emscripten(a):
     return select({
         clean_dep("//tensorflow:emscripten"): a,
@@ -880,7 +906,9 @@ def tf_cc_shared_library_opensource(
         version = soversion,
     )
     for name_os, name_os_major, name_os_full in names:
-        soname = name_os_major.split("/")[-1]  # Uses major version for soname.
+        # Using full name solves missing link in `_pywrap_py_exception_registry.so`
+        # to `libtensorflow_framework.so.2`
+        soname = name_os_full.split("/")[-1]  
         user_link_flags = linkopts + _rpath_user_link_flags(name_os_full) + select({
             clean_dep("//tensorflow:ios"): [
                 "-Wl,-install_name,@rpath/" + soname,
@@ -1237,13 +1265,13 @@ def tf_gen_op_wrappers_cc(
         name = name,
         srcs = subsrcs,
         hdrs = subhdrs,
-        deps = deps + if_not_android([
+        deps = deps + if_not_android_or_elinux([
             clean_dep("//tensorflow/core:core_cpu"),
             clean_dep("//tensorflow/core:framework"),
             clean_dep("//tensorflow/core:lib"),
             clean_dep("//tensorflow/core:ops"),
             clean_dep("//tensorflow/core:protos_all_cc"),
-        ]) + if_android([
+        ]) + if_android_or_elinux([
             clean_dep("//tensorflow/core:portable_tensorflow_lib"),
         ]),
         copts = tf_copts(),
@@ -1255,13 +1283,13 @@ def tf_gen_op_wrappers_cc(
         name = name + "_internal",
         srcs = internalsrcs,
         hdrs = internalhdrs,
-        deps = deps + deps_internal + if_not_android([
+        deps = deps + deps_internal + if_not_android_or_elinux([
             clean_dep("//tensorflow/core:core_cpu"),
             clean_dep("//tensorflow/core:framework"),
             clean_dep("//tensorflow/core:lib"),
             clean_dep("//tensorflow/core:ops"),
             clean_dep("//tensorflow/core:protos_all_cc"),
-        ]) + if_android([
+        ]) + if_android_or_elinux([
             clean_dep("//tensorflow/core:portable_tensorflow_lib"),
         ]),
         copts = tf_copts(),
@@ -2426,11 +2454,14 @@ def pywrap_tensorflow_macro_opensource(
     additional_linker_inputs = if_windows([], otherwise = ["%s.lds" % vscriptname])
 
     # This is needed so that libtensorflow_cc is included in the pip package.
-    srcs += select({
-        clean_dep("//tensorflow:macos"): [clean_dep("//tensorflow:libtensorflow_cc.%s.dylib" % VERSION_MAJOR)],
-        clean_dep("//tensorflow:windows"): [],
-        "//conditions:default": [clean_dep("//tensorflow:libtensorflow_cc.so.%s" % VERSION_MAJOR)],
-    })
+    # Selective build for eLinux: 
+    #   Removes `_pywrap_tensorflow_internal.so` missing link to `libtensorflow_cc.so.2.x.y` issue
+
+    # srcs += select({
+    #     clean_dep("//tensorflow:macos"): [clean_dep("//tensorflow:libtensorflow_cc.%s.dylib" % VERSION_MAJOR)],
+    #     clean_dep("//tensorflow:windows"): [],
+    #     "//conditions:default": [clean_dep("//tensorflow:libtensorflow_cc.so.%s" % VERSION_MAJOR)],
+    # })
 
     tf_cc_shared_library_opensource(
         name = cc_shared_library_name,
@@ -2961,13 +2992,13 @@ def tf_py_build_info_genrule(name, out):
             }), ""),
     )
 
-def cc_library_with_android_deps(
+def cc_library_with_portable_deps(
         deps,
-        android_deps = [],
+        portable_deps = [],
         common_deps = [],
         copts = tf_copts(),
         **kwargs):
-    deps = if_not_android(deps) + if_android(android_deps) + common_deps
+    deps = if_not_android_or_elinux(deps) + if_android_or_elinux(portable_deps) + common_deps
     cc_library(deps = deps, copts = copts, **kwargs)
 
 def tensorflow_opensource_extra_deps():
@@ -3552,6 +3583,7 @@ def replace_with_portable_tf_lib_when_required(non_portable_tf_deps, use_lib_wit
 
     return select({
         "//tensorflow:android": [portable_tf_lib],
+        "//tensorflow:elinux_arm": [portable_tf_lib],
         "//tensorflow:ios": [portable_tf_lib],
         "//conditions:default": non_portable_tf_deps,
     })

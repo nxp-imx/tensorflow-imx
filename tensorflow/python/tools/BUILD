@@ -296,6 +296,9 @@ py_strict_test(
     ],
 )
 
+# Selective build for eLinux: 
+#   Modified to avoid duplicated registration issues. Workaround
+#   while finding a better solution to avoid breaking other targets.
 py_strict_library(
     name = "selective_registration_header_lib",
     srcs = ["selective_registration_header_lib.py"],
@@ -303,7 +306,7 @@ py_strict_library(
     visibility = ["//visibility:public"],
     deps = [
         # copybara:comment_begin(oss-only)
-        "//tensorflow/python",  # to fix libtensorflow_framework.so.2 import error.
+        # "//tensorflow/python",  # to fix libtensorflow_framework.so.2 import error.
         # copybara:comment_end
         "//tensorflow/core:protos_all_py",
         "//tensorflow/python/platform:gfile",

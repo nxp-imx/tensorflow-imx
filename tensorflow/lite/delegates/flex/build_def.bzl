@@ -179,6 +179,9 @@ def tflite_flex_cc_library(
             clean_dep("//tensorflow:android"): [
                 portable_tensorflow_lib,
             ],
+            clean_dep("//tensorflow:elinux_arm"): [
+                portable_tensorflow_lib,
+            ],
             clean_dep("//tensorflow:ios"): [
                 portable_tensorflow_lib,
             ],

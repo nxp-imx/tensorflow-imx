@@ -477,20 +477,17 @@ cc_library(
     hdrs = [
         "init_tensorflow.h",
     ],
-    visibility = [
-        # copybara:uncomment_begin(internal brella benchmark)
-        # "//learning/brain/mobile/lite/brella_benchmark:__subpackages__",
-        # copybara:uncomment_end
-        "//tensorflow/lite/delegates/flex:__subpackages__",
-        "//tensorflow/lite/java/src/main/native:__subpackages__",
-        "//tensorflow/lite/testing:__subpackages__",
-        "//tensorflow/lite/tools/benchmark:__subpackages__",
-    ],
+    # Flex delegate for elinux configurations:
+    # Expose to simplify building tests/examples
+    visibility = ["//visibility:public"],
     deps = select({
         "//conditions:default": [
             "//tensorflow/core:lib",
         ],
         "//tensorflow:android": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
+        "//tensorflow:elinux_arm": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//tensorflow:ios": [
