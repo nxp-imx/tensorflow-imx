@@ -41,9 +41,17 @@ list(APPEND TFLITE_BENCHMARK_SRCS
   ${TFLITE_SOURCE_DIR}/tools/utils.cc
 )
 
-list(APPEND TFLITE_BENCHMARK_LIBS
-  tensorflow-lite
-)
+if(CMAKE_SYSTEM_NAME MATCHES "Android" AND CMAKE_CXX_COMPILER_ID MATCHES "Clang$")
+  # Adding tensorflow-lite-test-base will include NNAPI symbols
+  list(APPEND TFLITE_BENCHMARK_LIBS
+    tensorflow-lite
+    tensorflow-lite-test-base
+  )
+else()
+  list(APPEND TFLITE_BENCHMARK_LIBS
+    tensorflow-lite
+  )
+endif()
 
 # TODO(b/171007016): Enable performance options on Windows.
 if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
