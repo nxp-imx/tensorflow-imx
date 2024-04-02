@@ -40,6 +40,10 @@ public class BenchmarkModelActivity extends Activity {
       // Users should not specify this argument.
       args = args + " --hexagon_lib_path=" + getApplicationInfo().nativeLibraryDir;
     }
+    if (args.contains("--use_vx_delegate=true") || args.contains("--use_vx_delegate=1")) { 
+      // Users should not specify this argument. 
+      args = args + " --external_delegate_path=" + getApplicationInfo().nativeLibraryDir + "/libvx_delegate.so"; 
+    } 
     Log.i(TAG, "Running TensorFlow Lite benchmark with args: " + args);
 
     Trace.beginSection("TFLite Benchmark Model");

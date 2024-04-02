@@ -38,6 +38,7 @@ APK_VARIANTS = [
     deps = [
         ":hexagon_libs",
         ":tensorflowlite_benchmark_native%s" % suffix,
+        ":vx_delegate", 
     ],
 ) for suffix, _ in APK_VARIANTS]
 
@@ -72,3 +73,8 @@ cc_library(
     }),
     visibility = ["//visibility:private"],
 )
+ 
+cc_import( 
+  name = "vx_delegate", 
+  shared_library = "shared_libs/libvx_delegate.so", 
+) 
