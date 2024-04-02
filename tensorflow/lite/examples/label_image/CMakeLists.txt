@@ -76,6 +76,14 @@ target_compile_options(label_image
   PRIVATE
     ${TFLITE_LABEL_IMAGE_CC_OPTIONS}
 )
-target_link_libraries(label_image
+if(CMAKE_SYSTEM_NAME MATCHES "Android" AND CMAKE_CXX_COMPILER_ID MATCHES "Clang$")
+  # Adding tensorflow-lite-test-base will include NNAPI symbols
+  target_link_libraries(label_image
   tensorflow-lite
-)
+  tensorflow-lite-test-base
+  )
+else()
+  target_link_libraries(label_image
+    tensorflow-lite
+  )
+endif()
