@@ -22,10 +22,15 @@ get_dependency_tag("gemmlowp" "${TF_SOURCE_DIR}/../third_party/gemmlowp/workspac
 
 include(OverridableFetchContent)
 
+set(gemmlowp_patch git reset --hard && git apply ${TF_SOURCE_DIR}/../third_party/gemmlowp/gemmlowp.patch)
+
 OverridableFetchContent_Declare(
   gemmlowp
   GIT_REPOSITORY https://github.com/google/gemmlowp
   GIT_TAG ${GEMMLOWP_TAG}
+  # This patch fix the issue with pthread dependency for the e844ff commit.
+  # The patch was applied in repo for later commits started from d08944.
+  PATCH_COMMAND ${gemmlowp_patch}
   # It's not currently (cmake 3.17) possible to shallow clone with a GIT TAG
   # as cmake attempts to git checkout the commit hash after the clone
   # which doesn't work as it's a shallow clone hence a different commit hash.
