@@ -21,6 +21,13 @@ import android.os.Bundle;
 import android.os.Trace;
 import android.util.Log;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.DirectoryStream;
+import java.util.Iterator;
+import java.io.IOException;
+
 /** Main {@code Activity} class for the benchmark app. */
 public class BenchmarkModelActivity extends Activity {
 
@@ -40,10 +47,25 @@ public class BenchmarkModelActivity extends Activity {
       // Users should not specify this argument.
       args = args + " --hexagon_lib_path=" + getApplicationInfo().nativeLibraryDir;
     }
-    if (args.contains("--use_vx_delegate=true") || args.contains("--use_vx_delegate=1")) { 
-      // Users should not specify this argument. 
-      args = args + " --external_delegate_path=" + getApplicationInfo().nativeLibraryDir + "/libvx_delegate.so"; 
-    } 
+    else if (args.contains("--use_external_delegate=true") || args.contains("--use_external_delegate=1")) {
+      final Path dir = Paths.get(getApplicationInfo().nativeLibraryDir);
+      // Search for all delegate libraries in the application native library folder.
+      try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(dir, "lib*_delegate.so")) {
+        Iterator<Path> itStream = dirStream.iterator();
+        // If the list of libraries is not empty, apply the first delegate libary from it. 
+        if (itStream.hasNext()) {
+          // Users should not specify this argument.
+          args = args.replaceFirst("--use_external_delegate=(true|1)", "--external_delegate_path=" + itStream.next().toString()); 
+        }
+        else {
+          Log.e(TAG, "There is no delegate library in " + dir.toString());
+          return;
+        }
+      } catch (IOException exception) {
+        System.err.println("Failed to open external delegate library");
+        System.exit(0);
+      }
+    }
     Log.i(TAG, "Running TensorFlow Lite benchmark with args: " + args);
 
     Trace.beginSection("TFLite Benchmark Model");
