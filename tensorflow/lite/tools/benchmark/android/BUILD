@@ -4,7 +4,7 @@
 load("//tensorflow/lite:build_def.bzl", "tflite_jni_binary")
 load("//tensorflow/lite:special_rules.bzl", "tflite_hexagon_nn_skel_libraries")
 load("@build_bazel_rules_android//android:rules.bzl", "android_binary")
-load("//tensorflow/lite/tools/benchmark/android:build_defs.bzl", "get_delegate_lib")
+load("//tensorflow/lite/tools/benchmark/android:build_defs.bzl", "get_shared_libs")
 
 package(
     # copybara:uncomment default_applicable_licenses = ["//tensorflow:license"],
@@ -24,7 +24,9 @@ APK_VARIANTS = [
     ),
 ]
 
-[android_binary(
+SHARED_LIBS, SHARED_LIBS_EXTRA_DEPS = get_shared_libs()
+
+[[android_binary(
     name = "benchmark_model%s" % suffix,
     srcs = glob([
         "src/**/*.java",
@@ -39,9 +41,8 @@ APK_VARIANTS = [
     deps = [
         ":hexagon_libs",
         ":tensorflowlite_benchmark_native%s" % suffix,
-        ":npu_delegate",
-    ],
-) for suffix, _ in APK_VARIANTS]
+    ] + SHARED_LIBS_EXTRA_DEPS,
+) for suffix, _ in APK_VARIANTS]]
 
 [tflite_jni_binary(
     name = "libtensorflowlite_benchmark%s.so" % suffix,
@@ -74,8 +75,8 @@ cc_library(
     }),
     visibility = ["//visibility:private"],
 )
- 
-cc_import( 
-    name = "npu_delegate",
-    shared_library = get_delegate_lib(),
-) 
+
+[cc_import(
+    name = "%s" % lib_name,
+    shared_library = "%s" % lib_path,
+) for lib_name, lib_path in SHARED_LIBS]
