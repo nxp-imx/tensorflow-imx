@@ -40,7 +40,23 @@
            android:required="false"/>
         <uses-library android:name="libOpenCL-pixel.so"
            android:required="false"/>
+        <uses-library android:name="libOpenVX.so"
+           android:required="false"/>
+        <uses-library android:name="libOpenVXU.so"
+           android:required="false"/>
+        <uses-library android:name="libGAL.so"
+           android:required="false"/>
+        <uses-library android:name="libCLC.so"
+           android:required="false"/>
+        <uses-library android:name="libVSC.so"
+           android:required="false"/>
+        <uses-library android:name="libarchmodelSw.so"
+           android:required="false"/>
+        <uses-library android:name="libNNArchPerf.so"
+           android:required="false"/>           
         <uses-library android:name="libtim-vx.so"
+           android:required="false"/>
+        <uses-library android:name="libNeutronDriver.so"
            android:required="false"/>
     </application>
 
