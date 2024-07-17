@@ -1,12 +1,12 @@
 NXP Software Content Register
 
 Release - TensorFlow Lite 2.15.0
-May 2024
+July 2024
 
 Outgoing License: Apache 2.0
 License in File: LICENSE
 
-Release branch: lf-6.6.23_2.0.0
+Release branch: lf-6.6.23_2.0.0-android
 
 --------------------------------------------
 
@@ -15,7 +15,7 @@ Version:                   2.15.0
 Outgoing License:          Apache 2.0
 License File:              LICENSE
 Description and comments:  TensorFlow Lite inference framework for mobile devices.
-Release Location:          https://github.com/nxp-imx/tensorflow-imx -b lf-6.6.23_2.0.0
+Release Location:          https://github.com/nxp-imx/tensorflow-imx -b lf-6.6.23_2.0.0-android
 Origin:                    TensorFlow - https://github.com/tensorflow/tensorflow
                            
 --------------------------------------------
