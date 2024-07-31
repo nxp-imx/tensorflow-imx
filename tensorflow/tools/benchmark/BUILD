@@ -29,6 +29,10 @@ cc_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib",
             "//tensorflow/core:portable_tensorflow_test_lib",
+        ],        
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib",
+            "//tensorflow/core:portable_tensorflow_test_lib",
         ],
         "//conditions:default": [
             "//tensorflow/core:core_cpu",

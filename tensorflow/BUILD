@@ -569,6 +569,27 @@ config_setting(
 )
 
 config_setting(
+    name = "elinux_aarch64",
+    values = {"cpu": "aarch64"},
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "elinux_armhf",
+    values = {"cpu": "armhf"},
+    visibility = ["//visibility:public"],
+)
+
+selects.config_setting_group(
+    name = "elinux_arm",
+    match_any = [
+        ":elinux_aarch64",
+        ":elinux_armhf"
+    ],
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
     name = "haswell",
     values = {"cpu": "haswell"},
     visibility = ["//visibility:public"],
@@ -666,6 +687,7 @@ selects.config_setting_group(
         ":arm64-v8a",
         ":linux_aarch64",
         ":linux_armhf",
+        ":elinux_arm",
     ],
 )
 
@@ -908,6 +930,7 @@ selects.config_setting_group(
         ":fuchsia",
         ":emscripten",
         ":ios",
+        ":elinux_arm",
     ],
     visibility = ["//visibility:public"],
 )
