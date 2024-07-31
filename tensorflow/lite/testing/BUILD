@@ -111,6 +111,10 @@ _test_size_override = {
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib",
             "//tensorflow/core:portable_tensorflow_test_lib",
+        ],        
+        "//tensorflow:elinux_arm": [            
+            "//tensorflow/core:portable_tensorflow_lib",
+            "//tensorflow/core:portable_tensorflow_test_lib",
         ],
     }),
 ) for conversion_mode, delegate, test_name, tags, args in generated_test_models_all()]
@@ -412,6 +416,9 @@ cc_library(
         ],
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib",
+        ],               
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib",
         ],
         "//tensorflow:ios": [
             "//tensorflow/core:portable_tensorflow_lib",
@@ -452,6 +459,9 @@ cc_library(
         ],
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib",
+        ],               
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib",
         ],
         "//tensorflow:ios": [
             "//tensorflow/core:portable_tensorflow_lib",
@@ -480,18 +490,17 @@ cc_library(
     hdrs = [
         "init_tensorflow.h",
     ],
-    visibility = [
-        # copybara:uncomment_begin(internal brella benchmark)
-        # "//learning/brain/mobile/lite/brella_benchmark:__subpackages__",
-        # copybara:uncomment_end
-        "//tensorflow/lite/delegates/flex:__subpackages__",
-        "//tensorflow/lite/tools/benchmark:__subpackages__",
-    ],
+    # Visibility scope increased to enable inclusion
+    # of the target outside the package.
+    visibility = ["//visibility:public"],
     deps = select({
         "//conditions:default": [
             "//tensorflow/core:lib",
         ],
         "//tensorflow:android": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],               
+        "//tensorflow:elinux_arm": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//tensorflow:ios": [
@@ -528,6 +537,9 @@ cc_library(
             "//tensorflow/core:lib",
         ],
         "//tensorflow:android": [
+            "//tensorflow/core:portable_tensorflow_lib",
+        ],               
+        "//tensorflow:elinux_arm": [
             "//tensorflow/core:portable_tensorflow_lib",
         ],
         "//tensorflow:ios": [

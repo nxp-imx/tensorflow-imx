@@ -88,6 +88,11 @@ def generate_flex_kernel_header(
     )
     return struct(include_path = include_path, header = header)
 
+def load_flex_kernel_header(
+        include_path,
+        header_path):
+    return struct( include_path = include_path, header = header_path)
+
 def tflite_flex_cc_library(
         name,
         models = [],
@@ -95,7 +100,8 @@ def tflite_flex_cc_library(
         testonly = 0,
         visibility = ["//visibility:public"],
         link_symbol = True,
-        compatible_with = None):
+        compatible_with = None,
+        kernel_headers = None):
     """A rule to generate a flex delegate with only ops to run listed models.
 
     Args:
@@ -108,15 +114,19 @@ def tflite_flex_cc_library(
       visibility: visibility of the generated rules.
       link_symbol: If true, add delegate_symbol to deps.
       compatible_with: The standard compatible_with attribute.
+      kernel_headers: Kernel headers. Used to bypass the generation phase.
     """
     portable_tensorflow_lib = clean_dep("//tensorflow/core:portable_tensorflow_lib")
     if models:
-        CUSTOM_KERNEL_HEADER = generate_flex_kernel_header(
-            name = "%s_tf_op_headers" % name,
-            models = models,
-            additional_deps = additional_deps,
-            testonly = testonly,
-        )
+        if kernel_headers:
+            CUSTOM_KERNEL_HEADER = kernel_headers
+        else:
+            CUSTOM_KERNEL_HEADER = generate_flex_kernel_header(
+                name = "%s_tf_op_headers" % name,
+                models = models,
+                additional_deps = additional_deps,
+                testonly = testonly,
+            )
 
         # Define a custom tensorflow_lib with selective registration.
         # The library will only contain ops exist in provided models.
@@ -179,6 +189,9 @@ def tflite_flex_cc_library(
             clean_dep("//tensorflow:android"): [
                 portable_tensorflow_lib,
             ],
+            clean_dep("//tensorflow:elinux_arm"): [
+                portable_tensorflow_lib,
+            ],
             clean_dep("//tensorflow:ios"): [
                 portable_tensorflow_lib,
             ],
@@ -199,7 +212,8 @@ def tflite_flex_shared_library(
         models = [],
         additional_deps = [],
         testonly = 0,
-        visibility = ["//visibility:private"]):
+        visibility = ["//visibility:private"],
+        kernel_headers = None):
     """A rule to generate a flex delegate shared library with only ops to run listed models.
 
     The output library name is platform dependent:
@@ -215,6 +229,7 @@ def tflite_flex_shared_library(
       additional_deps: Dependencies for additional TF ops.
       testonly: Mark this library as testonly if true.
       visibility: visibility of the generated rules.
+      kernel_headers: Kernel headers. Used to bypass the generation phase.
     """
     tflite_flex_cc_library(
         name = "%s_flex_delegate" % name,
@@ -222,6 +237,7 @@ def tflite_flex_shared_library(
         additional_deps = additional_deps,
         testonly = testonly,
         visibility = visibility,
+        kernel_headers = kernel_headers,
     )
 
     tflite_cc_shared_object(
