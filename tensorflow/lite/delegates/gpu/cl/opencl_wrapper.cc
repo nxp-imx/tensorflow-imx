@@ -137,6 +137,12 @@ absl::Status LoadOpenCL() {
 #else
   libopencl = dlopen(kClLibName, RTLD_NOW | RTLD_LOCAL);
 #endif
+#if !defined(__APPLE__) && !defined(__ANDROID__)
+  if (!libopencl) {
+    libopencl = dlopen("libOpenCL.so.1", RTLD_NOW | RTLD_LOCAL);
+  }
+#endif
+
   if (libopencl) {
     LoadOpenCLFunctions(libopencl, false);
     return absl::OkStatus();
