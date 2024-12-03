@@ -6,6 +6,7 @@ load("//tensorflow:strict.default.bzl", "py_strict_binary")
 load(
     "//tensorflow:tensorflow.bzl",
     "if_android",
+    "if_android_or_elinux",
     "if_google",
     "if_mobile",
     "if_not_mobile",
@@ -117,7 +118,7 @@ cc_library(
         "//tensorflow/core:lib",
         "//tensorflow/core:ops",
         "//tensorflow/core:protos_all_cc",
-    ]) + if_android([
+    ]) + if_android_or_elinux([
         "//tensorflow/core:portable_tensorflow_lib",
     ]),
 )
@@ -394,7 +395,7 @@ cc_library(
         "@jsoncpp_git//:jsoncpp",
     ] + if_not_mobile([
         "//tensorflow/core:lib",
-    ]) + if_android([
+    ]) + if_android_or_elinux([
         "//tensorflow/core:portable_tensorflow_lib_lite",
     ]),
     alwayslink = True,
@@ -411,7 +412,7 @@ cc_library(
         ":metrics_impl",
     ]) + if_not_mobile([
         "//tensorflow/core:lib",
-    ]) + if_android([
+    ]) + if_android_or_elinux([
         "//tensorflow/core:portable_tensorflow_lib_lite",
     ]) + [
         "//tensorflow/core/protobuf:for_core_protos_cc",
@@ -448,7 +449,7 @@ cc_library(
         "//tensorflow/core/platform:errors",
         "//tensorflow/core/platform:status",
         "//tensorflow/core/protobuf:for_core_protos_cc",
-    ] + if_not_mobile(["//tensorflow/core:lib"]) + if_android(["//tensorflow/core:portable_tensorflow_lib_lite"]),
+    ] + if_not_mobile(["//tensorflow/core:lib"]) + if_android_or_elinux(["//tensorflow/core:portable_tensorflow_lib_lite"]),
 )
 
 cc_library(
@@ -506,7 +507,7 @@ cc_library(
         "@local_tsl//tsl/platform:types",
     ] + if_not_mobile([
         "//tensorflow/core:lib",
-    ]) + if_android([
+    ]) + if_android_or_elinux([
         "//tensorflow/core:portable_tensorflow_lib_lite",
     ]) + if_not_windows_or_mac([
         ":fingerprinting_utils",
@@ -532,7 +533,7 @@ cc_library(
         "//tensorflow/core:protos_all_cc",
     ]) + if_not_mobile([
         "//tensorflow/core:lib",
-    ]) + if_android([
+    ]) + if_android_or_elinux([
         "//tensorflow/core:portable_tensorflow_lib_lite",
     ]),
 )

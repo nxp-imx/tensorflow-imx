@@ -37,6 +37,11 @@ tf_cc_binary(
             # decoder to enable real-image evaluation on Android
             "//tensorflow/core/kernels/image:android_tensorflow_image_op",
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/cc:cc_ops",
+            "//tensorflow/core:portable_tensorflow_lib",
+            "//tensorflow/core/kernels/image:android_tensorflow_image_op",
+        ],
         "//conditions:default": [
             "//tensorflow/core:core_cpu",
             "//tensorflow/core:framework",

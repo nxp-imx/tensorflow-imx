@@ -7350,6 +7350,11 @@ tf_cc_binary(
             "//tensorflow/core:portable_tensorflow_lib",
             "//tensorflow/core:portable_tensorflow_test_lib",
         ],
+        "//tensorflow:elinux_arm": [
+            ":portable_tensorflow_kernels",
+            "//tensorflow/core:portable_tensorflow_lib",
+            "//tensorflow/core:portable_tensorflow_test_lib",
+        ],
         "//conditions:default": [
             ":quantized_ops",
             "//tensorflow/cc:cc_ops",
@@ -7408,6 +7413,11 @@ cc_binary(
         "//tensorflow/cc:client_session",
     ] + select({
         "//tensorflow:android": [
+            ":portable_tensorflow_kernels",
+            "//tensorflow/core:portable_tensorflow_lib",
+            "//tensorflow/core:portable_tensorflow_test_lib",
+        ],
+        "//tensorflow:elinux_arm": [
             ":portable_tensorflow_kernels",
             "//tensorflow/core:portable_tensorflow_lib",
             "//tensorflow/core:portable_tensorflow_test_lib",
@@ -7494,6 +7504,11 @@ cc_binary(
         "//tensorflow/cc:client_session",
     ] + select({
         "//tensorflow:android": [
+            ":portable_tensorflow_kernels",
+            "//tensorflow/core:portable_tensorflow_lib",
+            "//tensorflow/core:portable_tensorflow_test_lib",
+        ],
+        "//tensorflow:elinux_arm": [
             ":portable_tensorflow_kernels",
             "//tensorflow/core:portable_tensorflow_lib",
             "//tensorflow/core:portable_tensorflow_test_lib",
@@ -7614,6 +7629,11 @@ cc_binary(
         "//tensorflow/cc:client_session",
     ] + select({
         "//tensorflow:android": [
+            ":portable_tensorflow_kernels",
+            "//tensorflow/core:portable_tensorflow_lib",
+            "//tensorflow/core:portable_tensorflow_test_lib",
+        ],
+        "//tensorflow:elinux_arm": [
             ":portable_tensorflow_kernels",
             "//tensorflow/core:portable_tensorflow_lib",
             "//tensorflow/core:portable_tensorflow_test_lib",
@@ -7756,6 +7776,11 @@ cc_binary(
         "//tensorflow/cc:client_session",
     ] + select({
         "//tensorflow:android": [
+            ":portable_tensorflow_kernels",
+            "//tensorflow/core:portable_tensorflow_lib",
+            "//tensorflow/core:portable_tensorflow_test_lib",
+        ],
+        "//tensorflow:elinux_arm": [
             ":portable_tensorflow_kernels",
             "//tensorflow/core:portable_tensorflow_lib",
             "//tensorflow/core:portable_tensorflow_test_lib",

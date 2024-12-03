@@ -447,6 +447,9 @@ cc_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib",
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib",
+        ],
         "//conditions:default": [
             "//tensorflow/core:graph",
         ],

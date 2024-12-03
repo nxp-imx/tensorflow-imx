@@ -65,6 +65,9 @@ tf_cc_shared_test(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/cc/saved_model:loader",
             "//tensorflow/core:test",

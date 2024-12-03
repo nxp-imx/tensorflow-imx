@@ -156,6 +156,9 @@ tf_cuda_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         ("//tensorflow:chromiumos", "//tensorflow:fuchsia"): [
             ":tf_attrtype",
             "//tensorflow/core:core_cpu",
@@ -295,6 +298,9 @@ tf_cuda_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             ":env",
             ":logging",
@@ -361,6 +367,9 @@ tf_cuda_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/core:lib",
         ],
@@ -416,6 +425,9 @@ cc_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/core:lib",
         ],
@@ -467,6 +479,9 @@ cc_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/core:lib",
             "//tensorflow/core:protos_all_cc",
@@ -494,6 +509,9 @@ cc_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core:framework",
@@ -538,6 +556,9 @@ cc_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/core:framework",
             "//tensorflow/core:lib",
@@ -564,6 +585,9 @@ tf_cuda_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core:framework",
@@ -735,6 +759,9 @@ tf_cuda_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/core:framework",
         ],
@@ -799,6 +826,10 @@ tf_cuda_library(
         "@local_xla//xla/tsl/c:tsl_status_internal",
     ] + select({
         "//tensorflow:android": [
+            "//tensorflow/c/experimental/stream_executor:stream_executor_hdrs",
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
+        "//tensorflow:elinux_arm": [
             "//tensorflow/c/experimental/stream_executor:stream_executor_hdrs",
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
@@ -870,6 +901,9 @@ tf_cuda_library(
         ":tf_status_helper",
     ] + select({
         "//tensorflow:android": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
+        "//tensorflow:elinux_arm": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
