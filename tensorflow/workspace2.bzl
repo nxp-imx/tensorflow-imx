@@ -148,6 +148,9 @@ def _tf_repositories():
     # how to manually upload a mirror if necessary, see go/tf_mirror_md.
 
     # LINT.IfChange
+    # Attention: TensorFlow Lite CMake build uses this variable, update only the hash content.
+    XNNPACK_COMMIT = "6b83f69d4938da4dc9ad63c00bd13e9695659a51"
+
     tf_http_archive(
         name = "XNNPACK",
         sha256 = "f66213a4d66991b2a44400f95fcd260adf6f4f7077956cdf7fce2571d6164d5e",
@@ -177,6 +180,9 @@ def _tf_repositories():
         strip_prefix = "pthreadpool-4fe0e1e183925bf8cfa6aae24237e724a96479b8",
         urls = tf_mirror_urls("https://github.com/Maratyszcza/pthreadpool/archive/4fe0e1e183925bf8cfa6aae24237e724a96479b8.zip"),
     )
+
+    # Attention: TensorFlow Lite CMake build uses this variable, update only the hash content.
+    CPUINFO_COMMIT = "fa1c679da8d19e1d87f20175ae1ec10995cd3dd3"
 
     tf_http_archive(
         name = "cpuinfo",
@@ -502,12 +508,15 @@ def _tf_repositories():
     )
 
     # LINT.IfChange
+    # Attention: TensorFlow Lite CMake build uses these variables, update only the URL and the checksum value.
+    FFT2D_URL = "https://storage.googleapis.com/mirror.tensorflow.org/github.com/petewarden/OouraFFT/archive/v1.0.tar.gz"
+    FFT2D_SHA256 = "5f4dabc2ae21e1f537425d58a49cdca1c49ea11db0d6271e2a4b27e9697548eb"
     tf_http_archive(
         name = "fft2d",
         build_file = "//third_party/fft2d:fft2d.BUILD",
-        sha256 = "5f4dabc2ae21e1f537425d58a49cdca1c49ea11db0d6271e2a4b27e9697548eb",
+        sha256 = FFT2D_SHA256,
         strip_prefix = "OouraFFT-1.0",
-        urls = tf_mirror_urls("https://github.com/petewarden/OouraFFT/archive/v1.0.tar.gz"),
+        urls = tf_mirror_urls(FFT2D_URL),
     )
     # LINT.ThenChange(//tensorflow/lite/tools/cmake/modules/fft2d.cmake)
 
@@ -635,12 +644,15 @@ def _tf_repositories():
     )
 
     # LINT.IfChange
+    # Attention: TensorFlow Lite CMake parser processes these lines
+    NEON2SSE_URL = "https://storage.googleapis.com/mirror.tensorflow.org/github.com/intel/ARM_NEON_2_x86_SSE/archive/a15b489e1222b2087007546b4912e21293ea86ff.tar.gz"
+    NEON2SSE_SHA256 = "019fbc7ec25860070a1d90e12686fc160cfb33e22aa063c80f52b363f1361e9d"
     tf_http_archive(
         name = "arm_neon_2_x86_sse",
         build_file = "//third_party:arm_neon_2_x86_sse.BUILD",
-        sha256 = "019fbc7ec25860070a1d90e12686fc160cfb33e22aa063c80f52b363f1361e9d",
+        sha256 = NEON2SSE_SHA256,
         strip_prefix = "ARM_NEON_2_x86_SSE-a15b489e1222b2087007546b4912e21293ea86ff",
-        urls = tf_mirror_urls("https://github.com/intel/ARM_NEON_2_x86_SSE/archive/a15b489e1222b2087007546b4912e21293ea86ff.tar.gz"),
+        urls = tf_mirror_urls(NEON2SSE_URL),
     )
     # LINT.ThenChange(//tensorflow/lite/tools/cmake/modules/neon2sse.cmake)
 

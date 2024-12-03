@@ -17,13 +17,15 @@ if(TARGET cpuinfo OR cpuinfo_POPULATED)
   return()
 endif()
 
+include(utils)
+get_dependency_tag("cpuinfo" "${TF_SOURCE_DIR}/workspace2.bzl" CPUINFO_TAG)
+
 include(OverridableFetchContent)
 
 OverridableFetchContent_Declare(
   cpuinfo
   GIT_REPOSITORY https://github.com/pytorch/cpuinfo
-  # Sync with tensorflow/workspace2.bzl
-  GIT_TAG fa1c679da8d19e1d87f20175ae1ec10995cd3dd3
+  GIT_TAG ${CPUINFO_TAG}
   GIT_PROGRESS TRUE
   SOURCE_DIR "${CMAKE_BINARY_DIR}/cpuinfo"
 )
