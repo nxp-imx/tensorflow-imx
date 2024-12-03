@@ -30,6 +30,9 @@ cc_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/core/framework:tensor",
             "//tensorflow/core/framework:tensor_shape",
@@ -51,6 +54,9 @@ tf_cc_shared_test(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/c:c_api",
@@ -78,6 +84,9 @@ cc_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core/framework:types_proto_cc",
@@ -109,6 +118,9 @@ cc_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/core/framework:types_proto_cc",
             "//tensorflow/core/platform:errors",
@@ -133,6 +145,9 @@ tf_cc_test(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core:test",
@@ -166,6 +181,9 @@ cc_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/core/framework:tensor",
         ],
@@ -192,6 +210,9 @@ cc_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/c:tf_datatype",
@@ -229,6 +250,9 @@ cc_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core/framework:tensor",
@@ -273,6 +297,9 @@ cc_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/core/common_runtime/eager:context",
             "//tensorflow/core/framework:tensor",
@@ -300,6 +327,9 @@ cc_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core/framework:tensor",
@@ -342,6 +372,9 @@ cc_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core:framework",
@@ -387,6 +420,9 @@ cc_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/core:framework",
             "//tensorflow/core:lib",
@@ -423,6 +459,9 @@ cc_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core:core_cpu_base",

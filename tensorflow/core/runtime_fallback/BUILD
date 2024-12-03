@@ -49,6 +49,9 @@ tf_cc_binary(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//conditions:default": [
             "//tensorflow/core:all_kernels",
         ],
@@ -95,6 +98,9 @@ cc_library(
     ] + select({
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",  # TODO(annarev): exclude runtime srcs
+        ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//conditions:default": [
             "//tensorflow/core/platform:platform_port",

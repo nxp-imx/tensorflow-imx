@@ -36,6 +36,9 @@ cc_library(
         "//tensorflow:android": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
+        "//tensorflow:elinux_arm": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
         "//tensorflow:ios": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
@@ -69,6 +72,9 @@ tf_cc_test(
         "@flatbuffers",
     ] + select({
         "//tensorflow:android": [
+            "//tensorflow/core:portable_tensorflow_lib_lite",
+        ],
+        "//tensorflow:elinux_arm": [
             "//tensorflow/core:portable_tensorflow_lib_lite",
         ],
         "//tensorflow:ios": [

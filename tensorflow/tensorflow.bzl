@@ -241,6 +241,32 @@ def if_android_or_ios(a):
         "//conditions:default": [],
     })
 
+def if_elinux(a, otherwise = []):
+    return select({
+        clean_dep("//tensorflow:elinux_arm"): a,
+        "//conditions:default": otherwise,
+    })
+
+def if_not_elinux(a, otherwise = []):
+    return select({
+        clean_dep("//tensorflow:elinux_arm"): otherwise,
+        "//conditions:default": a,
+    })
+
+def if_android_or_elinux(a):
+    return select({
+        clean_dep("//tensorflow:android"): a,
+        clean_dep("//tensorflow:elinux_arm"): a,
+        "//conditions:default": [],
+    })
+
+def if_not_android_or_elinux(a):
+    return select({
+        clean_dep("//tensorflow:android"): [],
+        clean_dep("//tensorflow:elinux_arm"): [],
+        "//conditions:default": a,
+    })
+
 def if_emscripten(a):
     return select({
         clean_dep("//tensorflow:emscripten"): a,
@@ -1249,13 +1275,13 @@ def tf_gen_op_wrappers_cc(
         name = name,
         srcs = subsrcs,
         hdrs = subhdrs,
-        deps = deps + if_not_android([
+        deps = deps + if_not_android_or_elinux([
             clean_dep("//tensorflow/core:core_cpu"),
             clean_dep("//tensorflow/core:framework"),
             clean_dep("//tensorflow/core:lib"),
             clean_dep("//tensorflow/core:ops"),
             clean_dep("//tensorflow/core:protos_all_cc"),
-        ]) + if_android([
+        ]) + if_android_or_elinux([
             clean_dep("//tensorflow/core:portable_tensorflow_lib"),
         ]),
         copts = tf_copts(),
@@ -1267,13 +1293,13 @@ def tf_gen_op_wrappers_cc(
         name = name + "_internal",
         srcs = internalsrcs,
         hdrs = internalhdrs,
-        deps = deps + deps_internal + if_not_android([
+        deps = deps + deps_internal + if_not_android_or_elinux([
             clean_dep("//tensorflow/core:core_cpu"),
             clean_dep("//tensorflow/core:framework"),
             clean_dep("//tensorflow/core:lib"),
             clean_dep("//tensorflow/core:ops"),
             clean_dep("//tensorflow/core:protos_all_cc"),
-        ]) + if_android([
+        ]) + if_android_or_elinux([
             clean_dep("//tensorflow/core:portable_tensorflow_lib"),
         ]),
         copts = tf_copts(),
@@ -2986,13 +3012,13 @@ def tf_py_build_info_genrule(name, out):
             }), ""),
     )
 
-def cc_library_with_android_deps(
+def cc_library_with_mobile_deps(
         deps,
-        android_deps = [],
+        mobile_deps = [],
         common_deps = [],
         copts = tf_copts(),
         **kwargs):
-    deps = if_not_android(deps) + if_android(android_deps) + common_deps
+    deps = if_not_android_or_elinux(deps) + if_android_or_elinux(mobile_deps) + common_deps
     cc_library(deps = deps, copts = copts, **kwargs)
 
 def tensorflow_opensource_extra_deps():
@@ -3572,6 +3598,7 @@ def replace_with_portable_tf_lib_when_required(non_portable_tf_deps, use_lib_wit
     return select({
         clean_dep("//tensorflow:android"): [portable_tf_lib],
         clean_dep("//tensorflow:ios"): [portable_tf_lib],
+	clean_dep("//tensorflow:elinux_arm"): [portable_tf_lib],
         clean_dep("//conditions:default"): non_portable_tf_deps,
     })
 
