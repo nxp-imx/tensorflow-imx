@@ -614,16 +614,25 @@ populate_tflite_source_vars("kernels/internal/optimized/4bit"
 )
 set(TFLITE_PROFILER_SRCS
   ${TFLITE_SOURCE_DIR}/profiling/platform_profiler.cc
-  ${TFLITE_SOURCE_DIR}/profiling/root_profiler.h
+  ${TFLITE_SOURCE_DIR}/profiling/memory_info.cc
+  ${TFLITE_SOURCE_DIR}/profiling/memory_usage_monitor.cc
+  ${TFLITE_SOURCE_DIR}/profiling/platform_profiler.cc
+  ${TFLITE_SOURCE_DIR}/profiling/profile_buffer.cc
+  ${TFLITE_SOURCE_DIR}/profiling/profile_summarizer.cc
+  ${TFLITE_SOURCE_DIR}/profiling/profile_summary_formatter.cc
   ${TFLITE_SOURCE_DIR}/profiling/root_profiler.cc
+  ${TFLITE_SOURCE_DIR}/profiling/subgraph_tensor_profiler.cc
+  ${TFLITE_SOURCE_DIR}/profiling/time.cc
   ${TFLITE_SOURCE_DIR}/profiling/telemetry/profiler.cc
-  ${TFLITE_SOURCE_DIR}/profiling/telemetry/profiler.h
   ${TFLITE_SOURCE_DIR}/profiling/telemetry/telemetry.cc
   ${TFLITE_SOURCE_DIR}/profiling/telemetry/c/telemetry_setting_internal.cc
   ${TFLITE_SOURCE_DIR}/profiling/telemetry/c/telemetry_setting_internal.h
-  ${TFLITE_SOURCE_DIR}/profiling/telemetry/c/profiler.h
-  ${TFLITE_SOURCE_DIR}/profiling/telemetry/c/telemetry_setting.h
-  ${TFLITE_SOURCE_DIR}/profiling/telemetry/telemetry_status.h
+  ${TFLITE_SOURCE_DIR}/tools/delegates/delegate_provider.cc
+  ${TFLITE_SOURCE_DIR}/tools/delegates/default_execution_provider.cc
+  ${TFLITE_SOURCE_DIR}/tools/evaluation/utils.cc
+  ${TFLITE_SOURCE_DIR}/tools/tool_params.cc
+  ${TFLITE_SOURCE_DIR}/tools/command_line_flags.cc
+  ${XLA_SOURCE_DIR}/xla/tsl/util/stats_calculator.cc
 )
 if(CMAKE_SYSTEM_NAME MATCHES "Android")
   list(APPEND TFLITE_PROFILER_SRCS
@@ -639,6 +648,10 @@ endif()
 
 if(${TFLITE_BUILD_SHARED_LIB})
   set(LIB_TYPE "SHARED")
+endif()
+
+if(TFLITE_ENABLE_XNNPACK)
+  list(APPEND TFLITE_PROFILER_SRCS ${TFLITE_SOURCE_DIR}/core/acceleration/configuration/c/xnnpack_plugin.cc)
 endif()
 
 # TFLite library
