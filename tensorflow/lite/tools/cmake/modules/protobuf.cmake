@@ -30,8 +30,21 @@ set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(protobuf_INSTALL OFF CACHE BOOL "" FORCE)
 set(protobuf_WITH_ZLIB OFF CACHE BOOL "" FORCE)
-set(protobuf_BUILD_PROTOC_BINARIES ON CACHE BOOL "" FORCE)
+if(${CMAKE_CROSSCOMPILING})
+  # When cross-compiling, the following needs to be disabled in order to avoid
+  # naming clash with the 'protoc' target that is part of the protobuf CMake project
+  set(protobuf_BUILD_PROTOC_BINARIES OFF CACHE BOOL "Do not cross-compile protoc and libprotoc" FORCE)
 
+  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${TFLITE_SOURCE_DIR}/tools/cmake/native_tools)
+  include(native_utils)
+
+  find_native_compiler("protoc")
+  add_executable(protoc IMPORTED GLOBAL)
+  set_property(TARGET protoc PROPERTY
+               IMPORTED_LOCATION $CACHE{PROTOC-BIN})
+else()
+  set(protobuf_BUILD_PROTOC_BINARIES ON CACHE BOOL "" FORCE)
+endif()
 OverridableFetchContent_GetProperties(protobuf)
 if(NOT protobuf_POPULATED)
   OverridableFetchContent_Populate(protobuf)
