@@ -162,9 +162,6 @@ tools::ToolParams DelegateProviders::GetAllParams(
       if (tool_params.HasParam("use_xnnpack")) {
         tool_params.Set<bool>("use_xnnpack", true);
       }
-      if (tool_params.HasParam("xnnpack_force_fp16")) {
-        tool_params.Set<bool>("xnnpack_force_fp16", true);
-      }
       break;
     case TfliteInferenceParams::COREML:
       if (tool_params.HasParam("use_coreml")) {
