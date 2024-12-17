@@ -555,7 +555,6 @@ if(TFLITE_ENABLE_XNNPACK)
   )
 
   list(APPEND TFLITE_TARGET_DEPENDENCIES
-    xnnpack-delegate
     XNNPACK
   )
   list(APPEND TFLITE_TARGET_PUBLIC_OPTIONS "-DTFLITE_BUILD_WITH_XNNPACK_DELEGATE")
@@ -660,6 +659,10 @@ endif()
 
 if(TFLITE_ENABLE_XNNPACK)
   list(APPEND TFLITE_PROFILER_SRCS ${TFLITE_SOURCE_DIR}/core/acceleration/configuration/c/xnnpack_plugin.cc)
+  list(APPEND TFLITE_PROFILER_SRCS
+    ${TFLITE_DELEGATES_XNNPACK_SRCS}
+    ${PROJECT_BINARY_DIR}/tensorflow/lite/delegates/xnnpack/weight_cache_schema_generated.h
+  )
 endif()
 
 # TFLite library
