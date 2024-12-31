@@ -765,7 +765,7 @@ add_subdirectory(${TFLITE_SOURCE_DIR}/profiling/proto)
 
 message(${Protobuf_INCLUDE_DIR})
 target_include_directories(tensorflow-lite
-    PUBLIC ${CMAKE_BINARY_DIR} ${Protobuf_INCLUDE_DIR})
+    PUBLIC ${CMAKE_BINARY_DIR} ${PROJECT_BINARY_DIR} ${Protobuf_INCLUDE_DIR})
 
 target_link_libraries(tensorflow-lite
   PUBLIC
