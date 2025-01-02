@@ -7,7 +7,7 @@ android {
         applicationId "android.example.com.tflitecamerademo"
         // Required by Camera2 API.
         minSdkVersion 21
-        targetSdkVersion 26
+        targetSdkVersion 29
         versionCode 1
         versionName "1.0"
     }
@@ -57,10 +57,12 @@ dependencies {
     implementation 'com.android.support:design:25.2.0'
     implementation 'com.android.support:support-annotations:25.3.1'
     implementation 'com.android.support:support-v13:25.2.0'
+    implementation 'androidx.annotation:annotation:1.1.0'
 
     // Build off of nightly TensorFlow Lite
-    implementation 'org.tensorflow:tensorflow-lite:0.0.0-nightly-SNAPSHOT'
-    implementation 'org.tensorflow:tensorflow-lite-gpu:0.0.0-nightly-SNAPSHOT'
+    implementation 'org.tensorflow:tensorflow-lite:2.10.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.10.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu-api:2.10.0'
     // Use local TensorFlow library
     // implementation 'org.tensorflow:tensorflow-lite-local:0.0.0'
 }
