@@ -63,6 +63,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import android.support.v13.app.FragmentCompat;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -399,8 +400,27 @@ public class Camera2BasicFragment extends Fragment
     // Build list of devices
     int defaultModelIndex = 0;
     deviceStrings.add(cpu);
-    deviceStrings.add(gpu);
-    deviceStrings.add(nnApi);
+    Log.i(TAG, "Add CPU Device.");
+    try {
+      Class<?> c = Class.forName("android.os.SystemProperties");
+      Method get = c.getMethod("get", String.class, String.class);
+      String hardware = (String) get.invoke(c, "ro.hardware.egl", "google");
+      if (hardware.equals("mali")) {
+        deviceStrings.add(gpu);
+        Log.i(TAG, "Add GPU Device.");
+      } else if (hardware.equals("VIVANTE")) {
+        deviceStrings.add(nnApi);
+        Log.i(TAG, "Add NNAPI Device.");
+      } else {
+        deviceStrings.add(gpu);
+        deviceStrings.add(nnApi);
+        Log.i(TAG, "Add GPU&NNAPI Device.");
+      }
+    } catch (Exception e) {
+      deviceStrings.add(gpu);
+      deviceStrings.add(nnApi);
+      Log.i(TAG, "Add GPU&NNAPI Device by default.");
+    }
 
     deviceView.setAdapter(
         new ArrayAdapter<String>(
