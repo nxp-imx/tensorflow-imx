@@ -268,7 +268,7 @@ void RunInference(Settings* settings,
 
   auto profiler = std::make_unique<profiling::Profiler>(
       settings->max_profiling_buffer_entries);
-  interpreter->SetProfiler(profiler.get());
+  if (settings->profiling) interpreter->SetProfiler(profiler.get());
 
   auto delegates = delegate_providers.CreateAllDelegates();
   for (auto& delegate : delegates) {
