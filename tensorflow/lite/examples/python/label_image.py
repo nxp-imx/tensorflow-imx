@@ -107,7 +107,7 @@ if __name__ == '__main__':
   input_data = np.expand_dims(img, axis=0)
 
   if int8_model:
-    input_data = input_data - 128
+    input_data = input_data.astype(np.int32) - 128
     input_data = input_data.astype(np.int8)
 
   if floating_model:
@@ -129,7 +129,7 @@ if __name__ == '__main__':
   output_data = interpreter.get_tensor(output_details[0]['index'])
 
   if int8_model:
-    output_data = output_data + 128
+    output_data = output_data.astype(np.int32) + 128
     output_data = output_data.astype(np.uint8)
 
   results = np.squeeze(output_data)
