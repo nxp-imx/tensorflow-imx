@@ -42,15 +42,23 @@ list(APPEND TFLITE_BENCHMARK_SRCS
   ${TFLITE_SOURCE_DIR}/tools/utils.cc
 )
 
-list(APPEND TFLITE_BENCHMARK_LIBS
-  tensorflow-lite
-)
+if(CMAKE_SYSTEM_NAME MATCHES "Android" AND CMAKE_CXX_COMPILER_ID MATCHES "Clang$")
+  # Adding tensorflow-lite-test-base will include NNAPI symbols
+  list(APPEND TFLITE_BENCHMARK_LIBS
+    tensorflow-lite
+    tensorflow-lite-test-base
+  )
+else()
+  list(APPEND TFLITE_BENCHMARK_LIBS
+    tensorflow-lite
+  )
+endif()
 
 list(APPEND TFLITE_BENCHMARK_LIBS
+  model_runtime_info_proto
   profiling_info_proto
   feature_proto
   example_proto
-  model_runtime_info_proto
   protobuf::libprotobuf
   absl::log
 )

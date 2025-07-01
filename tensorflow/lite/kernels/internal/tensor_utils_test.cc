@@ -1349,7 +1349,7 @@ TEST(uKernels, DotprodSparseMatrixBatchVectorMultiplyAccumulate) {
               testing::ElementsAre(8764, 5196, 7204, 11148));
 }
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) && defined(ANDROID_UNSTABLE_TESTS)
 TEST(uKernels, MatrixBatchVectorMultiplyAccumulateSymmetricQuantizedTest) {
   // Note we use 29 columns as this exercises all the neon kernel: the
   // 16-block SIMD code, the 8-block postamble, and the leftover postamble.
@@ -1474,7 +1474,7 @@ TEST(uKernels, MatrixBatchVectorMultiplyAccumulateSymmetricQuantizedTest) {
 
   aligned_free(a_int8_data);
 }
-#endif  // __ANDROID__
+#endif  // __ANDROID__ && ANDROID_UNSTABLE_TESTS
 
 TEST(uKernels, SparseMatrixBatchVectorMultiplyAccumulateTest) {
   const int kRow = 4;

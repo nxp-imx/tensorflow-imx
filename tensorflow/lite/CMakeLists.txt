@@ -238,6 +238,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang$")
   # warnings so surpress these until they're fixed.
   list(APPEND TFLITE_TARGET_PRIVATE_OPTIONS "-Wno-deprecated-declarations")
 endif()
+
+# Avoid gtest/gmock related errors
+if(CMAKE_SYSTEM_NAME MATCHES "Android" AND CMAKE_CXX_COMPILER_ID MATCHES "Clang$")
+  add_compile_options(-Wno-error=deprecated-copy)
+endif()
+
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
   # Use NOMINMAX to disable the min / max macros in windows.h as they break
   # use of std::min std::max.
