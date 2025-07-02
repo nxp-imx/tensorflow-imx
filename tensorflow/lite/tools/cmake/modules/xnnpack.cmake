@@ -42,6 +42,7 @@ set(XNNPACK_BUILD_BENCHMARKS OFF CACHE BOOL "Disable XNNPACK benchmarks.")
 # needed to compile XNNPACK delegate of TFLite.
 # Note, we introduce an intermediate subdirectory, see ${TFLITE_SOURCE_DIR}/tools/cmake/modules/xnnpack/CMakeLists.txt
 # for details.
+SET(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} " -Wno-error=incompatible-pointer-types")
 add_subdirectory(${TFLITE_SOURCE_DIR}/tools/cmake/modules/xnnpack)
 
 include_directories(

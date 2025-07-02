@@ -81,6 +81,7 @@ option(TFLITE_ENABLE_XNNPACK "Enable XNNPACK backend" ON)
 option(TFLITE_ENABLE_EXTERNAL_DELEGATE "Enable External Delegate backend" ON)
 
 option(TFLITE_KERNEL_TEST "Enable tflite kernel unit test" OFF)
+option(TFLITE_EVAL_TOOLS "Enable tflite eval tools compilation" OFF)
 
 if(${CMAKE_CROSSCOMPILING})
   set(TFLITE_HOST_TOOLS_DIR "" CACHE PATH "Host tools directory")
@@ -766,6 +767,18 @@ list(FILTER _ALL_TFLITE_HDRS INCLUDE REGEX ".*\\.h$")
 target_include_directories(tensorflow-lite
   PUBLIC $<BUILD_INTERFACE:${TENSORFLOW_SOURCE_DIR}> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+
+# Add the generated headers directory. Required for maintaining the
+# tensorflow/lite directory structure for generated headers.
+set(TFLITE_GENERATED_HEADERS_DIR ${CMAKE_BINARY_DIR}/tensorflow/lite)
+
+# Add the profiling proto directory.
+add_subdirectory(${TFLITE_SOURCE_DIR}/profiling/proto)
+
+message(${Protobuf_INCLUDE_DIR})
+target_include_directories(tensorflow-lite
+    PUBLIC ${CMAKE_BINARY_DIR} ${Protobuf_INCLUDE_DIR})
+
 target_link_libraries(tensorflow-lite
   PUBLIC
     Eigen3::Eigen
@@ -779,6 +792,7 @@ target_link_libraries(tensorflow-lite
     farmhash
     fft2d_fftsg2d
     flatbuffers::flatbuffers
+    profiling_info_proto
     gemmlowp::gemmlowp
     ml_dtypes
     ruy::ruy
@@ -841,15 +855,13 @@ if(TFLITE_KERNEL_TEST)
   add_subdirectory(${TFLITE_SOURCE_DIR}/kernels)
 endif()
 
-# Add the generated headers directory. Required for maintaining the
-# tensorflow/lite directory structure for generated headers.
-set(TFLITE_GENERATED_HEADERS_DIR ${CMAKE_BINARY_DIR}/tensorflow/lite)
-
-# Add the profiling proto directory.
-add_subdirectory(${TFLITE_SOURCE_DIR}/profiling/proto)
-
 # Add the tf example directory.
 add_subdirectory(${TF_SOURCE_DIR}/core/example ${CMAKE_BINARY_DIR}/example_proto_generated)
+
+# Tensorflow Lite Evaluation Tools
+if(TFLITE_EVAL_TOOLS)
+  add_subdirectory(${TFLITE_SOURCE_DIR}/tools/evaluation)
+endif()
 
 # The benchmark tool.
 add_subdirectory(${TFLITE_SOURCE_DIR}/tools/benchmark)
