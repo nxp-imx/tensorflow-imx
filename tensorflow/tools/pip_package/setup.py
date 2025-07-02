@@ -47,7 +47,8 @@ from setuptools.dist import Distribution
 # For pip, we will remove all '-' characters from this string, and use the
 # result for pip.
 # Also update tensorflow/tensorflow.bzl and
-# tensorflow/core/public/version.h
+# tensorflow/core/public/version.h and
+# tensorflow/lite/CMakeLists.txt
 _VERSION = '2.19.0'
 
 # Update this version when a new libtpu stable version is released.
