@@ -1,0 +1,14 @@
+NXP Software Content Register
+
+---------------------------------------------
+Package:                     tensorflow-imx.git
+Outgoing License:            Apache-2.0
+License File:                LICENSE
+Package Category:            MachineLearning
+Type of Content:             source
+Description and comments:    i.MX Tensorflow
+Release Location:            https://github.com/nxp-imx/tensorflow-imx
+Origin:                      NXP (Apache-2.0)
+                             tensorflow 2.19.0 (Apache-2.0) - https://github.com/tensorflow/tensorflow
+
+
