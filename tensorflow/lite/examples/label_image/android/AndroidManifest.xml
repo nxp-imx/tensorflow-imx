@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2025 NXP
+
+  SPDX-License-Identifier: Apache-2.0
+-->
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.tensorflow.lite.label_image">
+
+    <!-- Necessary for loading custom models from disk. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+
+    <uses-sdk
+        android:minSdkVersion="23"
+        android:targetSdkVersion="34" />
+
+    <application
+        android:debuggable="true">
+        <activity
+            android:name="org.tensorflow.lite.label_image.LabelImageActivity"
+            android:screenOrientation="portrait"
+            android:label="TFLite Label Image"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:exported="true"
+            android:noHistory="true" />
+        <uses-library android:name="libOpenCL.so"
+           android:required="false"/>
+        <uses-library android:name="libOpenCL-pixel.so"
+           android:required="false"/>
+        <uses-library android:name="libtim-vx.so"
+           android:required="false"/>
+        <uses-library android:name="libNeutronDriver.so"
+           android:required="false"/>
+    </application>
+
+</manifest>
+
