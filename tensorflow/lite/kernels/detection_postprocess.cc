@@ -233,17 +233,22 @@ class Dequantizer {
     return (static_cast<float>(x) - zero_point_) * scale_;
   }
 
+  float operator()(int8 x) {
+    return (static_cast<float>(x) - zero_point_) * scale_;
+  }
+
  private:
   int zero_point_;
   float scale_;
 };
 
+template <typename T>
 void DequantizeBoxEncodings(const TfLiteTensor* input_box_encodings, int idx,
                             float quant_zero_point, float quant_scale,
                             int length_box_encoding,
                             CenterSizeEncoding* box_centersize) {
-  const uint8* boxes =
-      GetTensorData<uint8>(input_box_encodings) + length_box_encoding * idx;
+  const T* boxes =
+      GetTensorData<T>(input_box_encodings) + length_box_encoding * idx;
   Dequantizer dequantize(quant_zero_point, quant_scale);
   // See definition of the KeyPointBoxCoder at
   // https://github.com/tensorflow/models/blob/master/research/object_detection/box_coders/keypoint_box_coder.py
@@ -289,13 +294,25 @@ TfLiteStatus DecodeCenterSizeBoxes(TfLiteContext* context, TfLiteNode* node,
   for (int idx = 0; idx < num_boxes; ++idx) {
     switch (input_box_encodings->type) {
         // Quantized
-      case kTfLiteUInt8:
-        DequantizeBoxEncodings(
+      case kTfLiteInt8:
+        DequantizeBoxEncodings<int8>(
             input_box_encodings, idx,
             static_cast<float>(input_box_encodings->params.zero_point),
             static_cast<float>(input_box_encodings->params.scale),
             input_box_encodings->dims->data[2], &box_centersize);
-        DequantizeBoxEncodings(
+        DequantizeBoxEncodings<int8>(
+            input_anchors, idx,
+            static_cast<float>(input_anchors->params.zero_point),
+            static_cast<float>(input_anchors->params.scale), kNumCoordBox,
+            &anchor);
+        break;
+      case kTfLiteUInt8:
+        DequantizeBoxEncodings<uint8>(
+            input_box_encodings, idx,
+            static_cast<float>(input_box_encodings->params.zero_point),
+            static_cast<float>(input_box_encodings->params.scale),
+            input_box_encodings->dims->data[2], &box_centersize);
+        DequantizeBoxEncodings<uint8>(
             input_anchors, idx,
             static_cast<float>(input_anchors->params.zero_point),
             static_cast<float>(input_anchors->params.scale), kNumCoordBox,
@@ -826,6 +843,7 @@ TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext* context,
   return kTfLiteOk;
 }
 
+template <typename T>
 void DequantizeClassPredictions(const TfLiteTensor* input_class_predictions,
                                 const int num_boxes,
                                 const int num_classes_with_background,
@@ -838,7 +856,7 @@ void DequantizeClassPredictions(const TfLiteTensor* input_class_predictions,
   op_params.scale = quant_scale;
   const auto shape = RuntimeShape(1, num_boxes * num_classes_with_background);
   optimized_ops::Dequantize(op_params, shape,
-                            GetTensorData<uint8>(input_class_predictions),
+                            GetTensorData<T>(input_class_predictions),
                             shape, GetTensorData<float>(scores));
 }
 
@@ -866,9 +884,15 @@ TfLiteStatus NonMaxSuppressionMultiClass(TfLiteContext* context,
 
   const TfLiteTensor* scores;
   switch (input_class_predictions->type) {
+    case kTfLiteInt8: {
+      TfLiteTensor* temporary_scores = &context->tensors[op_data->scores_index];
+      DequantizeClassPredictions<int8>(input_class_predictions, num_boxes,
+                                 num_classes_with_background, temporary_scores);
+      scores = temporary_scores;
+    } break;
     case kTfLiteUInt8: {
       TfLiteTensor* temporary_scores = &context->tensors[op_data->scores_index];
-      DequantizeClassPredictions(input_class_predictions, num_boxes,
+      DequantizeClassPredictions<uint8>(input_class_predictions, num_boxes,
                                  num_classes_with_background, temporary_scores);
       scores = temporary_scores;
     } break;
