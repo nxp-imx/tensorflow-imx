@@ -243,6 +243,28 @@ aar_with_jni(
     ],
 )
 
+aar_with_jni(
+    name = "tensorflow-lite-external-delegate",
+    android_library = ":tensorflowlite_external",
+    headers = [
+        "//tensorflow/lite/delegates/external:external_delegate.h",
+        "//tensorflow/lite/delegates/external:external_delegate_interface.h",
+    ],
+)
+
+android_library(
+    name = "tensorflowlite_external",
+    srcs = ["//tensorflow/lite/delegates/external/java:external_delegate_group"],
+    manifest = "AndroidManifestExternal.xml",
+    exports = [
+        "//tensorflow/lite/delegates/external/java:tensorflowlite_external_delegate",
+    ],
+    deps = [
+        "//tensorflow/lite/delegates/external/java:tensorflowlite_external_delegate",
+	"//tensorflow/lite/java:tensorflowlite_java",
+    ],
+)
+
 #-----------------------------------------------------------------------------
 # android_library targets.
 
@@ -372,6 +394,7 @@ android_library(
         "@maven//:androidx_annotation_annotation",
     ],
 )
+
 
 # 'tensorflowlite_java' is the public android_library target for the TF Lite Java
 # APIs & Runtime, including experimental APIs, but EXCLUDING NATIVE CODE dependencies.
