@@ -5,15 +5,15 @@
     <application>
         <!-- Applications that target Android S+ require explicit declaration of
              any referenced vendor-provided libraries. -->
-        <uses-native-library
+        <uses-library
             android:name="libOpenCL.so"
             android:required="false" />
 
-        <uses-native-library
+        <uses-library
             android:name="libOpenCL-car.so"
             android:required="false" />
 
-        <uses-native-library
+        <uses-library
             android:name="libOpenCL-pixel.so"
             android:required="false" />
     </application>
