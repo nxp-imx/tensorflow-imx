@@ -1,0 +1,165 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "spdxVersion": "SPDX-2.3",
+  "creationInfo": {
+    "created": "2025-08-24T08:19:19Z",
+    "creators": [
+      "Organization: NXP"
+    ],
+    "licenseListVersion": "3.20"
+  },
+  "name": "tensorflow-imx-LF_6.12.34_2.1.0",
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "https://nxp.com/spdx/7041feb2-d30a-46b3-a913-0117d9bc7118",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-package-7041feb2-d30a-46b3-a913-0117d9bc7118",
+      "name": "tensorflow-imx",
+      "versionInfo": "LF_6.12.34_2.1.0",
+      "licenseConcluded": "(Apache-2.0)",
+      "licenseDeclared": "(Apache-2.0)",
+      "downloadLocation": "https://github.com/nxp-imx/tensorflow-imx -b lf-6.12.34-2.1.0",
+      "originator": "Organization: NXP",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-d71441dd-f430-4e45-9737-d8979adab7eb",
+      "name": "google/tsl",
+      "versionInfo": "20250118-snapshot-ffeadbc9",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: google",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/google/tsl@ffeadbc9111309a845ab07df3ff41d59cb005afb",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "2e3d7615-cc45-4959-9b5d-3ba5fa6d68b5",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-12496511-0e2e-4129-a9a9-60545456aa70",
+      "name": "Go programming language",
+      "versionInfo": "20250305-snapshot",
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "homepage": "http://golang.org/",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: golang",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/golang/go@20250305-snapshot",
+          "referenceType": "purl"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "00d43d9d-1a13-4c8e-945a-48e5aaf9ab39",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-b062ba43-9e87-49ff-9f07-5a59d1e0a19d",
+      "name": "TensorFlow",
+      "versionInfo": "2.19.0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "http://tensorflow.org",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: tensorflow",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:tensorflow:tensorflow:2.19.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:pypi_package:tensorflow:2.19.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "73a048ba-202c-477c-b595-af44a1f9480d",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:google:tensorflow:2.19.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/tensorflow/tensorflow@v2.19.0",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-be72fd20-098c-4476-a2a1-6ea6db2af0f0",
+      "name": "TensorFlowLiteSwift",
+      "versionInfo": "0.0.1-nightly.20250206",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "https://github.com/tensorflow/tensorflow",
+      "downloadLocation": "https://github.com/CocoaPods/Specs/blob/master/Specs/d/9/6/TensorFlowLiteSwift/0.0.1-nightly.20250206/TensorFlowLiteSwift.podspec.json",
+      "originator": "Organization: cocoapods",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "baac43d0-03ef-4f1e-ba49-84942e490753",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:cocoapods/TensorFlowLiteSwift@0.0.1-nightly.20250206",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-package-7041feb2-d30a-46b3-a913-0117d9bc7118"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-7041feb2-d30a-46b3-a913-0117d9bc7118",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-12496511-0e2e-4129-a9a9-60545456aa70"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-7041feb2-d30a-46b3-a913-0117d9bc7118",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-package-b062ba43-9e87-49ff-9f07-5a59d1e0a19d"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-7041feb2-d30a-46b3-a913-0117d9bc7118",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-be72fd20-098c-4476-a2a1-6ea6db2af0f0"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-7041feb2-d30a-46b3-a913-0117d9bc7118",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-d71441dd-f430-4e45-9737-d8979adab7eb"
+    }
+  ]
+}
