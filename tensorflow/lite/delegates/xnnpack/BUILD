@@ -95,7 +95,7 @@ config_setting(
 cc_library(
     name = "tflite_with_xnnpack_qu8_default",
     compatible_with = get_compatible_with_portable(),
-    defines = ["XNNPACK_DELEGATE_ENABLE_QU8=1"],
+    defines = [],
 )
 
 cc_library(
@@ -226,7 +226,7 @@ cc_library(
     }) + select({
         ":xnnpack_enable_subgraph_reshaping_explicit": ["-DXNNPACK_DELEGATE_ENABLE_SUBGRAPH_RESHAPING=1"],
         # copybara:uncomment "//conditions:default": [],
-        "//conditions:default": ["-DXNNPACK_DELEGATE_ENABLE_SUBGRAPH_RESHAPING=1"],  # copybara:comment
+        "//conditions:default": [],  # copybara:comment
     }) + select({
         ":xnnpack_use_latest_ops_explicit": ["-DXNNPACK_DELEGATE_USE_LATEST_OPS=1"],
         # copybara:uncomment "//conditions:default": [],
