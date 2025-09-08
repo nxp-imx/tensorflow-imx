@@ -2,12 +2,12 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 26
-    buildToolsVersion "27.0.3"
+    buildToolsVersion "30.0.3"
     defaultConfig {
         applicationId "android.example.com.tflitecamerademo"
         // Required by Camera2 API.
-        minSdkVersion 21
-        targetSdkVersion 29
+        minSdkVersion 26
+        targetSdkVersion 26
         versionCode 1
         versionName "1.0"
     }
@@ -28,6 +28,11 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
 }
 
 repositories {
@@ -35,6 +40,9 @@ repositories {
     maven {  // Only for snapshot artifacts
         name 'ossrh-snapshot'
         url 'https://oss.sonatype.org/content/repositories/snapshots'
+    }
+    flatDir {
+        dirs 'libs'
     }
 }
 
@@ -59,12 +67,12 @@ dependencies {
     implementation 'com.android.support:support-v13:25.2.0'
     implementation 'androidx.annotation:annotation:1.1.0'
 
-    // Build off of nightly TensorFlow Lite
-    implementation 'org.tensorflow:tensorflow-lite:2.10.0'
-    implementation 'org.tensorflow:tensorflow-lite-gpu:2.10.0'
-    implementation 'org.tensorflow:tensorflow-lite-gpu-api:2.10.0'
-    // Use local TensorFlow library
-    // implementation 'org.tensorflow:tensorflow-lite-local:0.0.0'
+    // Use NXP eIQ TensorFlowLite library
+    implementation(name: 'tensorflow-lite', ext: 'aar')
+    implementation(name: 'tensorflow-lite-api', ext: 'aar')
+    implementation(name: 'tensorflow-lite-gpu', ext: 'aar')
+    implementation(name: 'tensorflow-lite-gpu-api', ext: 'aar')
+    implementation(name: 'tensorflow-lite-external-delegate', ext: 'aar')
 }
 
 def targetFolder = "src/main/assets"

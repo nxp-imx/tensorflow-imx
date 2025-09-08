@@ -25,6 +25,7 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -41,6 +42,11 @@ import java.util.PriorityQueue;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.gpu.GpuDelegate;
 import org.tensorflow.lite.nnapi.NnApiDelegate;
+import org.tensorflow.lite.external.ExternalDelegate;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.lang.IllegalStateException;
 
 /**
  * Classifies images with Tensorflow Lite.
@@ -85,6 +91,10 @@ public abstract class ImageClassifier {
   private static final int FILTER_STAGES = 3;
   private static final float FILTER_FACTOR = 0.4f;
 
+  private String soc_type;
+  private String device;
+  private String nativeLibraryDir;
+
   private PriorityQueue<Map.Entry<String, Float>> sortedLabels =
       new PriorityQueue<>(
           RESULTS_TO_SHOW,
@@ -102,8 +112,15 @@ public abstract class ImageClassifier {
 
   /** Initializes an {@code ImageClassifier}. */
   ImageClassifier(Activity activity) throws IOException {
+    nativeLibraryDir = Paths.get(activity.getApplicationInfo().nativeLibraryDir).toString();
     tfliteModel = loadModelFile(activity);
-    tflite = new Interpreter(tfliteModel, tfliteOptions);
+    // It will fail to create interpreter object for Neutron, but it's OK to recreate it later,
+    // so capture the error and continue
+    try {
+      tflite = new Interpreter(tfliteModel, tfliteOptions);
+    } catch (IllegalStateException e) {
+      Log.i(TAG, "Expected failture for Neutron. Recover later.");
+    }
     labelList = loadLabelList(activity);
     imgData =
         ByteBuffer.allocateDirect(
@@ -166,8 +183,8 @@ public abstract class ImageClassifier {
   private void recreateInterpreter() {
     if (tflite != null) {
       tflite.close();
-      tflite = new Interpreter(tfliteModel, tfliteOptions);
     }
+    tflite = new Interpreter(tfliteModel, tfliteOptions);
   }
 
   public void useGpu() {
@@ -188,6 +205,27 @@ public abstract class ImageClassifier {
   public void useNNAPI() {
     nnapiDelegate = new NnApiDelegate();
     tfliteOptions.addDelegate(nnapiDelegate);
+    recreateInterpreter();
+  }
+
+  public void useNPU(String soc_type) {
+    String delegate = null;
+    if (soc_type.equals("imx95") || soc_type.equals("imx943")) {
+      delegate = "libneutron_delegate.so";
+    } else if (soc_type.equals("imx93")) {
+      delegate = "libethosu_delegate.so";
+    } else {
+      delegate = "libvx_delegate.so";
+    }
+    Path path = Paths.get(nativeLibraryDir + "/" + delegate);
+    Log.i(TAG, "Create external delegate from " + path.toString());
+    if (Files.exists(path)) {
+      tfliteOptions.setUseXNNPACK(true);
+      String delegate_path = path.toString();
+      ExternalDelegate.Options extDelegateOptions = new ExternalDelegate.Options(delegate_path);
+      ExternalDelegate extDelegate = new ExternalDelegate(extDelegateOptions);
+      tfliteOptions.addDelegate(extDelegate);
+    }
     recreateInterpreter();
   }
 
@@ -369,5 +407,28 @@ public abstract class ImageClassifier {
    */
   protected int getNumLabels() {
     return labelList.size();
+  }
+
+  /**
+   * Set/Get SoC type.
+   *
+   * @return
+   */
+  protected String getSocType() {
+    return soc_type;
+  }
+  protected void setSocType(String soc) {
+    soc_type = soc;
+  }
+  /**
+   * Set/Get device type.
+   *
+   * @return
+   */
+  protected String getDevice() {
+    return device;
+  }
+  protected void setDevice(String dev) {
+    device = dev;
   }
 }

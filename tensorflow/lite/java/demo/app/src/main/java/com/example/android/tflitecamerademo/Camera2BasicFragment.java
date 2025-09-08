@@ -131,8 +131,10 @@ public class Camera2BasicFragment extends Fragment
   private String gpu;
   private String cpu;
   private String nnApi;
+  private String npu;
   private String mobilenetV1Quant;
   private String mobilenetV1Float;
+  private String soc_type;
 
 
 
@@ -350,14 +352,31 @@ public class Camera2BasicFragment extends Fragment
 
           Log.i(TAG, "Changing model to " + model + " device " + device);
 
+          // Stop inference befoe creating classifier
+          synchronized (lock) {
+            runClassifier = false;
+            Log.i(TAG, "Stopped inference");
+          }
           // Try to load model.
           try {
-            if (model.equals(mobilenetV1Quant)) {
-              classifier = new ImageClassifierQuantizedMobileNet(getActivity());
-            } else if (model.equals(mobilenetV1Float)) {
-              classifier = new ImageClassifierFloatMobileNet(getActivity());
-            } else {
-              showToast("Failed to load model");
+            if (device.equals(npu)) { // regardingless the model type
+              if (soc_type.equals("imx95")) {
+                classifier = new ImageClassifierMobileNetIMX95(getActivity());
+	          } else if (soc_type.equals("imx943")) {
+                classifier = new ImageClassifierMobileNetIMX943(getActivity());
+	          } else if (soc_type.equals("imx93")) {
+                classifier = new ImageClassifierMobileNetVela(getActivity());
+	          } else { // i.MX8
+                classifier = new ImageClassifierQuantizedMobileNet(getActivity());
+	          }
+            } else { // CPU or GPU
+              if (model.equals(mobilenetV1Quant)) {
+                classifier = new ImageClassifierQuantizedMobileNet(getActivity());
+              } else if (model.equals(mobilenetV1Float)) {
+                classifier = new ImageClassifierFloatMobileNet(getActivity());
+              } else {
+                showToast("Failed to load model");
+              }
             }
           } catch (IOException e) {
             Log.d(TAG, "Failed to load", e);
@@ -368,12 +387,18 @@ public class Camera2BasicFragment extends Fragment
           if (classifier == null) {
             return;
           }
-          classifier.setNumThreads(numThreads);
           if (device.equals(cpu)) {
           } else if (device.equals(gpu)) {
             classifier.useGpu();
           } else if (device.equals(nnApi)) {
             classifier.useNNAPI();
+          } else if (device.equals(npu)) {
+            classifier.useNPU(soc_type);
+          }
+          //classifier.setNumThreads(numThreads);
+          synchronized (lock) {
+            runClassifier = true;
+            Log.i(TAG, "Resume inference");
           }
         });
   }
@@ -384,6 +409,7 @@ public class Camera2BasicFragment extends Fragment
     gpu = getString(R.string.gpu);
     cpu = getString(R.string.cpu);
     nnApi = getString(R.string.nnapi);
+    npu = getString(R.string.npu);
     mobilenetV1Quant = getString(R.string.mobilenetV1Quant);
     mobilenetV1Float = getString(R.string.mobilenetV1Float);
 
@@ -404,22 +430,28 @@ public class Camera2BasicFragment extends Fragment
     try {
       Class<?> c = Class.forName("android.os.SystemProperties");
       Method get = c.getMethod("get", String.class, String.class);
-      String hardware = (String) get.invoke(c, "ro.hardware.egl", "google");
-      if (hardware.equals("mali")) {
+      soc_type = (String) get.invoke(c, "ro.boot.soc_type", "google");
+      Log.i(TAG, "Running on " + soc_type);
+      if (soc_type.equals("imx8mp")) {
+        deviceStrings.add(nnApi);
+        deviceStrings.add(npu);
+        Log.i(TAG, "Add NNAPI&NPU Device.");
+      } else if (soc_type.equals("imx95") || soc_type.equals("imx943")) {
         deviceStrings.add(gpu);
-        Log.i(TAG, "Add GPU Device.");
-      } else if (hardware.equals("VIVANTE")) {
+        deviceStrings.add(npu);
+        Log.i(TAG, "Add GPU&NPU Device.");
+      } else if (soc_type.startsWith("imx")) {
         deviceStrings.add(nnApi);
         Log.i(TAG, "Add NNAPI Device.");
       } else {
-        deviceStrings.add(gpu);
         deviceStrings.add(nnApi);
-        Log.i(TAG, "Add GPU&NNAPI Device.");
+        deviceStrings.add(gpu);
+        Log.i(TAG, "Add NNAPI&GPU Device.");
       }
     } catch (Exception e) {
-      deviceStrings.add(gpu);
       deviceStrings.add(nnApi);
-      Log.i(TAG, "Add GPU&NNAPI Device by default.");
+      deviceStrings.add(gpu);
+      Log.i(TAG, "Add NNAPI&GPU Device.");
     }
 
     deviceView.setAdapter(

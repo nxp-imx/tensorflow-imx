@@ -25,6 +25,7 @@
     <string name="nnapi">NNAPI</string>
     <string name="gpu">GPU</string>
     <string name="cpu">CPU</string>
+    <string name="npu">NPU</string>
     <string name="modelLabel">Model</string>
     <string name="deviceLabel">Device</string>
     <string name="mobilenetV1Quant">mobilenet v1 quant</string>
