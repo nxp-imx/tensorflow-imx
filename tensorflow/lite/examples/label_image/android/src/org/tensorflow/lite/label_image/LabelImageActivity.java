@@ -47,23 +47,30 @@ public class LabelImageActivity extends Activity {
         threads = bundle.getInt("num_threads", 1);
     } else {
         model = MODEL;
-	label = LABEL;
-	image = IMAGE;
-	threads = 1;
-	ext_delegate = null;
-	ext_delegate_options = null;
+        label = LABEL;
+        image = IMAGE;
+        threads = 1;
+        ext_delegate = null;
+        ext_delegate_options = null;
     }
 
-
-        Log.i(TAG, "Running TensorFlow Lite classification inference");
-        LabelImage labelimage = new LabelImage(threads, ext_delegate, ext_delegate_options);
-       // try {
-            labelimage.loadModelAndLabel(model, label);
-        //} catch (Exception e) {
-         //   Log.e(TAG, "Fail to load model." + e);
-        //}
-        labelimage.inference(image);
-        Trace.endSection();
+    Log.i(TAG, "Running TensorFlow Lite classification inference");
+    // If using relative path for delegate so, search it in library path first. 
+    if (ext_delegate != null) {
+        if (!ext_delegate.startsWith("/")) {
+            String dir = Paths.get(getApplicationInfo().nativeLibraryDir).toString();
+            Path path = Paths.get(dir + "/" + ext_delegate);
+            if (Files.exists(path)) {
+                ext_delegate = path.toString();
+            }
+        }
+        Log.i(TAG, "The external delegate path: " + ext_delegate);
+    }
+        
+    LabelImage labelimage = new LabelImage(threads, ext_delegate, ext_delegate_options);
+    labelimage.loadModelAndLabel(model, label);
+    labelimage.inference(image);
+    Trace.endSection();
     finish();
   }
 }
