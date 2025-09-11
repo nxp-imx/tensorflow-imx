@@ -209,7 +209,7 @@ public abstract class ImageClassifier {
   }
 
   public void useNPU(String soc_type) {
-    String delegate = null;
+    String delegate;
     if (soc_type.equals("imx95") || soc_type.equals("imx943")) {
       delegate = "libneutron_delegate.so";
     } else if (soc_type.equals("imx93")) {
@@ -217,15 +217,14 @@ public abstract class ImageClassifier {
     } else {
       delegate = "libvx_delegate.so";
     }
-    Path path = Paths.get(nativeLibraryDir + "/" + delegate);
-    Log.i(TAG, "Create external delegate from " + path.toString());
-    if (Files.exists(path)) {
-      tfliteOptions.setUseXNNPACK(true);
-      String delegate_path = path.toString();
-      ExternalDelegate.Options extDelegateOptions = new ExternalDelegate.Options(delegate_path);
-      ExternalDelegate extDelegate = new ExternalDelegate(extDelegateOptions);
-      tfliteOptions.addDelegate(extDelegate);
-    }
+    String delegate_path = "/vendor/lib64/" + delegate;
+    Log.i(TAG, "Create external delegate from " + delegate_path);
+
+    tfliteOptions.setUseXNNPACK(true);
+    ExternalDelegate.Options extDelegateOptions = new ExternalDelegate.Options(delegate_path);
+    ExternalDelegate extDelegate = new ExternalDelegate(extDelegateOptions);
+    tfliteOptions.addDelegate(extDelegate);
+
     recreateInterpreter();
   }
 
@@ -265,6 +264,7 @@ public abstract class ImageClassifier {
   /** Memory-map the model file in Assets. */
   private MappedByteBuffer loadModelFile(Activity activity) throws IOException {
     AssetFileDescriptor fileDescriptor = activity.getAssets().openFd(getModelPath());
+    Log.i(TAG, "Load model: " + getModelPath());
     FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
     FileChannel fileChannel = inputStream.getChannel();
     long startOffset = fileDescriptor.getStartOffset();
