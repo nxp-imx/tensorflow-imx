@@ -60,6 +60,10 @@
             android:required="false"/>
         <uses-library android:name="libNeutronDriver.so"
             android:required="false"/>
+        <uses-library android:name="libneutron_delegate.so"
+            android:required="false"/>
+        <uses-library android:name="libvx_delegate.so"
+            android:required="false"/>
     </application>
 
 </manifest>
