@@ -85,7 +85,7 @@ public abstract class ImageClassifierINT8MobileNet extends ImageClassifier {
 
   @Override
   protected float getNormalizedProbability(int labelIndex) {
-    return ((labelProbArray[0][labelIndex] & 0xff) + 128) / 255.0f;
+    return (labelProbArray[0][labelIndex] + 128) / 255.0f;
   }
 
   @Override
