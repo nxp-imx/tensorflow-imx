@@ -362,13 +362,15 @@ public class Camera2BasicFragment extends Fragment
             if (device.equals(npu)) { // regardingless the model type
               if (soc_type.equals("imx95")) {
                 classifier = new ImageClassifierMobileNetIMX95(getActivity());
-	          } else if (soc_type.equals("imx943")) {
+              } else if (soc_type.equals("imx943")) {
                 classifier = new ImageClassifierMobileNetIMX943(getActivity());
-	          } else if (soc_type.equals("imx93")) {
+              } else if (soc_type.equals("imx93")) {
                 classifier = new ImageClassifierMobileNetVela(getActivity());
-	          } else { // i.MX8
+              } else if (soc_type.equals("imx952")) {
+                classifier = new ImageClassifierMobileNetIMX952(getActivity());
+              } else { // i.MX8
                 classifier = new ImageClassifierQuantizedMobileNet(getActivity());
-	          }
+              }
             } else { // CPU or GPU
               if (model.equals(mobilenetV1Quant)) {
                 classifier = new ImageClassifierQuantizedMobileNet(getActivity());
@@ -436,7 +438,7 @@ public class Camera2BasicFragment extends Fragment
         deviceStrings.add(nnApi);
         deviceStrings.add(npu);
         Log.i(TAG, "Add NNAPI&NPU Device.");
-      } else if (soc_type.equals("imx95") || soc_type.equals("imx943")) {
+      } else if (soc_type.equals("imx95") || soc_type.equals("imx943") || soc_type.equals("imx952")) {
         deviceStrings.add(gpu);
         deviceStrings.add(npu);
         Log.i(TAG, "Add GPU&NPU Device.");

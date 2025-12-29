@@ -210,7 +210,7 @@ public abstract class ImageClassifier {
 
   public void useNPU(String soc_type) {
     String delegate;
-    if (soc_type.equals("imx95") || soc_type.equals("imx943")) {
+    if (soc_type.equals("imx95") || soc_type.equals("imx943") || soc_type.equals("imx952")) {
       delegate = "libneutron_delegate.so";
     } else if (soc_type.equals("imx93")) {
       delegate = "libethosu_delegate.so";
