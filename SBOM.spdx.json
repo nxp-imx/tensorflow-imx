@@ -1,0 +1,108 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "spdxVersion": "SPDX-2.3",
+  "creationInfo": {
+    "created": "2026-01-26T02:21:28Z",
+    "creators": [
+      "Organization: NXP"
+    ],
+    "licenseListVersion": "3.26"
+  },
+  "name": "tensorflow-imx-LF_6.18.2_1.0.0",
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "https://nxp.com/spdx/20a39483-e34c-461a-bcd0-5290b6998996",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-package-20a39483-e34c-461a-bcd0-5290b6998996",
+      "name": "tensorflow-imx",
+      "versionInfo": "LF_6.18.2_1.0.0",
+      "licenseConcluded": "(Apache-2.0)",
+      "licenseDeclared": "(Apache-2.0)",
+      "downloadLocation": "https://github.com/nxp-imx/tensorflow-imx -b lf-6.18.2-1.0.0",
+      "originator": "Organization: NXP",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-d4dfd2f8-f0cf-4dc1-a2c5-6e0a8f0c6faa",
+      "name": "Mesa",
+      "versionInfo": "25.1.6",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "homepage": "https://mesa3d.org/",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: opensuse",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "df1830bf-68d3-4f81-8e8e-a64a05334df8",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:rpm/opensuse/Mesa@25.1.6-420.0.2.1.sr20250801?arch=i586",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-b062ba43-9e87-49ff-9f07-5a59d1e0a19d",
+      "name": "TensorFlow",
+      "versionInfo": "2.19.0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "http://tensorflow.org",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: tensorflow",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "73a048ba-202c-477c-b595-af44a1f9480d",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:google:tensorflow:2.19.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:pypi_package:tensorflow:2.19.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:tensorflow:tensorflow:2.19.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/tensorflow/tensorflow@v2.19.0",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-package-20a39483-e34c-461a-bcd0-5290b6998996"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-20a39483-e34c-461a-bcd0-5290b6998996",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-package-b062ba43-9e87-49ff-9f07-5a59d1e0a19d"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-20a39483-e34c-461a-bcd0-5290b6998996",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-d4dfd2f8-f0cf-4dc1-a2c5-6e0a8f0c6faa"
+    }
+  ]
+}
