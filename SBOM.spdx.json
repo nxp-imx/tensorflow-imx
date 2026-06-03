@@ -1,0 +1,84 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "spdxVersion": "SPDX-2.3",
+  "creationInfo": {
+    "created": "2026-06-02T02:59:26Z",
+    "creators": [
+      "Organization: NXP"
+    ],
+    "licenseListVersion": "3.26"
+  },
+  "name": "tensorflow-imx-lf-6.18.20-2.0.0",
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "https://nxp.com/spdx/0c2f2a27-c36c-4519-a858-99440af5fd77",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-package-0c2f2a27-c36c-4519-a858-99440af5fd77",
+      "name": "tensorflow-imx",
+      "versionInfo": "lf-6.18.20-2.0.0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "downloadLocation": "https://github.com/nxp-imx/tensorflow-imx -b lf-6.18.20-2.0.0",
+      "originator": "Organization: NXP",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-0c2f2a27-c36c-4519-a858-99440af5fd77---b062ba43-9e87-49ff-9f07-5a59d1e0a19d",
+      "name": "TensorFlow",
+      "versionInfo": "2.19.0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "http://tensorflow.org",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: tensorflow",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "73a048ba-202c-477c-b595-af44a1f9480d",
+          "referenceType": "BlackDuck-ComponentOrigin"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:google:tensorflow:2.19.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:pypi_package:tensorflow:2.19.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:tensorflow:tensorflow:2.19.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceLocator": "pkg:github/tensorflow/tensorflow@v2.19.0",
+          "referenceType": "purl"
+        }
+      ],
+      "filesAnalyzed": false
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-package-0c2f2a27-c36c-4519-a858-99440af5fd77"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-0c2f2a27-c36c-4519-a858-99440af5fd77",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-package-0c2f2a27-c36c-4519-a858-99440af5fd77---b062ba43-9e87-49ff-9f07-5a59d1e0a19d"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-0c2f2a27-c36c-4519-a858-99440af5fd77",
+      "relationshipType": "DYNAMIC_LINK",
+      "relatedSpdxElement": "SPDXRef-package-0c2f2a27-c36c-4519-a858-99440af5fd77---b062ba43-9e87-49ff-9f07-5a59d1e0a19d"
+    }
+  ]
+}
