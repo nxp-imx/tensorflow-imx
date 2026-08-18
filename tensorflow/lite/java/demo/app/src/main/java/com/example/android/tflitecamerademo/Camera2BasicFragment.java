@@ -368,6 +368,8 @@ public class Camera2BasicFragment extends Fragment
                 classifier = new ImageClassifierMobileNetVela(getActivity());
               } else if (soc_type.equals("imx952")) {
                 classifier = new ImageClassifierMobileNetIMX952(getActivity());
+              } else if (soc_type.equals("imx937")) {
+                classifier = new ImageClassifierMobileNetIMX937(getActivity());
               } else { // i.MX8
                 classifier = new ImageClassifierQuantizedMobileNet(getActivity());
               }
@@ -438,7 +440,10 @@ public class Camera2BasicFragment extends Fragment
         deviceStrings.add(nnApi);
         deviceStrings.add(npu);
         Log.i(TAG, "Add NNAPI&NPU Device.");
-      } else if (soc_type.equals("imx95") || soc_type.equals("imx943") || soc_type.equals("imx952")) {
+      } else if (soc_type.equals("imx95") || 
+                 soc_type.equals("imx943") || 
+                 soc_type.equals("imx952") ||
+                 soc_type.equals("imx937")) {
         deviceStrings.add(gpu);
         deviceStrings.add(npu);
         Log.i(TAG, "Add GPU&NPU Device.");
