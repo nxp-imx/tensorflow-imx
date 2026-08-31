@@ -1,0 +1,69 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "spdxVersion": "SPDX-2.3",
+  "creationInfo": {
+    "created": "2026-08-27T02:57:18Z",
+    "creators": [
+      "Organization: NXP"
+    ],
+    "licenseListVersion": "3.28"
+  },
+  "name": "tensorflow-imx-lf-6.18.37-2.1.0",
+  "dataLicense": "CC0-1.0",
+  "documentNamespace": "https://nxp.com/spdx/a8d3fb04-76cc-4bb8-90d0-58629d394d88",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-package-a8d3fb04-76cc-4bb8-90d0-58629d394d88",
+      "name": "tensorflow-imx",
+      "versionInfo": "lf-6.18.37-2.1.0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "downloadLocation": "https://github.com/nxp-imx/tensorflow-imx -b lf-6.18.37-2.1.0",
+      "originator": "Organization: NXP",
+      "supplier": "NOASSERTION",
+      "externalRefs": [],
+      "filesAnalyzed": false
+    },
+    {
+      "SPDXID": "SPDXRef-package-a8d3fb04-76cc-4bb8-90d0-58629d394d88---b062ba43-9e87-49ff-9f07-5a59d1e0a19d",
+      "name": "TensorFlow",
+      "versionInfo": "2.19.0",
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "homepage": "http://tensorflow.org",
+      "downloadLocation": "NOASSERTION",
+      "originator": "Organization: unknown",
+      "supplier": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:google:tensorflow:2.19.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:pypi_package:tensorflow:2.19.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceLocator": "cpe:2.3:a:tensorflow:tensorflow:2.19.0:*:*:*:*:*:*:*",
+          "referenceType": "cpe23Type"
+        }
+      ],
+      "filesAnalyzed": false
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-DOCUMENT",
+      "relationshipType": "DESCRIBES",
+      "relatedSpdxElement": "SPDXRef-package-a8d3fb04-76cc-4bb8-90d0-58629d394d88"
+    },
+    {
+      "spdxElementId": "SPDXRef-package-a8d3fb04-76cc-4bb8-90d0-58629d394d88",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-package-a8d3fb04-76cc-4bb8-90d0-58629d394d88---b062ba43-9e87-49ff-9f07-5a59d1e0a19d"
+    }
+  ]
+}
